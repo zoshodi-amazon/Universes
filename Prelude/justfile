@@ -1,0 +1,160 @@
+# Universes - Universal Nix/Flake Commands
+# Usage: just <command> [args]
+
+set shell := ["bash", "-c"]
+default_host := "cloud-dev"
+
+# List all available commands
+list:
+    @just --list
+
+# ─────────────────────────────────────────────────────────────
+# Flake Operations
+# ─────────────────────────────────────────────────────────────
+
+# Show all flake outputs
+show:
+    nix flake show
+
+# Run all checks
+check:
+    nix flake check
+
+# Update all inputs
+update:
+    nix flake update
+
+# Update specific input
+update-input input:
+    nix flake update {{input}}
+
+# ─────────────────────────────────────────────────────────────
+# Home Manager
+# ─────────────────────────────────────────────────────────────
+
+# List available hosts
+hosts:
+    @nix eval --json '.#homeConfigurations' --apply 'builtins.attrNames' | jq -r '.[]'
+
+# Switch to home configuration
+switch host=default_host:
+    home-manager switch --flake .#{{host}}
+
+# Build home configuration (no switch)
+build-home host=default_host:
+    nix build .#homeConfigurations.{{host}}.activationPackage
+
+# ─────────────────────────────────────────────────────────────
+# Modules
+# ─────────────────────────────────────────────────────────────
+
+# List all modules by class
+modules:
+    @nix eval --json '.#modules' --apply 'builtins.mapAttrs (k: v: builtins.attrNames v)' | jq
+
+# List homeManager modules
+modules-home:
+    @nix eval --json '.#modules.homeManager' --apply 'builtins.attrNames' | jq -r '.[]'
+
+# List nixos modules
+modules-nixos:
+    @nix eval --json '.#modules.nixos' --apply 'builtins.attrNames' | jq -r '.[]'
+
+# ─────────────────────────────────────────────────────────────
+# Config Inspection
+# ─────────────────────────────────────────────────────────────
+
+# Eval any config path
+eval path:
+    nix eval '.#{{path}}'
+
+# Eval as JSON
+eval-json path:
+    nix eval --json '.#{{path}}' | jq
+
+# List attribute names at path
+keys path:
+    @nix eval --json '.#{{path}}' --apply 'builtins.attrNames' | jq -r '.[]'
+
+# Show nixvim keymaps
+keymaps host=default_host:
+    @nix eval '.#homeConfigurations.{{host}}.config.programs.nixvim.keymaps' 2>&1 \
+        | grep -oE 'key = "[^"]+";.*desc = "[^"]+"' \
+        | sed 's/key = "//; s/";.*desc = "/ → /; s/"$//'
+
+# Show enabled plugins
+plugins host=default_host:
+    @nix eval --json '.#homeConfigurations.{{host}}.config.programs.nixvim.plugins' \
+        --apply 'p: builtins.filter (n: n != "__unfix__") (builtins.attrNames p)' | jq -r '.[]'
+
+# ─────────────────────────────────────────────────────────────
+# Development
+# ─────────────────────────────────────────────────────────────
+
+# Enter dev shell
+dev shell="default":
+    nix develop .#{{shell}}
+
+# Enter checks dev shell
+dev-checks:
+    nix develop .#checks
+
+# Run REPL with flake
+repl:
+    nix repl .#
+
+# ─────────────────────────────────────────────────────────────
+# Nixpkgs
+# ─────────────────────────────────────────────────────────────
+
+# Search nixpkgs
+search query:
+    nix search nixpkgs {{query}}
+
+# Show package meta
+info pkg:
+    nix eval --json '{{pkg}}.meta' | jq
+
+# Run package without installing
+run pkg *args:
+    nix run {{pkg}} -- {{args}}
+
+# ─────────────────────────────────────────────────────────────
+# Store & GC
+# ─────────────────────────────────────────────────────────────
+
+# Garbage collect (default: older than 7 days)
+gc days="7":
+    nix-collect-garbage --delete-older-than {{days}}d
+
+# Show store path size
+size path="./result":
+    nix path-info -Sh {{path}}
+
+# Optimize store
+optimize:
+    nix store optimise
+
+# ─────────────────────────────────────────────────────────────
+# Invariants
+# ─────────────────────────────────────────────────────────────
+
+# Run all invariant checks
+invariants:
+    nix build .#checks.x86_64-linux.invariant-module-dirs
+    nix build .#checks.x86_64-linux.invariant-universe-features
+    nix build .#checks.x86_64-linux.invariant-bindings-subdirs
+    nix build .#checks.x86_64-linux.invariant-no-manual-imports
+
+# ─────────────────────────────────────────────────────────────
+# Quick Aliases
+# ─────────────────────────────────────────────────────────────
+
+# Shorthand: build and switch
+bs host=default_host: (switch host)
+
+# Shorthand: check and switch
+cs host=default_host: check (switch host)
+
+# Shorthand: update and switch  
+us host=default_host: update (switch host)

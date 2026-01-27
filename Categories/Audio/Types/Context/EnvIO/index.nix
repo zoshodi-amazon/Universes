@@ -1,0 +1,4 @@
+{
+  Inputs = ./Inputs;
+  Outputs = ./Outputs;
+}
