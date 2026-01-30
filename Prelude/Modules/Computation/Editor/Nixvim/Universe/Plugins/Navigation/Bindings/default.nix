@@ -6,6 +6,7 @@
     oil.enable = true;
     nvim-tree.enable = true;
     yazi.enable = true;
+    harpoon.enable = true;
     treesitter = {
       enable = true;
       folding.enable = true;

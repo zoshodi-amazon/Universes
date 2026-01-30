@@ -1,2 +1,0 @@
-# MicroVM Bindings/Scripts
-{ ... }: { }

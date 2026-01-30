@@ -5,7 +5,7 @@ let cfg = config.shell.zsh; in
     programs.zsh = {
       enable = true;
       shellAliases = cfg.aliases;
-      initExtra = ''
+      initContent = ''
         ${lib.concatMapStringsSep "\n" (p: "export PATH=\"${p}:$PATH\"") cfg.paths}
         bindkey -v
         ${cfg.initExtra}

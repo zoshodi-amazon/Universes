@@ -11,12 +11,16 @@ let cfg = config.git; in
         key = cfg.signing.key;
         signByDefault = cfg.signing.signByDefault;
       };
-      extraConfig = {
+      settings = {
         init.defaultBranch = cfg.defaultBranch;
+        alias = cfg.aliases;
       } // cfg.extraConfig;
-      aliases = cfg.aliases;
-      delta.enable = cfg.delta.enable;
       lfs.enable = cfg.lfs.enable;
+      ignores = cfg.ignores;
+    };
+    programs.delta = {
+      enable = cfg.delta.enable;
+      enableGitIntegration = true;
     };
   };
 }

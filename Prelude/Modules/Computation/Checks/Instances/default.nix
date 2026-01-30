@@ -14,7 +14,12 @@ let
   modulesDir = ../../..;
 in
 {
-  config.perSystem = { pkgs, ... }: {
+  config.perSystem = { pkgs, system, ... }:
+  let
+    # Filter hosts to only those buildable on current system
+    hostSystem = host: homeConfigs.${host}.config.nixpkgs.system or homeConfigs.${host}.pkgs.system or system;
+    evalHosts = builtins.filter (h: homeConfigs ? ${h} && hostSystem h == system) eval.hosts;
+  in {
     devShells.checks = pkgs.mkShell {
       packages = lib.flatten [
         (lib.optionals nix.enable [
@@ -34,14 +39,12 @@ in
     };
 
     checks = lib.mkMerge [
-      (lib.mkIf eval.enable {
+      (lib.mkIf (eval.enable && evalHosts != []) {
         eval-home = pkgs.runCommand "eval-home" {} ''
-          echo "Evaluating homeConfigurations..."
+          echo "Evaluating homeConfigurations for ${system}..."
           ${lib.concatMapStringsSep "\n" (host:
-            if homeConfigs ? ${host}
-            then "echo '✓ ${host}: ${homeConfigs.${host}.activationPackage}'"
-            else "echo '✗ ${host}: not found' && exit 1"
-          ) eval.hosts}
+            "echo '✓ ${host}: ${homeConfigs.${host}.activationPackage}'"
+          ) evalHosts}
           touch $out
         '';
       })

@@ -3,9 +3,10 @@ let env = config.shell.env; in
 {
   # Shared aliases - single source of truth
   config.shell.aliases = {
+    k = "kiro-cli";
     vi = "nvim";
     ll = "ls -la"; la = "ls -la"; l = "ls -l";
-    b = "cd .."; ".." = "cd .."; "..." = "cd ../..";
+    b = "cd .. && ls"; ".." = "cd .."; "..." = "cd ../..";
     hm = "home-manager"; hms = "home-manager switch";
     nr = "nix registry"; nf = "nix flake"; nfc = "nix flake check"; nd = "nix develop";
     gs = "git status"; ga = "git add"; gc = "git commit";
