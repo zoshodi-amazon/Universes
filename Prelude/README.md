@@ -148,6 +148,33 @@ Is it tangible hardware/material?
 
 ## Module Structure
 
+```mermaid
+mindmap
+  root((Module))
+    README.md
+    default.nix
+    Env/
+      default.nix
+    Instances/
+      default.nix
+    Drv/
+      default.nix
+      package/
+        default.nix
+    Universe/
+      Feature/
+        Options/
+          default.nix
+        Bindings/
+          Scripts/
+          Commands/
+          Keymaps/
+          Hooks/
+          State/
+          Secrets/
+          Plugins/
+```
+
 Every module follows this frozen structure:
 
 ```

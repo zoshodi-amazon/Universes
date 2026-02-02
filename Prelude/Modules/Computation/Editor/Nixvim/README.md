@@ -1,36 +1,65 @@
 # Nixvim Module
 
-## Canonical Module Structure (6 dirs)
-
-Required:
-- **Options/** source of truth (schema)
-- **Env/** 1-1 env var mapping
-- **Bindings/** runtime imperative (keymaps, scripts, commands)
-- **Plugins/** plugin/extension configs
-- **Instances/** class targets (nixos, darwin, homeManager, devShells)
-
-Optional:
-- **Drv/** custom derivation (when wrapping a package not in nixpkgs)
+## Structure
 
 ```
-<Module>/
-├── Options/index.nix
-├── Env/index.nix
-├── Bindings/
-│   ├── Keymaps/index.nix
-│   ├── Scripts/index.nix
-│   ├── Commands/index.nix
-│   └── index.nix
-├── Plugins/index.nix
-├── Instances/index.nix
-├── Drv/index.nix          # optional
-└── index.nix
+Nixvim/
+├── Env/                    # ENV var aggregation
+├── Instances/              # Wires config → programs.nixvim
+└── Universe/
+    ├── Core/               # Base vim options
+    ├── Keymaps/            # Key bindings (ontological categories)
+    └── Plugins/            # Plugin configs (directory = namespace)
+        ├── Completion/     # → config.nixvim.plugins.completion
+        ├── Git/            # → config.nixvim.plugins.git
+        ├── Markdown/       # → config.nixvim.plugins.markdown
+        ├── Navigation/     # → config.nixvim.plugins.navigation
+        ├── Nix/            # → config.nixvim.plugins.nix
+        └── Ui/             # → config.nixvim.plugins.ui
 ```
 
-## The Isomorphism
+## Plugin Convention
+
+**Directory name = config namespace**. The path `Universe/Plugins/<Category>/Bindings/default.nix` must set:
+
+```nix
+config.nixvim.plugins.<category> = lib.mkIf config.nixvim.enable {
+  <plugin>.enable = true;
+};
+```
+
+Example for `Universe/Plugins/Markdown/Bindings/default.nix`:
+
+```nix
+{ config, lib, ... }:
+{
+  config.nixvim.plugins.markdown = lib.mkIf config.nixvim.enable {
+    glow.enable = true;
+    markdown-preview = {
+      enable = true;
+      autoLoad = true;  # load immediately, not just for .md files
+    };
+  };
+}
+```
+
+## Keymap Convention
+
+Keymaps in `Universe/Keymaps/Bindings/default.nix` are organized ontologically:
+
+| Prefix | Category | Examples |
+|--------|----------|----------|
+| `<leader>c` | Computation | code actions, format, build |
+| `<leader>i` | Information | files, buffers, grep, harpoon |
+| `<leader>s` | Signal | diagnostics, notifications |
+| `<leader>m` | Meta | help, keymaps, preview |
+
+## Flow
 
 ```
-Options ≅ Env ≅ Bindings
-   ↓       ↓       ↓
-Schema → Vars → Keymaps/Scripts/Commands
+Universe/Plugins/*/Bindings/default.nix
+    ↓ sets config.nixvim.plugins.<category>
+Instances/default.nix
+    ↓ merges all: plugins = lib.mkMerge (lib.attrValues cfg.plugins)
+programs.nixvim.plugins
 ```

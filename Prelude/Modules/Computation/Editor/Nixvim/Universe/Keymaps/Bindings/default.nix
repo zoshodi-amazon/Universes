@@ -60,6 +60,8 @@
       { mode = "n"; key = "<leader>mh"; action = "<cmd>Telescope help_tags<cr>"; options.desc = "Help tags"; }
       { mode = "n"; key = "<leader>mk"; action = "<cmd>Telescope keymaps<cr>"; options.desc = "Search keymaps"; }
       { mode = "n"; key = "<leader>mm"; action = "<cmd>Telescope man_pages<cr>"; options.desc = "Man pages"; }
+      { mode = "n"; key = "<leader>mg"; action = "<cmd>Glow<cr>"; options.desc = "Glow preview"; }
+      { mode = "n"; key = "<leader>mp"; action = "<cmd>MarkdownPreview<cr>"; options.desc = "Markdown preview (browser)"; }
     ];
   };
 }
