@@ -1,0 +1,108 @@
+# Nixvim Filetype → Renderer Architecture
+# Vertical layout for ASCII preview
+
+direction: down
+
+title: {
+  label: "Nixvim Plugins (Filetype → Renderer)"
+  shape: text
+  style.font-size: 20
+}
+
+# ═══════════════════════════════════════
+# EXISTING
+# ═══════════════════════════════════════
+
+existing: {
+  label: "Existing ✓"
+  style.fill: "#88c0d0"
+  
+  Navigation
+  Completion
+  Git
+  Ui
+  Nix
+  Documentation
+}
+
+# ═══════════════════════════════════════
+# NEW CATEGORIES
+# ═══════════════════════════════════════
+
+Languages: {
+  label: "Languages/"
+  style.fill: "#a3be8c"
+  
+  nix: ".nix → nil LSP + repl"
+  lean: ".lean → lean.nvim infoview"
+  python: ".py → pyright + repl"
+  rust: ".rs → rust-analyzer"
+  typescript: ".ts → tsserver"
+}
+
+Data: {
+  label: "Data/"
+  style.fill: "#ebcb8b"
+  
+  json: ".json → jq tree"
+  yaml: ".yaml → yq"
+  csv: ".csv → table view"
+  toml: ".toml → taplo"
+}
+
+Media: {
+  label: "Media/"
+  style.fill: "#d08770"
+  
+  image: ".png/jpg → image.nvim"
+  svg: ".svg → browser"
+  audio: ".wav/mp3 → ffplay"
+  video: ".mp4 → mpv"
+}
+
+Web: {
+  label: "Web/"
+  style.fill: "#bf616a"
+  
+  html: ".html → live-server"
+  css: ".css → live-server"
+  jsx: ".jsx → hot reload"
+}
+
+# ═══════════════════════════════════════
+# FLOW
+# ═══════════════════════════════════════
+
+existing -> Instances
+Languages -> Instances
+Data -> Instances
+Media -> Instances
+Web -> Instances
+
+Instances: {
+  label: "Instances/"
+  shape: cylinder
+  style.fill: "#b48ead"
+}
+
+Instances -> target
+
+target: {
+  label: "programs.nixvim"
+  shape: cylinder
+}
+
+# ═══════════════════════════════════════
+# PATTERN
+# ═══════════════════════════════════════
+
+pattern: {
+  label: "Each Plugin dir"
+  style.stroke-dash: 3
+  
+  Options
+  Bindings: {
+    plugins: "config.nixvim.plugins.X"
+    keymaps: "config.nixvim.keymaps.X"
+  }
+}
