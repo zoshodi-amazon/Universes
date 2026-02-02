@@ -1,8 +1,9 @@
 # Keymap bindings - organized ontologically
+# NOTE: Plugin-specific keymaps belong in their plugin's Bindings/, not here
 { ... }:
 {
   config.nixvim.keymaps = {
-    # Core vim motions (non-leader)
+    # Core vim motions (non-leader) - always available
     core = [
       { mode = "i"; key = "jk"; action = "<Esc>"; options.desc = "Exit insert mode"; }
       { mode = "n"; key = "<C-h>"; action = "<C-w>h"; options.desc = "Move to left window"; }
@@ -21,7 +22,7 @@
       { mode = "n"; key = "zk"; action = "zk"; options.desc = "Previous fold"; }
     ];
 
-    # <leader>c → Computation (code actions, format, eval, check)
+    # <leader>c → Computation (code actions, format, eval, check) - LSP always available
     computation = [
       { mode = "n"; key = "<leader>ca"; action = "<cmd>lua vim.lsp.buf.code_action()<cr>"; options.desc = "Code actions"; }
       { mode = "n"; key = "<leader>cf"; action = "<cmd>lua vim.lsp.buf.format()<cr>"; options.desc = "Format buffer"; }
@@ -32,36 +33,17 @@
       { mode = "n"; key = "<leader>cR"; action = "<cmd>terminal nix repl<cr>"; options.desc = "Nix REPL"; }
     ];
 
-    # <leader>i → Information (files, buffers, grep, git)
-    information = [
-      { mode = "n"; key = "<leader>if"; action = "<cmd>Telescope find_files<cr>"; options.desc = "Find files"; }
-      { mode = "n"; key = "<leader>ig"; action = "<cmd>Telescope live_grep<cr>"; options.desc = "Live grep"; }
-      { mode = "n"; key = "<leader>ib"; action = "<cmd>Telescope buffers<cr>"; options.desc = "Find buffers"; }
-      { mode = "n"; key = "<leader>e"; action = "<cmd>Oil<cr>"; options.desc = "File explorer"; }
-      { mode = "n"; key = "<leader>it"; action = "<cmd>NvimTreeToggle<cr>"; options.desc = "Toggle file tree"; }
-      { mode = "n"; key = "<leader>ia"; action.__raw = "function() require('harpoon'):list():add() end"; options.desc = "Harpoon add"; }
-      { mode = "n"; key = "<leader>ih"; action.__raw = "function() require('harpoon').ui:toggle_quick_menu(require('harpoon'):list()) end"; options.desc = "Harpoon menu"; }
-      { mode = "n"; key = "<leader>i1"; action.__raw = "function() require('harpoon'):list():select(1) end"; options.desc = "Harpoon 1"; }
-      { mode = "n"; key = "<leader>i2"; action.__raw = "function() require('harpoon'):list():select(2) end"; options.desc = "Harpoon 2"; }
-      { mode = "n"; key = "<leader>i3"; action.__raw = "function() require('harpoon'):list():select(3) end"; options.desc = "Harpoon 3"; }
-      { mode = "n"; key = "<leader>i4"; action.__raw = "function() require('harpoon'):list():select(4) end"; options.desc = "Harpoon 4"; }
-    ];
-
-    # <leader>s → Signal (diagnostics, notifications, logs)
+    # <leader>s → Signal (diagnostics) - vim.diagnostic always available
     signal = [
-      { mode = "n"; key = "<leader>sd"; action = "<cmd>Telescope diagnostics<cr>"; options.desc = "Diagnostics"; }
+      { mode = "n"; key = "<leader>sd"; action = "<cmd>lua vim.diagnostic.setloclist()<cr>"; options.desc = "Diagnostics list"; }
       { mode = "n"; key = "<leader>sl"; action = "<cmd>lua vim.diagnostic.open_float()<cr>"; options.desc = "Line diagnostics"; }
       { mode = "n"; key = "<leader>sn"; action = "<cmd>lua vim.diagnostic.goto_next()<cr>"; options.desc = "Next diagnostic"; }
       { mode = "n"; key = "<leader>sp"; action = "<cmd>lua vim.diagnostic.goto_prev()<cr>"; options.desc = "Prev diagnostic"; }
     ];
 
-    # <leader>m → Meta (help, keymaps, introspection)
+    # <leader>m → Meta (help) - vim builtins
     meta = [
-      { mode = "n"; key = "<leader>mh"; action = "<cmd>Telescope help_tags<cr>"; options.desc = "Help tags"; }
-      { mode = "n"; key = "<leader>mk"; action = "<cmd>Telescope keymaps<cr>"; options.desc = "Search keymaps"; }
-      { mode = "n"; key = "<leader>mm"; action = "<cmd>Telescope man_pages<cr>"; options.desc = "Man pages"; }
-      { mode = "n"; key = "<leader>mg"; action = "<cmd>Glow<cr>"; options.desc = "Glow preview"; }
-      { mode = "n"; key = "<leader>mp"; action = "<cmd>MarkdownPreview<cr>"; options.desc = "Markdown preview (browser)"; }
+      { mode = "n"; key = "<leader>mh"; action = "<cmd>help<cr>"; options.desc = "Help"; }
     ];
   };
 }

@@ -10,6 +10,7 @@
     tabWidth = lib.mkOption { type = lib.types.int; default = 2; };
     keymaps = lib.mkOption { type = lib.types.attrsOf (lib.types.listOf lib.types.attrs); default = {}; };
     plugins = lib.mkOption { type = lib.types.attrsOf lib.types.attrs; default = {}; };
+    extraPluginConfigs = lib.mkOption { type = lib.types.attrsOf lib.types.attrs; default = {}; };
     env = lib.mkOption { type = lib.types.attrsOf lib.types.str; default = {}; };
   };
 }

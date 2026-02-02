@@ -11,5 +11,6 @@
     "fzf"
     "nil"
     "nixfmt"
+    "d2"
   ];
 }

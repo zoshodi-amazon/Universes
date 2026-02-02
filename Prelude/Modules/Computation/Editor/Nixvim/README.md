@@ -5,61 +5,86 @@
 ```
 Nixvim/
 ├── Env/                    # ENV var aggregation
-├── Instances/              # Wires config → programs.nixvim
+├── Instances/              # Global bindings → programs.nixvim
 └── Universe/
     ├── Core/               # Base vim options
-    ├── Keymaps/            # Key bindings (ontological categories)
-    └── Plugins/            # Plugin configs (directory = namespace)
+    ├── Keymaps/            # ONLY core/builtin keymaps
+    └── Plugins/            # Plugin configs + local keymaps
         ├── Completion/     # → config.nixvim.plugins.completion
+        ├── Documentation/  # → config.nixvim.plugins.documentation
         ├── Git/            # → config.nixvim.plugins.git
-        ├── Markdown/       # → config.nixvim.plugins.markdown
         ├── Navigation/     # → config.nixvim.plugins.navigation
         ├── Nix/            # → config.nixvim.plugins.nix
         └── Ui/             # → config.nixvim.plugins.ui
 ```
 
+## Binding Locality Invariant
+
+**CRITICAL**: Bindings are scoped to their subdir level.
+
+| Scope | Location | Purpose |
+|-------|----------|---------|
+| Global | `Instances/` | Wires to flake-parts targets (programs.nixvim) |
+| Submodule | `Universe/<Feature>/Bindings/` | Feature-specific config + keymaps |
+
+**Why**: If a plugin isn't loaded, its keymaps shouldn't exist. Co-locating ensures the Options ⊣ Bindings contract holds.
+
 ## Plugin Convention
 
-**Directory name = config namespace**. The path `Universe/Plugins/<Category>/Bindings/default.nix` must set:
+**Directory name = config namespace**:
 
 ```nix
-config.nixvim.plugins.<category> = lib.mkIf config.nixvim.enable {
-  <plugin>.enable = true;
-};
-```
-
-Example for `Universe/Plugins/Markdown/Bindings/default.nix`:
-
-```nix
+# Universe/Plugins/<Category>/Bindings/default.nix
 { config, lib, ... }:
 {
-  config.nixvim.plugins.markdown = lib.mkIf config.nixvim.enable {
-    glow.enable = true;
-    markdown-preview = {
-      enable = true;
-      autoLoad = true;  # load immediately, not just for .md files
-    };
+  # Plugin config
+  config.nixvim.plugins.<category> = lib.mkIf config.nixvim.enable {
+    <plugin>.enable = true;
   };
+
+  # Keymaps co-located - guaranteed to exist when plugin loads
+  config.nixvim.keymaps.<category> = lib.mkIf config.nixvim.enable [
+    { mode = "n"; key = "<leader>xx"; action = "<cmd>PluginCommand<cr>"; options.desc = "..."; }
+  ];
 }
 ```
 
-## Keymap Convention
+## Filetype-Specific Commands
 
-Keymaps in `Universe/Keymaps/Bindings/default.nix` are organized ontologically:
+Some plugins (like d2-vim) register commands only for specific filetypes:
+
+| Plugin | Filetype | Commands |
+|--------|----------|----------|
+| d2-vim | `.d2` | `:D2PreviewToggle`, `:D2Fmt`, `:D2Validate` |
+| glow | `.md` | `:Glow` |
+| markdown-preview | `.md` | `:MarkdownPreview` |
+
+Visual mode keymaps (e.g., `<leader>md` → `D2PreviewSelection`) work in any file for selected text.
+
+## Keymap Ontology
 
 | Prefix | Category | Examples |
 |--------|----------|----------|
 | `<leader>c` | Computation | code actions, format, build |
 | `<leader>i` | Information | files, buffers, grep, harpoon |
 | `<leader>s` | Signal | diagnostics, notifications |
-| `<leader>m` | Meta | help, keymaps, preview |
+| `<leader>m` | Meta | help, keymaps, preview, docs |
+
+## Central Keymaps (Universe/Keymaps/)
+
+ONLY contains always-available bindings:
+- Core vim motions
+- LSP keymaps (`vim.lsp.buf.*`)
+- Diagnostics (`vim.diagnostic.*`)
 
 ## Flow
 
 ```
-Universe/Plugins/*/Bindings/default.nix
+Universe/Plugins/*/Bindings/
     ↓ sets config.nixvim.plugins.<category>
-Instances/default.nix
-    ↓ merges all: plugins = lib.mkMerge (lib.attrValues cfg.plugins)
-programs.nixvim.plugins
+    ↓ sets config.nixvim.keymaps.<category>  ← co-located!
+Instances/
+    ↓ merges: plugins = lib.mkMerge (lib.attrValues cfg.plugins)
+    ↓ merges: keymaps = lib.flatten (lib.attrValues cfg.keymaps)
+programs.nixvim
 ```

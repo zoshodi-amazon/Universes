@@ -1,0 +1,32 @@
+# D2 Module Structure
+
+Module: {
+  shape: rectangle
+  
+  README.md
+  default.nix
+  
+  Env: {
+    default.nix
+  }
+  
+  Instances: {
+    default.nix
+  }
+  
+  Universe: {
+    Feature: {
+      Options: {
+        default.nix
+      }
+      Bindings: {
+        Scripts
+        Commands
+        Keymaps
+      }
+    }
+  }
+}
+
+Module.Env -> Module.Universe: aggregates
+Module.Universe -> Module.Instances: consumes
