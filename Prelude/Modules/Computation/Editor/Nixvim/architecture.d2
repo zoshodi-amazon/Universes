@@ -69,6 +69,33 @@ Web: {
   jsx: ".jsx → hot reload"
 }
 
+Preview: {
+  label: "Preview/ (Live Renderers)"
+  style.fill: "#81a1c1"
+  
+  diagrams: {
+    d2: ".d2 → d2 --watch"
+    mermaid: ".mmd → mmdc"
+    graphviz: ".dot → dot"
+    plantuml: ".puml → plantuml"
+  }
+  
+  cad: {
+    stl: ".stl/.obj → f3d"
+    scad: ".scad → openscad"
+  }
+  
+  docs: {
+    typst: ".typ → typst watch"
+    pdf: ".pdf → zathura"
+    md: ".md → glow"
+  }
+  
+  game: {
+    godot: ".tscn → godot --editor"
+  }
+}
+
 # ═══════════════════════════════════════
 # FLOW
 # ═══════════════════════════════════════
@@ -78,6 +105,7 @@ Languages -> Instances
 Data -> Instances
 Media -> Instances
 Web -> Instances
+Preview -> Instances
 
 Instances: {
   label: "Instances/"

@@ -33,7 +33,8 @@ __pycache__/
 .venv/
 venv/
 ENV/
-env/
+# Note: Nix Modules use Env/ (capital) - don't ignore those
+!**/Modules/**/Env/
 
 # Logs
 *.log
@@ -53,7 +54,6 @@ Thumbs.db
 *~
 
 # Brazil/Amazon specific
-env/
 
 # Git
 .git/

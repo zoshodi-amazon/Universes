@@ -1,8 +1,7 @@
-# RL Instances - wire options to devShell
+# RL Instances - wire options to ENV vars
 { config, lib, ... }:
 let
   cfg = config.rl;
-  # Generic options → ENV vars (abstract mapping)
   coreEnvVars = {
     RL_ENV_ID = cfg.env.envId;
     RL_ENV_N_ENVS = toString cfg.env.nEnvs;
@@ -25,32 +24,9 @@ let
     RL_STORE_MODEL_DIR = cfg.store.modelDir;
     RL_STORE_CHECKPOINT_FREQ = toString cfg.store.checkpointFreq;
   };
-  # Merge core + vendor-specific from Bindings
   allEnvVars = coreEnvVars // cfg._internal.storeEnvVars;
 in
 {
   config.rl.enable = lib.mkDefault true;
-  
-  config.perSystem = { pkgs, ... }: lib.mkIf cfg.enable {
-    devShells.rl = pkgs.mkShell {
-      name = "rl-dev";
-      packages = with pkgs; [
-        (python311.withPackages (ps: with ps; [
-          gymnasium
-          stable-baselines3
-          tensorboard
-          pydantic-settings
-          numpy
-          torch
-        ]))
-      ];
-      shellHook = ''
-        echo "RL Development Shell"
-        echo "  Algorithm: ${cfg.agent.algorithm}"
-        echo "  Env: ${cfg.env.envId}"
-        echo "  Store: ${cfg.store.backend}"
-        ${lib.concatStringsSep "\n" (lib.mapAttrsToList (k: v: "export ${k}=\"${v}\"") allEnvVars)}
-      '';
-    };
-  };
+  config.rl.env.vars = allEnvVars;
 }

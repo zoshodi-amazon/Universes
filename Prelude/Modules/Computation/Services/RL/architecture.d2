@@ -1,0 +1,269 @@
+# RL Module Architecture
+# Capability-centric RL pipeline with built-in observability
+
+direction: right
+
+# =============================================================================
+# OPTIONS (Abstract Capability Schema)
+# =============================================================================
+
+Options: {
+  label: "Options (Abstract)"
+  style.fill: "#e1f5fe"
+  
+  Env: {
+    envId: "CartPole-v1"
+    nEnvs: 8
+  }
+  
+  Agent: {
+    algorithm: "ppo"
+    policyType: "MlpPolicy"
+  }
+  
+  Train: {
+    totalTimesteps: 100000
+    learningRate: "3e-4"
+  }
+  
+  Eval: {
+    episodes: 10
+  }
+  
+  Store: {
+    backend: "local | mlflow | wandb"
+    modelDir: "./models"
+  }
+  
+  Db: {
+    backend: "sqlite | postgres"
+    uri: "sqlite:///rl.db"
+  }
+  
+  Telemetry: {
+    backend: "local | otel"
+    endpoint: "http://localhost:4317"
+  }
+  
+  Render: {
+    backend: "headless | pygame | raylib"
+    resolution: "[640, 480]"
+    fps: 30
+    assets: {
+      background: "./assets/bg.png"
+      sprites: "attrset of paths"
+      theme: "dark | light | retro"
+    }
+  }
+  
+  Audio: {
+    backend: "silent | miniaudio | sdl2"
+    assets: {
+      step: "./assets/tick.wav"
+      reward: "./assets/ding.wav"
+      done: "./assets/complete.wav"
+      music: "null | path"
+    }
+  }
+}
+
+# =============================================================================
+# BINDINGS (Vendor-Specific ENV Mapping)
+# =============================================================================
+
+Bindings: {
+  label: "Bindings (Concrete)"
+  style.fill: "#fff3e0"
+  
+  CoreEnv: {
+    label: "Core ENV"
+    vars: "RL_ENV_ID, RL_AGENT_ALGORITHM, RL_TRAIN_TIMESTEPS"
+  }
+  
+  StoreEnv: {
+    label: "Store ENV"
+    mlflow: "MLFLOW_TRACKING_URI"
+    wandb: "WANDB_BASE_URL"
+    local: "RL_STORE_MODEL_DIR"
+  }
+  
+  DbEnv: {
+    label: "Db ENV"
+    sqlite: "RL_DB_URI=sqlite:///rl.db"
+    postgres: "PGHOST, PGPORT, PGDATABASE"
+  }
+  
+  TelemetryEnv: {
+    label: "Telemetry ENV"
+    local: "RL_LOG_DIR=./logs"
+    otel: "OTEL_EXPORTER_OTLP_ENDPOINT"
+  }
+  
+  RenderEnv: {
+    label: "Render ENV"
+    headless: "RL_RENDER_BACKEND=headless"
+    pygame: "RL_RENDER_BACKEND=pygame"
+    assets: "RL_RENDER_BG, RL_RENDER_THEME"
+  }
+  
+  AudioEnv: {
+    label: "Audio ENV"
+    silent: "RL_AUDIO_BACKEND=silent"
+    miniaudio: "RL_AUDIO_BACKEND=miniaudio"
+    assets: "RL_AUDIO_STEP, RL_AUDIO_REWARD"
+  }
+}
+
+# =============================================================================
+# INSTANCES (Nix Targets)
+# =============================================================================
+
+Instances: {
+  label: "Instances (Nix Targets)"
+  style.fill: "#e8f5e9"
+  
+  devShell: {
+    label: "devShells.rl"
+    packages: "sb3 + gymnasium + sqlite"
+  }
+  
+  cmds: {
+    rl-train: "sb3 train"
+    rl-eval: "sb3 eval"
+  }
+}
+
+# =============================================================================
+# RUNTIME STACK
+# =============================================================================
+
+Runtime: {
+  label: "Runtime Stack"
+  style.fill: "#fce4ec"
+  
+  SQLite: {
+    label: "SQLite (default)"
+    style.fill: "#c8e6c9"
+  }
+  
+  OTEL: {
+    label: "OTEL (optional)"
+    style.fill: "#b3e5fc"
+    Prometheus
+    Grafana
+  }
+  
+  MLflow: {
+    label: "MLflow (optional)"
+    style.fill: "#ffe0b2"
+  }
+}
+
+# =============================================================================
+# PIPELINE
+# =============================================================================
+
+Pipeline: {
+  label: "RL Pipeline"
+  style.fill: "#f3e5f5"
+  
+  Env: "gymnasium.make()"
+  Agent: "sb3.PPO()"
+  Train: "model.learn()"
+  Eval: "evaluate_policy()"
+  
+  Env -> Agent -> Train -> Eval
+}
+
+# =============================================================================
+# SQLITE SCHEMA
+# =============================================================================
+
+Schema: {
+  label: "SQLite Schema"
+  style.fill: "#e0e0e0"
+  
+  episodes: "id, run_id, total_reward, length"
+  steps_tbl: "id, episode_id, obs, action, reward"
+  checkpoints: "id, run_id, timestep, path"
+  
+  episodes -> steps_tbl: "1:N"
+}
+
+# =============================================================================
+# CONNECTIONS
+# =============================================================================
+
+Options.Env -> Bindings.CoreEnv
+Options.Agent -> Bindings.CoreEnv
+Options.Train -> Bindings.CoreEnv
+Options.Store -> Bindings.StoreEnv
+Options.Db -> Bindings.DbEnv
+Options.Telemetry -> Bindings.TelemetryEnv
+Options.Render -> Bindings.RenderEnv
+Options.Audio -> Bindings.AudioEnv
+
+Bindings.CoreEnv -> Instances.devShell
+Bindings.StoreEnv -> Instances.devShell
+Bindings.DbEnv -> Instances.devShell
+Bindings.TelemetryEnv -> Instances.devShell
+Bindings.RenderEnv -> Instances.devShell
+Bindings.AudioEnv -> Instances.devShell
+
+Instances.cmds -> Pipeline.Train
+Instances.cmds -> Pipeline.Eval
+
+Pipeline.Train -> Runtime.SQLite: "log episodes"
+Pipeline.Train -> Runtime.OTEL: "emit metrics"
+Pipeline.Train -> Runtime.MLflow: "log artifacts"
+
+Runtime.SQLite -> Schema: "implements"
+
+# =============================================================================
+# DEFAULTS NOTE
+# =============================================================================
+
+Defaults: {
+  label: "Zero Config Defaults"
+  style.fill: "#c8e6c9"
+  style.stroke: "#2e7d32"
+  
+  sqlite: "./rl.db"
+  logs: "./logs/"
+  models: "./models/"
+  render: "headless"
+  audio: "silent"
+}
+
+# =============================================================================
+# ASSET SOURCES
+# =============================================================================
+
+Assets: {
+  label: "Asset Sources"
+  style.fill: "#e1bee7"
+  
+  builtin: {
+    label: "Built-in (./assets/)"
+    bg_png: "default background"
+    tick_wav: "step sound"
+    ding_wav: "reward sound"
+  }
+  
+  fetchable: {
+    label: "Fetchable (nixpkgs)"
+    kenney: "kenney.nl CC0 packs"
+    opengameart: "OpenGameArt CC0"
+    freesound: "freesound.org"
+  }
+  
+  custom: {
+    label: "Custom (override)"
+    path: "any nix path"
+  }
+}
+
+Options.Render.assets -> Assets.builtin: "default"
+Options.Audio.assets -> Assets.builtin: "default"
+Assets.fetchable -> Options.Render.assets: "override"
+Assets.fetchable -> Options.Audio.assets: "override"
