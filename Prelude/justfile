@@ -1,119 +1,142 @@
-# Universes Prelude - Machine Management
-# Usage: just <recipe> [args]
-# Run `just --list` for all available commands
+# ===============================================================================
+# UNIVERSES PRELUDE - Dendritic Nix Configuration System
+# ===============================================================================
+#
+# NAME
+#     justfile - Capability-centric module and machine management
+#
+# SYNOPSIS
+#     just <recipe> [arguments...]
+#     just --list
+#
+# DESCRIPTION
+#     Thin interface to scripts in Modules/Computation/Scripts/.
+#     Organized by capability, not implementation.
+#
+#     INTROSPECT  - Discover modules, features, and options
+#     CREATE      - Scaffold new modules and features
+#     BUILD       - Compile and validate
+#     DEPLOY      - Flash and connect to machines
+#     SYNC        - Remote build operations
+#
+# PHILOSOPHY
+#     Index on CAPABILITY, not IMPLEMENTATION.
+#     Options define types (what), Bindings define terms (how).
+#     See AGENTS.md for full ontology.
+#
+# SCRIPTS
+#     All scripts live in Modules/Computation/Scripts/Universe/*/Bindings/Scripts/
+#
+# ===============================================================================
 
-# Default recipe - show help
+scripts := "Modules/Computation/Scripts/Universe"
+
 default:
     @just --list
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MACHINE MANAGEMENT
-# ─────────────────────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
+# INTROSPECT
+# -------------------------------------------------------------------------------
 
-# List all defined machines
-# Usage: just list
+# List all modules by category (Computation, Information, Labs, Physical)
+modules:
+    @nu {{scripts}}/Discover/Bindings/Scripts/default.nu
+
+# List Universe features in a module
+# ARGS: module - path to module (e.g., Modules/Computation/Terminal/Shell)
+features module:
+    @echo '{"mode": "features", "module": "{{module}}"}' | nu {{scripts}}/Introspect/Bindings/Scripts/default.nu /dev/stdin
+
+# Show Options type space for all features in a module
+# ARGS: module - path to module (e.g., Modules/Computation/Terminal/Shell)
+options module:
+    @echo '{"mode": "options", "module": "{{module}}"}' | nu {{scripts}}/Introspect/Bindings/Scripts/default.nu /dev/stdin
+
+# Show machine options schema (capability space for machine definitions)
+schema:
+    @echo "machines.<name> = {"
+    @echo "  identity.hostname    : str           # What is this machine called?"
+    @echo "  target.arch          : enum          # x86_64 | aarch64"
+    @echo "  format.type          : enum          # iso | vm | sd-image | raw-efi"
+    @echo "  persistence.strategy : enum          # full | impermanent | ephemeral"
+    @echo "  persistence.device   : str?          # e.g., /dev/disk/by-label/NIXOS_PERSIST"
+    @echo "  persistence.paths    : [str]         # Directories to persist"
+    @echo "  users                : [user]        # Users on this machine"
+    @echo "};"
+
+# List all defined machines (queries flake.nixosConfigurations)
 list:
-    @echo "Defined machines:"
-    @nix eval .#nixosConfigurations --apply 'x: builtins.attrNames x' 2>/dev/null || echo "  (none or eval error)"
+    @nix eval .#nixosConfigurations --apply 'x: builtins.attrNames x' 2>/dev/null || echo "(eval error - run on Linux)"
 
-# Build a machine image
-# Usage: just build <machine>
-# Example: just build sovereignty
-# Output: ./result/ contains the built image
+# -------------------------------------------------------------------------------
+# CREATE
+# -------------------------------------------------------------------------------
+
+# Scaffold a new module from frozen template (Docs/TEMPLATE.md)
+# ARGS: path - module path (e.g., Modules/Computation/Foo)
+new-module path:
+    @echo '{"mode": "module", "path": "{{path}}"}' | nu {{scripts}}/Scaffold/Bindings/Scripts/default.nu /dev/stdin
+
+# Add a feature to a module (creates Universe/<name> with Options/Bindings)
+# ARGS: module - path to module, name - feature name (e.g., Core, Config)
+new-feature module name:
+    @echo '{"mode": "feature", "path": "{{module}}", "name": "{{name}}"}' | nu {{scripts}}/Scaffold/Bindings/Scripts/default.nu /dev/stdin
+
+# -------------------------------------------------------------------------------
+# BUILD
+# -------------------------------------------------------------------------------
+
+# Build a machine image based on its format.type option
+# ARGS: machine - name of machine (e.g., sovereignty)
+# NOTE: Must run on Linux to build NixOS images
 build machine:
     nix build .#{{machine}}-iso --print-out-paths
 
-# Build and run machine in QEMU VM (for testing)
-# Usage: just vm <machine>
-# Example: just vm sovereignty
-# Note: Requires x86_64-linux or aarch64-linux host
+# Run machine in QEMU VM for testing before flashing
+# ARGS: machine - name of machine (e.g., sovereignty)
 vm machine:
     nix run .#{{machine}}-vm
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DEPLOYMENT
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Flash ISO to USB drive
-# Usage: just flash <machine> <disk>
-# Example: just flash sovereignty /dev/disk4
-# WARNING: This will ERASE ALL DATA on the target disk
-# Args:
-#   machine - Name of the machine config (e.g., sovereignty)
-#   disk    - Target disk device (e.g., /dev/sda, /dev/disk4)
-flash machine disk:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "Building {{machine}} ISO..."
-    nix build .#{{machine}}-iso --print-out-paths
-    ISO=$(find result/iso -name "*.iso" | head -1)
-    echo ""
-    echo "WARNING: This will ERASE ALL DATA on {{disk}}"
-    echo "ISO: $ISO"
-    echo ""
-    read -p "Type 'yes' to confirm: " confirm
-    if [ "$confirm" != "yes" ]; then
-        echo "Aborted."
-        exit 1
-    fi
-    echo "Flashing to {{disk}}..."
-    sudo dd if="$ISO" of={{disk}} bs=4M status=progress conv=fsync
-    sync
-    echo "Done! USB is ready to boot."
-
-# Format SD card for persistence
-# Usage: just format-persist <disk>
-# Example: just format-persist /dev/sdb
-# Creates ext4 filesystem with label NIXOS_PERSIST
-# WARNING: This will ERASE ALL DATA on the target disk
-# Args:
-#   disk - Target disk device for persistence (e.g., /dev/sdb)
-format-persist disk:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "WARNING: This will ERASE ALL DATA on {{disk}}"
-    echo "Creating persistence partition with label NIXOS_PERSIST"
-    echo ""
-    read -p "Type 'yes' to confirm: " confirm
-    if [ "$confirm" != "yes" ]; then
-        echo "Aborted."
-        exit 1
-    fi
-    sudo mkfs.ext4 -L NIXOS_PERSIST {{disk}}
-    echo "Done! SD card is ready for persistence."
-
-# ─────────────────────────────────────────────────────────────────────────────
-# REMOTE MANAGEMENT
-# ─────────────────────────────────────────────────────────────────────────────
-
-# SSH into a deployed machine
-# Usage: just ssh <machine> [user]
-# Example: just ssh sovereignty
-# Example: just ssh sovereignty root
-# Args:
-#   machine - Hostname of the machine
-#   user    - SSH user (default: nixos)
-ssh machine user="nixos":
-    ssh {{user}}@{{machine}}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# DEVELOPMENT
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Check flake for errors
+# Validate all modules (runs nix flake check)
 check:
     nix flake check
 
-# Show machine options schema
-# Usage: just schema
-schema:
-    @echo "Machine options schema:"
-    @echo ""
-    @echo "machines.<name> = {"
-    @echo "  identity.hostname = <str>;      # What is this machine called?"
-    @echo "  target.arch = x86_64|aarch64;   # What architecture?"
-    @echo "  format.type = iso|vm|sd-image;  # How do I deploy it?"
-    @echo "  persistence.strategy = full|impermanent|ephemeral;"
-    @echo "  persistence.device = <str?>;    # Where is persistent storage?"
-    @echo "  persistence.paths = [<str>];    # What paths to persist?"
-    @echo "};"
+# -------------------------------------------------------------------------------
+# DEPLOY
+# -------------------------------------------------------------------------------
+
+# Flash ISO to USB drive (uses ~/Downloads/<machine>.iso if exists, else builds)
+# ARGS: machine - name of machine, disk - target disk (e.g., /dev/disk4)
+# WARNING: Erases all data on target disk
+flash machine disk:
+    @echo '{"mode": "flash", "machine": "{{machine}}", "disk": "{{disk}}"}' | nu {{scripts}}/Deploy/Bindings/Scripts/default.nu /dev/stdin
+
+# Unmount all volumes on a disk (required before flashing)
+# ARGS: disk - target disk (e.g., /dev/disk4)
+unmount disk:
+    @diskutil unmountDisk {{disk}} 2>/dev/null || echo "Already unmounted"
+
+# Format SD card for persistence (ext4 with label NIXOS_PERSIST)
+# ARGS: disk - target disk (e.g., /dev/sdb)
+# WARNING: Erases all data on target disk
+format-persist disk:
+    @echo '{"mode": "format-persist", "disk": "{{disk}}"}' | nu {{scripts}}/Deploy/Bindings/Scripts/default.nu /dev/stdin
+
+# SSH into a deployed machine
+# ARGS: machine - hostname, user - SSH user (optional)
+ssh machine user="":
+    @if [ -z "{{user}}" ]; then ssh {{machine}}; else ssh {{user}}@{{machine}}; fi
+
+# -------------------------------------------------------------------------------
+# SYNC
+# -------------------------------------------------------------------------------
+
+# Sync repo to remote host (for building on Linux from macOS)
+# ARGS: host - SSH host (e.g., cloud-dev)
+sync-to host:
+    rsync -avz --delete ~/repos/Universes/ {{host}}:~/repos/Universes/
+
+# Build on remote host and copy ISO back to ~/Downloads/<machine>.iso
+# ARGS: host - SSH host, machine - name of machine
+remote-build host machine:
+    @echo '{"mode": "remote-build", "host": "{{host}}", "machine": "{{machine}}"}' | nu {{scripts}}/Deploy/Bindings/Scripts/default.nu /dev/stdin

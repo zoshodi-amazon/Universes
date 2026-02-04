@@ -11,7 +11,11 @@
       servers = {
         nil_ls.enable = true;        # .nix
         pyright.enable = true;       # .py
-        rust_analyzer.enable = true; # .rs
+        rust_analyzer = {            # .rs
+          enable = true;
+          installCargo = false;
+          installRustc = false;
+        };
         ts_ls.enable = true;         # .ts
         lua_ls.enable = true;        # .lua
       };

@@ -1,0 +1,114 @@
+# ===============================================================================
+# AUDIO LAB - Signal Processing Workstation
+# ===============================================================================
+#
+# NAME
+#     justfile - Audio signal processing via pure data transforms
+#
+# SYNOPSIS
+#     just <recipe> [arguments...]
+#     just --list
+#
+# DESCRIPTION
+#     Capability-centric audio workstation. All configuration via Options
+#     (pure data). Scripts interpret Options into ffmpeg calls.
+#     NO hidden CLI params - see Options/default.nix for full schema.
+#
+#     ACQUIRE     - Fetch, record, generate audio sources
+#     ANALYZE     - Spectrum, loudness, waveform analysis
+#     TRANSFORM   - Pitch, stretch, filter, effects
+#     SYNTHESIZE  - Tone generation, noise, envelopes
+#     COMPOSE     - Sequence, layer, mix audio
+#     EXPORT      - Render to various formats
+#     PREVIEW     - Visualize and playback
+#
+# PHILOSOPHY
+#     Options = pure data schema (single source of truth)
+#     Scripts = interpreters (read config, execute)
+#     NO imperative params - all config explicit in Options
+#
+# ===============================================================================
+
+scripts := "Universe"
+
+default:
+    @just --list
+
+# -------------------------------------------------------------------------------
+# ACQUIRE
+# -------------------------------------------------------------------------------
+
+# Fetch/generate audio from config
+# CONFIG: audio.acquire.{source, url, input, generate, output}
+# SCHEMA: See Universe/Acquire/Options/default.nix
+acquire config:
+    @nu {{scripts}}/Acquire/Bindings/Scripts/default.nu {{config}}
+
+# -------------------------------------------------------------------------------
+# ANALYZE
+# -------------------------------------------------------------------------------
+
+# Run analysis from config
+# CONFIG: audio.analyze.{input, spectrum, waveform, loudness, outputDir}
+# SCHEMA: See Universe/Analyze/Options/default.nix
+analyze config:
+    @nu {{scripts}}/Analyze/Bindings/Scripts/default.nu {{config}}
+
+# -------------------------------------------------------------------------------
+# TRANSFORM
+# -------------------------------------------------------------------------------
+
+# Apply transforms from config
+# CONFIG: audio.transform.{input, output, transforms[]}
+# SCHEMA: See Universe/Transform/Options/default.nix
+transform config:
+    @nu {{scripts}}/Transform/Bindings/Scripts/default.nu {{config}}
+
+# -------------------------------------------------------------------------------
+# SYNTHESIZE
+# -------------------------------------------------------------------------------
+
+# Generate audio from config
+# CONFIG: audio.synthesize.{waveform, frequency, duration, envelope, output}
+# SCHEMA: See Universe/Synthesize/Options/default.nix
+synthesize config:
+    @nu {{scripts}}/Synthesize/Bindings/Scripts/default.nu {{config}}
+
+# -------------------------------------------------------------------------------
+# COMPOSE
+# -------------------------------------------------------------------------------
+
+# Compose audio from config
+# CONFIG: audio.compose.{inputs[], mode, output}
+# SCHEMA: See Universe/Compose/Options/default.nix
+compose config:
+    @nu {{scripts}}/Compose/Bindings/Scripts/default.nu {{config}}
+
+# -------------------------------------------------------------------------------
+# EXPORT
+# -------------------------------------------------------------------------------
+
+# Render audio from config
+# CONFIG: audio.export.{input, output, format, bitrate, sampleRate}
+# SCHEMA: See Universe/Export/Options/default.nix
+export config:
+    @nu {{scripts}}/Export/Bindings/Scripts/default.nu {{config}}
+
+# -------------------------------------------------------------------------------
+# PREVIEW
+# -------------------------------------------------------------------------------
+
+# Visualize waveform in terminal (ASCII)
+# ARGS: input - audio file to visualize
+viz input:
+    @ffmpeg -i {{input}} -f caca -
+
+# Play audio through speakers
+# ARGS: input - audio file to play
+play input:
+    @ffplay -nodisp -autoexit {{input}}
+
+# Show spectrum in terminal
+# ARGS: input - audio file to analyze
+spectrum input:
+    @ffplay -f lavfi "amovie={{input}},showspectrum=s=640x480"

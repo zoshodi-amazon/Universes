@@ -89,8 +89,8 @@ Is it a configuration knob users would want to set?
 Modules/
 ├── Computation/    # Process: interpreters, editors, services
 ├── Information/    # Symbol: code, docs, databases  
-├── Physical/       # Matter: hardware, materials
-└── Signal/         # Wave: audio, video, electrical
+├── Labs/           # Workstation: audio, video, signal processing
+└── Physical/       # Matter: hardware, materials
 ```
 
 ### Category Boundaries
@@ -99,16 +99,16 @@ Modules/
 |----------|---------|-------------------|----------|
 | **Computation** | Process | Transformation over time | Interpreters, editors, services, VMs |
 | **Information** | Symbol | Structured representation | Code, docs, databases, git |
+| **Labs** | Workstation | Signal processing environments | Audio, video, synthesis |
 | **Physical** | Matter | Tangible substrate | Hardware, materials, devices |
-| **Signal** | Wave | Continuous transmission | Audio, video, telemetry, streams |
 
 ### Boundary Distinctions
 
 | Boundary | Distinction |
 |----------|-------------|
 | Computation ↔ Information | Process vs Data. Computation *acts on* Information. |
-| Information ↔ Signal | Discrete vs Continuous. Symbols vs Waveforms. |
-| Signal ↔ Physical | Transmission vs Substrate. Signal travels *through* Physical. |
+| Information ↔ Labs | Discrete symbols vs Continuous signals. |
+| Labs ↔ Physical | Signal processing vs Hardware substrate. |
 | Physical ↔ Computation | Hardware vs Software. Physical runs Computation. |
 
 ### Category Decision Tree
@@ -122,8 +122,8 @@ Is it structured, discrete, stored representation?
   YES → Information/
   NO ↓
 
-Is it continuous transmission/streaming?
-  YES → Signal/
+Is it signal processing / waveform manipulation?
+  YES → Labs/
   NO ↓
 
 Is it tangible hardware/material?
@@ -136,12 +136,12 @@ Is it tangible hardware/material?
 |-------|----------|-----|
 | Neovim, shells | Computation | Transforms text (process) |
 | Git repo, configs | Information | Stores symbols (data) |
-| OTEL, Prometheus | Signal | Telemetry streams |
+| Audio workstation | Labs | Signal processing environment |
 | GPU, sensors | Physical | Hardware substrate |
 | Log *file* | Information | Discrete, stored |
-| Log *stream* | Signal | Continuous, transmitted |
+| Audio synthesis | Labs | Signal generation |
 | Trained model file | Information | Static artifact |
-| Inference stream | Signal | Real-time transmission |
+| Video editing | Labs | Signal transform pipeline |
 | Training loop | Computation | Process over time |
 
 ---
@@ -226,6 +226,9 @@ Each `Drv/<package>/default.nix` exports to `perSystem.packages.<package>`.
 10. File naming: default.* only
 11. Standard scripting: Nushell (default.nu)
 12. Modules enable themselves: if created, capability is desired
+13. Options/default.nix is single source of truth for all schema
+14. Scripts are interpreters of Options, not imperative commands
+15. NO hidden CLI params - all configuration explicit in Options
 ```
 
 ---

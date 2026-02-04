@@ -1,2 +1,0 @@
-# Acquire Bindings
-{ ... }: { }

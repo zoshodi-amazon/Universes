@@ -1,39 +1,48 @@
 #!/usr/bin/env nu
 
-# Introspect Nix module options - list all features and their options
-# Usage: default.nu [module_dir]
+# Introspect module structure - features or options
+# Usage: default.nu <config_path>
+# Config: { mode: "features" | "options", module: "<path>" }
 
-def main [module_dir: string = "Modules/Computation/Services/RL"] {
-  print $"📋 Features in ($module_dir)/Universe/\n"
+def main [config_path: string] {
+  let cfg = (open $config_path)
+  let module_dir = $cfg.module
+  let universe_path = $"($module_dir)/Universe"
   
-  let features = (
-    ls $"($module_dir)/Universe" 
-    | where type == dir 
-    | get name 
-    | path basename
-  )
+  if not ($universe_path | path exists) {
+    print $"No Universe/ in ($module_dir)"
+    exit 1
+  }
   
-  for feature in $features {
-    print $"\n🔹 ($feature)"
-    
-    let options_file = $"($module_dir)/Universe/($feature)/Options/default.nix"
-    
-    if ($options_file | path exists) {
-      let lines = (open $options_file | lines)
-      
-      for line in $lines {
-        if ($line | str contains "options.") and ($line | str contains "=") {
-          let trimmed = ($line | str trim)
-          # Extract just the option name after the last dot
-          let parts = ($trimmed | split row ".")
-          if ($parts | length) > 2 {
-            let option_part = ($parts | last | split row " " | first | str trim)
-            print $"    • ($option_part)"
-          }
-        }
+  match $cfg.mode {
+    "features" => {
+      print $"Features in ($module_dir)/Universe/:"
+      for feature in (ls $universe_path | where type == dir | get name) {
+        let name = ($feature | path basename)
+        print $"  ($name)"
       }
-    } else {
-      print "    (no options file)"
+    }
+    "options" => {
+      print $"Options in ($module_dir):"
+      print ""
+      for feature in (ls $universe_path | where type == dir | get name) {
+        let name = ($feature | path basename)
+        let opts_file = $"($feature)/Options/default.nix"
+        print $"[($name)]"
+        if ($opts_file | path exists) {
+          let lines = (open $opts_file | lines | where {|l| $l =~ "options\\." or $l =~ "= lib.mk"})
+          if ($lines | is-empty) {
+            print "  (no options found)"
+          } else {
+            for line in $lines {
+              print $"  ($line | str trim)"
+            }
+          }
+        } else {
+          print "  (no Options/default.nix)"
+        }
+        print ""
+      }
     }
   }
 }

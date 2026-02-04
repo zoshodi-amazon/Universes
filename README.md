@@ -10,8 +10,8 @@ Universes - Dendritic Nix configuration system using flake-parts + import-tree
 Modules/
 ├── Computation/    # Process: interpreters, editors, services
 ├── Information/    # Symbol: code, docs, databases
-├── Physical/       # Matter: hardware, materials
-└── Signal/         # Wave: audio, video, electrical
+├── Labs/           # Workstation: audio, video, signal processing
+└── Physical/       # Matter: hardware, materials
 ```
 
 **Pattern Version: v1.0.3** | **Structure: FROZEN**
