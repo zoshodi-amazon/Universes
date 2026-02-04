@@ -94,10 +94,34 @@ Bindings categories:
 
 ## EXAMPLES
 
-Wrapping external packages:
+Module wrapping philosophy - no shells, only CLI:
 
 ```nix
 # Universe/Core/Options/default.nix
+options.coolTool = {
+  enable = lib.mkEnableOption "cool-tool";
+  port = lib.mkOption { type = lib.types.port; default = 8080; };
+  logLevel = lib.mkOption { type = lib.types.enum ["debug" "info" "warn"]; default = "info"; };
+};
+
+# Instances/default.nix
+config.perSystem = { pkgs, ... }: lib.mkIf cfg.enable {
+  packages.cool-tool = pkgs.writeShellScriptBin "cool-tool" ''
+    export COOL_TOOL_PORT="${toString cfg.port}"
+    export COOL_TOOL_LOG_LEVEL="${cfg.logLevel}"
+    exec ${pkgs.cool-tool}/bin/cool-tool "$@"
+  '';
+};
+```
+
+Users interact via: `cool-tool --some-flag` (globally available, no shell needed).
+
+Introspect options to prevent type mismatches:
+
+```bash
+introspect-options Modules/Computation/Services/RL
+# Shows all Universe/*/Options for the module
+```
 options.coolTool = {
   enable = lib.mkEnableOption "cool-tool";
   port = lib.mkOption { type = lib.types.port; default = 8080; };
@@ -146,6 +170,8 @@ Quick reference:
 6. Standard scripting: Nushell (`default.nu`)
 7. Modules enable themselves: if created, capability is desired
 8. Binding locality: submodule bindings stay in subdir, global in Instances/
+9. **NO SHELLS**: Wrap everything as CLI commands, interact via ENV vars only
+10. Use `introspect-options <module>` to prevent type mismatches
 
 Common pitfalls:
 
@@ -155,6 +181,8 @@ Common pitfalls:
 | Infinite recursion | Don't set `x.enable` inside `mkIf x.enable` |
 | Module not exported | Ensure `enable = true` in Bindings |
 | New dirs not found | `git add` before rebuild (import-tree) |
+| Shell headaches | Don't use shells - CLI commands only |
+| Type mismatches | Use `introspect-options <module-path>` |
 
 ## USAGE
 

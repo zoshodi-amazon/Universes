@@ -11,11 +11,8 @@ let env = config.shell.env; in
     nr = "nix registry"; nf = "nix flake"; nfc = "nix flake check"; nd = "nix develop";
     gs = "git status"; ga = "git add"; gc = "git commit";
     gca = "git commit --amend --no-edit"; gl = "git log --oneline"; gd = "git diff";
-    bws = "brazil workspace"; bb = "brazil-build"; bbr = "brazil-recursive-cmd brazil-build";
     txn = "tmux new-session -s"; txl = "tmux ls"; txk = "tmux kill-session -t";
-    auth = "kinit -f && mwinit -o";
-    cloud-dev = "ssh dev-dsk-zoshodi-2a-2931a6cf.us-west-2.amazon.com";
-    cloud-nix = "ssh dev-dsk-zoshodi-2a-9d6f77e3.us-west-2.amazon.com";
+    discover = "nu ~/repos/Universes/Prelude/Modules/Computation/Scripts/Universe/Discover/Bindings/Scripts/default.nu";
   };
 
   config.shell.fish = {

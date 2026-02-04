@@ -83,7 +83,34 @@ def discover-domain [domain: string] {
     "data" => ["sqlite" "duckdb" "postgresql" "clickhouse" "datasette"]
     "diagram" => ["d2" "graphviz" "plantuml" "mermaid-cli" "drawio"]
     "docs" => ["typst" "pandoc" "mdbook" "sphinx" "asciidoctor"]
+    # Sovereignty domains
+    "energy" | "power" => ["victron" "mppt" "solar" "battery-management"]
+    "comms" | "mesh" => ["meshtastic" "lora" "reticulum" "gnuradio" "direwolf"]
+    "intelligence" | "osint" => ["maltego" "spiderfoot" "theHarvester" "sherlock" "ghidra" "radare2"]
+    "sigint" | "sdr" => ["gnuradio" "gqrx" "rtl-sdr" "hackrf" "urh"]
+    "fabrication" | "maker" => ["openscad" "freecad" "kicad" "prusa-slicer" "cura"]
+    "water" => ["water-quality" "filtration" "purification"]
+    "food" | "agriculture" => ["farmOS" "growatt" "hydroponics"]
+    "medical" | "health" => ["openemr" "gnuhealth" "freediams"]
+    "shelter" | "housing" => ["home-assistant" "esphome" "tasmota"]
+    "defense" | "security" => ["motion" "zoneminder" "frigate" "shinobi"]
+    "trade" | "crypto" => ["monero" "electrum" "bitcoin" "wasabi"]
+    "transport" | "navigation" => ["gpsd" "navit" "osmand" "marble"]
     _ => []
+  }
+  
+  # Sovereignty-specific resources
+  let sov_resources = match $domain {
+    "intelligence" | "osint" => ["https://github.com/jivoi/awesome-osint" "https://osintframework.com"]
+    "sigint" | "sdr" => ["https://github.com/luigifcruz/awesome-sdr"]
+    "fabrication" => ["https://github.com/ad-si/awesome-3d-printing" "https://oshwa.org"]
+    "comms" | "mesh" => ["https://meshtastic.org" "https://reticulum.network"]
+    "energy" => ["https://github.com/OpenEnergyMonitor" "https://victronenergy.com/live"]
+    _ => []
+  }
+  if ($sov_resources | length) > 0 {
+    print $"\n(ansi yellow)▸ Sovereignty resources(ansi reset)"
+    $sov_resources | each {|r| print $"  → ($r)" }
   }
   if ($suggestions | length) > 0 {
     $suggestions | each {|s| print $"  • ($s)" }

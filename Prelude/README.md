@@ -316,55 +316,28 @@ Fetch and build derivation:
   fetchFromGitHub + mkDerivation/buildPythonPackage/etc.
 ```
 
-### Strategy 1: Flake Input (preferred)
+### Module Wrapping Philosophy
 
-```nix
-# flake.nix inputs
-inputs.cool-tool.url = "github:owner/cool-tool";
+**CRITICAL**: Once wrapped as a Nix module, you NEVER enter shells or manage packages manually.
 
-# In module
-{ inputs, ... }: {
-  config.perSystem = { system, ... }: {
-    packages.cool-tool = inputs.cool-tool.packages.${system}.default;
-  };
-}
+```
+Traditional (❌)                    Module-Wrapped (✓)
+─────────────────                   ──────────────────
+nix develop .#env                   rl-train
+pip install package                 rl-eval
+python script.py                    rl-infer --load-best
+source venv/bin/activate            introspect-options rl
 ```
 
-### Strategy 2: Nixpkgs
+The module exports CLI commands globally. No shells, no per-system package management, no breakage.
 
-```nix
-{ pkgs, ... }: {
-  home.packages = [ pkgs.cool-tool ];
-}
-```
-
-### Strategy 3: Custom Derivation
-
-```nix
-{ pkgs, ... }:
-let
-  cool-tool = pkgs.stdenv.mkDerivation {
-    pname = "cool-tool";
-    version = "1.0.0";
-    src = pkgs.fetchFromGitHub {
-      owner = "owner";
-      repo = "cool-tool";
-      rev = "v1.0.0";
-      sha256 = "sha256-AAAA...";
-    };
-    # buildInputs, installPhase, etc.
-  };
-in { home.packages = [ cool-tool ]; }
-```
-
-### Wrapping as Module
-
-Once you have the package, wrap it by mapping its configuration surface:
+### Wrapping Strategy
 
 ```
 1. Discover   → <tool> --help, env | grep TOOL_, cat ~/.config/tool/*
-2. Map        → CLI flags / ENV vars / config files → Options
-3. Wire       → Options → ENV vars or config file generation
+2. Map        → CLI flags / ENV vars / config files → Options (vendor-agnostic)
+3. Wire       → Options → ENV vars in Bindings (vendor-specific)
+4. Export     → Instances → perSystem.packages.<cmd> (global CLI)
 ```
 
 Example:
@@ -378,17 +351,38 @@ options.coolTool = {
 };
 
 # Instances/default.nix  
-config.coolTool.enable = lib.mkDefault true;
 config.perSystem = { pkgs, ... }: lib.mkIf cfg.enable {
-  devShells.cool-tool = pkgs.mkShell {
-    packages = [ pkgs.cool-tool ];
-    shellHook = ''
-      export COOL_TOOL_PORT="${toString cfg.port}"
-      export COOL_TOOL_LOG_LEVEL="${cfg.logLevel}"
-    '';
-  };
+  packages.cool-tool = pkgs.writeShellScriptBin "cool-tool" ''
+    export COOL_TOOL_PORT="${toString cfg.port}"
+    export COOL_TOOL_LOG_LEVEL="${cfg.logLevel}"
+    exec ${pkgs.cool-tool}/bin/cool-tool "$@"
+  '';
 };
 ```
+
+Users interact via: `cool-tool --some-flag` (globally available, no shell needed).
+
+### Introspection
+
+Prevent type mismatches by introspecting module options:
+
+```bash
+introspect-options Modules/Computation/Services/RL
+
+# Output:
+# 📋 Features in Modules/Computation/Services/RL/Universe/
+# 
+# 🔹 Env
+#     • envId
+#     • nEnvs
+#     • seed
+# 🔹 Agent
+#     • algorithm
+#     • policyType
+#     • netArch
+```
+
+This parses `Universe/*/Options/default.nix` files to show the exact option space.
 
 ### Configuration Surface Isomorphism
 
@@ -463,7 +457,9 @@ Common pitfalls and lessons learned:
 | Where to set `<module>.enable = true` | Global: `Instances/`, Local features: `Universe/<Feature>/Bindings/` |
 | Package not building | Always `nix search nixpkgs <pkg>` or `nix eval nixpkgs#<pkg>.pname` first |
 | Python ML packages (tf, mlflow, sb3) | Create custom derivation in `Drv/` rather than fight nixpkgs versions |
+| Shell headaches | Don't use shells - wrap everything as CLI commands in `Instances/` |
+| Type mismatches during implementation | Use `introspect-options <module-path>` to see exact option space |
 
 ---
 
-**Pattern Version: v1.0.3** | **Structure: FROZEN** | **Expressiveness: Universe/**
+**Pattern Version: v1.0.3** | **Structure: FROZEN** | **Expressiveness: Universe/** | **Interaction: CLI only**

@@ -17,6 +17,7 @@
     deploy-rs.inputs.nixpkgs.follows = "nixpkgs";
     arion.url = "github:hercules-ci/arion";
     arion.inputs.nixpkgs.follows = "nixpkgs";
+    impermanence.url = "github:nix-community/impermanence";
   };
 
   nixConfig = {

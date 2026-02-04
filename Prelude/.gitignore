@@ -1,0 +1,52 @@
+# Nix
+result
+result-*
+.direnv/
+.envrc
+
+# Secrets
+*.age
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+secrets.yaml
+secrets.nix
+.env
+.env.*
+!.env.example
+
+# User-specific
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+dist/
+build/
+target/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+node_modules/
+
+# Logs
+*.log
+logs/
+.cache/
+
+# RL artifacts
+models/
+mlruns/
+rl_registry.db
+*.db
+
+# Temporary
+tmp/
+temp/
+*.tmp
