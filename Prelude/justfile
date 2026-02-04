@@ -1,185 +1,119 @@
-# Universes - Universal Nix/Flake Commands
-# Usage: just <command> [args]
+# Universes Prelude - Machine Management
+# Usage: just <recipe> [args]
+# Run `just --list` for all available commands
 
-set shell := ["bash", "-c"]
-default_host := "cloud-dev"
-modules_dir := "Modules"
-
-# List all available commands
-list:
+# Default recipe - show help
+default:
     @just --list
 
-# ─────────────────────────────────────────────────────────────
-# Scaffolding
-# ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# MACHINE MANAGEMENT
+# ─────────────────────────────────────────────────────────────────────────────
 
-# Scaffold a new module (e.g., just scaffold-module Computation/MyTool)
-scaffold-module path:
-    mkdir -p {{modules_dir}}/{{path}}/{Env,Instances,Universe}
-    touch {{modules_dir}}/{{path}}/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{path}}/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{path}}/Env/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{path}}/Instances/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{path}}/Universe/default.nix
-    @echo "Created module at {{modules_dir}}/{{path}}/"
-    @echo "Next: Add README.md and create Universe/<Feature>/{Options,Bindings}"
+# List all defined machines
+# Usage: just list
+list:
+    @echo "Defined machines:"
+    @nix eval .#nixosConfigurations --apply 'x: builtins.attrNames x' 2>/dev/null || echo "  (none or eval error)"
 
-# Scaffold a Universe feature (e.g., just scaffold-feature Computation/Editor/Nixvim Core)
-scaffold-feature module feature:
-    mkdir -p {{modules_dir}}/{{module}}/Universe/{{feature}}/{Options,Bindings}
-    echo '{ ... }: { }' > {{modules_dir}}/{{module}}/Universe/{{feature}}/Options/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{module}}/Universe/{{feature}}/Bindings/default.nix
-    @echo "Created feature at {{modules_dir}}/{{module}}/Universe/{{feature}}/"
+# Build a machine image
+# Usage: just build <machine>
+# Example: just build sovereignty
+# Output: ./result/ contains the built image
+build machine:
+    nix build .#{{machine}}-iso --print-out-paths
 
-# ─────────────────────────────────────────────────────────────
-# Flake Operations
-# ─────────────────────────────────────────────────────────────
+# Build and run machine in QEMU VM (for testing)
+# Usage: just vm <machine>
+# Example: just vm sovereignty
+# Note: Requires x86_64-linux or aarch64-linux host
+vm machine:
+    nix run .#{{machine}}-vm
 
-# Show all flake outputs
-show:
-    nix flake show
+# ─────────────────────────────────────────────────────────────────────────────
+# DEPLOYMENT
+# ─────────────────────────────────────────────────────────────────────────────
 
-# Run checks for current system only
-check:
-    nix flake check --system $(nix eval --raw --impure --expr 'builtins.currentSystem')
-
-# Update all inputs
-update:
-    nix flake update
-
-# Update specific input
-update-input input:
-    nix flake update {{input}}
-
-# ─────────────────────────────────────────────────────────────
-# Home Manager
-# ─────────────────────────────────────────────────────────────
-
-# List available hosts
-hosts:
-    @nix eval --json '.#homeConfigurations' --apply 'builtins.attrNames' | jq -r '.[]'
-
-# Switch to home configuration
-switch host=default_host:
-    home-manager switch --flake .#{{host}}
-
-# Build home configuration (no switch)
-build-home host=default_host:
-    nix build .#homeConfigurations.{{host}}.activationPackage
-
-# ─────────────────────────────────────────────────────────────
-# Modules
-# ─────────────────────────────────────────────────────────────
-
-# List all modules by class
-modules:
-    @nix eval --json '.#modules' --apply 'builtins.mapAttrs (k: v: builtins.attrNames v)' | jq
-
-# List homeManager modules
-modules-home:
-    @nix eval --json '.#modules.homeManager' --apply 'builtins.attrNames' | jq -r '.[]'
-
-# List nixos modules
-modules-nixos:
-    @nix eval --json '.#modules.nixos' --apply 'builtins.attrNames' | jq -r '.[]'
-
-# ─────────────────────────────────────────────────────────────
-# Config Inspection
-# ─────────────────────────────────────────────────────────────
-
-# Eval any config path
-eval path:
-    nix eval '.#{{path}}'
-
-# Eval as JSON
-eval-json path:
-    nix eval --json '.#{{path}}' | jq
-
-# List attribute names at path
-keys path:
-    @nix eval --json '.#{{path}}' --apply 'builtins.attrNames' | jq -r '.[]'
-
-# Show nixvim keymaps
-keymaps host=default_host:
-    @nix eval '.#homeConfigurations.{{host}}.config.programs.nixvim.keymaps' 2>&1 \
-        | grep -oE 'key = "[^"]+";.*desc = "[^"]+"' \
-        | sed 's/key = "//; s/";.*desc = "/ → /; s/"$//'
-
-# Show enabled plugins
-plugins host=default_host:
-    @nix eval --json '.#homeConfigurations.{{host}}.config.programs.nixvim.plugins' \
-        --apply 'p: builtins.filter (n: n != "__unfix__") (builtins.attrNames p)' | jq -r '.[]'
-
-# ─────────────────────────────────────────────────────────────
-# Development
-# ─────────────────────────────────────────────────────────────
-
-# Enter dev shell
-dev shell="default":
-    nix develop .#{{shell}}
-
-# Enter checks dev shell
-dev-checks:
-    nix develop .#checks
-
-# Run REPL with flake
-repl:
-    nix repl .#
-
-# ─────────────────────────────────────────────────────────────
-# Nixpkgs
-# ─────────────────────────────────────────────────────────────
-
-# Search nixpkgs
-search query:
-    nix search nixpkgs {{query}}
-
-# Show package meta
-info pkg:
-    nix eval --json '{{pkg}}.meta' | jq
-
-# Run package without installing
-run pkg *args:
-    nix run {{pkg}} -- {{args}}
-
-# ─────────────────────────────────────────────────────────────
-# Store & GC
-# ─────────────────────────────────────────────────────────────
-
-# Garbage collect (default: older than 7 days)
-gc days="7":
-    nix-collect-garbage --delete-older-than {{days}}d
-
-# Show store path size
-size path="./result":
-    nix path-info -Sh {{path}}
-
-# Optimize store
-optimize:
-    nix store optimise
-
-# ─────────────────────────────────────────────────────────────
-# Invariants
-# ─────────────────────────────────────────────────────────────
-
-# Run all invariant checks for current system
-invariants:
+# Flash ISO to USB drive
+# Usage: just flash <machine> <disk>
+# Example: just flash sovereignty /dev/disk4
+# WARNING: This will ERASE ALL DATA on the target disk
+# Args:
+#   machine - Name of the machine config (e.g., sovereignty)
+#   disk    - Target disk device (e.g., /dev/sda, /dev/disk4)
+flash machine disk:
     #!/usr/bin/env bash
-    sys=$(nix eval --raw --impure --expr 'builtins.currentSystem')
-    nix build .#checks.$sys.invariant-module-dirs
-    nix build .#checks.$sys.invariant-universe-features
-    nix build .#checks.$sys.invariant-bindings-subdirs
-    nix build .#checks.$sys.invariant-no-manual-imports
+    set -euo pipefail
+    echo "Building {{machine}} ISO..."
+    nix build .#{{machine}}-iso --print-out-paths
+    ISO=$(find result/iso -name "*.iso" | head -1)
+    echo ""
+    echo "WARNING: This will ERASE ALL DATA on {{disk}}"
+    echo "ISO: $ISO"
+    echo ""
+    read -p "Type 'yes' to confirm: " confirm
+    if [ "$confirm" != "yes" ]; then
+        echo "Aborted."
+        exit 1
+    fi
+    echo "Flashing to {{disk}}..."
+    sudo dd if="$ISO" of={{disk}} bs=4M status=progress conv=fsync
+    sync
+    echo "Done! USB is ready to boot."
 
-# ─────────────────────────────────────────────────────────────
-# Quick Aliases
-# ─────────────────────────────────────────────────────────────
+# Format SD card for persistence
+# Usage: just format-persist <disk>
+# Example: just format-persist /dev/sdb
+# Creates ext4 filesystem with label NIXOS_PERSIST
+# WARNING: This will ERASE ALL DATA on the target disk
+# Args:
+#   disk - Target disk device for persistence (e.g., /dev/sdb)
+format-persist disk:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "WARNING: This will ERASE ALL DATA on {{disk}}"
+    echo "Creating persistence partition with label NIXOS_PERSIST"
+    echo ""
+    read -p "Type 'yes' to confirm: " confirm
+    if [ "$confirm" != "yes" ]; then
+        echo "Aborted."
+        exit 1
+    fi
+    sudo mkfs.ext4 -L NIXOS_PERSIST {{disk}}
+    echo "Done! SD card is ready for persistence."
 
-# Shorthand: build and switch
-bs host=default_host: (switch host)
+# ─────────────────────────────────────────────────────────────────────────────
+# REMOTE MANAGEMENT
+# ─────────────────────────────────────────────────────────────────────────────
 
-# Shorthand: check and switch
-cs host=default_host: check (switch host)
+# SSH into a deployed machine
+# Usage: just ssh <machine> [user]
+# Example: just ssh sovereignty
+# Example: just ssh sovereignty root
+# Args:
+#   machine - Hostname of the machine
+#   user    - SSH user (default: nixos)
+ssh machine user="nixos":
+    ssh {{user}}@{{machine}}
 
-# Shorthand: update and switch  
-us host=default_host: update (switch host)
+# ─────────────────────────────────────────────────────────────────────────────
+# DEVELOPMENT
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Check flake for errors
+check:
+    nix flake check
+
+# Show machine options schema
+# Usage: just schema
+schema:
+    @echo "Machine options schema:"
+    @echo ""
+    @echo "machines.<name> = {"
+    @echo "  identity.hostname = <str>;      # What is this machine called?"
+    @echo "  target.arch = x86_64|aarch64;   # What architecture?"
+    @echo "  format.type = iso|vm|sd-image;  # How do I deploy it?"
+    @echo "  persistence.strategy = full|impermanent|ephemeral;"
+    @echo "  persistence.device = <str?>;    # Where is persistent storage?"
+    @echo "  persistence.paths = [<str>];    # What paths to persist?"
+    @echo "};"
