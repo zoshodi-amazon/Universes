@@ -133,16 +133,22 @@ noise duration="1" output="noise.wav":
 # Sequence audio files
 # ARGS: output - output file, inputs - space-separated input files
 sequence output +inputs:
-    @gum style --border normal --padding "0 1" "Sequencing files..."
-    @nu {{scripts}}/Compose/Bindings/Scripts/default.nu '{"mode": "sequence", "inputs": {{inputs}}, "output": "{{output}}"}'
-    @gum style --foreground 82 "Created: {{output}}"
+    #!/usr/bin/env nu
+    gum style --border normal --padding "0 1" "Sequencing files..."
+    let files: list<string> = "{{inputs}}" | split row " "
+    let json: string = {mode: "sequence", inputs: $files, output: "{{output}}"} | to json
+    nu {{scripts}}/Compose/Bindings/Scripts/default.nu $json
+    gum style --foreground 82 "Created: {{output}}"
 
 # Layer audio files
 # ARGS: output - output file, inputs - space-separated input files  
 layer output +inputs:
-    @gum style --border normal --padding "0 1" "Layering files..."
-    @nu {{scripts}}/Compose/Bindings/Scripts/default.nu '{"mode": "layer", "inputs": {{inputs}}, "output": "{{output}}"}'
-    @gum style --foreground 82 "Created: {{output}}"
+    #!/usr/bin/env nu
+    gum style --border normal --padding "0 1" "Layering files..."
+    let files: list<string> = "{{inputs}}" | split row " "
+    let json: string = {mode: "layer", inputs: $files, output: "{{output}}"} | to json
+    nu {{scripts}}/Compose/Bindings/Scripts/default.nu $json
+    gum style --foreground 82 "Created: {{output}}"
 
 # -------------------------------------------------------------------------------
 # EXPORT

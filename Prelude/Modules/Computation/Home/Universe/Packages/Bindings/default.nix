@@ -35,5 +35,9 @@
     "raylib"
     # Labs
     "entr"
+    #Git
+    "lazygit"
+    #Tree
+    "tree"
   ];
 }

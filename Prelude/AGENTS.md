@@ -102,6 +102,16 @@ Is it tangible hardware/material?
 | Log file | Information | Discrete, stored |
 | Audio synthesis | Labs | Signal generation |
 
+### Hierarchy
+
+| Level | Location | Has | Example |
+|-------|----------|-----|---------|
+| Category | `Modules/<Cat>/` | `default.nix` only | `Computation/`, `Information/` |
+| Module | `Modules/<Cat>/<Mod>/` | README.md, Arch.d2, Env/, Instances/, Universe/ | `Browsers/`, `Terminal/Shell/` |
+| Feature | `Universe/<Feat>/` | Options/, Bindings/ | `Universe/Firefox/`, `Universe/Config/` |
+
+Categories are organizational containers. Modules are capability units with full structure. Features are local sub-modules within a Module's Universe/.
+
 ## Invariants
 
 MUST NEVER VIOLATE:
@@ -126,6 +136,7 @@ MUST NEVER VIOLATE:
 18. Every module requires README.md + Arch.d2 (architecture diagram)
 19. Naming is semantic binding to capability - optimize for best fit
 20. CLI output uses gum styling, external tools run silent (-q, -loglevel error)
+21. Justfile is self-documenting: recipes match 1-1 with README capabilities
 
 ## Capability Discovery & Freezing
 
