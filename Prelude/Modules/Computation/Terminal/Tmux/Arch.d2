@@ -1,0 +1,58 @@
+# Terminal/Tmux Architecture
+
+direction: down
+
+title: {
+  label: Terminal/Tmux Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    vars: "TMUX_*"
+  }
+  
+  instances: Instances {
+    exports: "flake.modules.homeManager.tmux"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  config: Config {
+    options: Options {
+      prefix: "prefix (C-a)"
+      baseindex: baseIndex
+      mouse: mouse
+      history: historyLimit
+    }
+    bindings: Bindings {
+      keymaps: Keymaps
+      plugins: "sensible, yank, resurrect, continuum"
+    }
+    options -> bindings
+  }
+}
+
+# Keymaps
+keymaps: Key Bindings {
+  style.fill: "#e8f5e9"
+  
+  split_h: "prefix + | = split horizontal"
+  split_v: "prefix + - = split vertical"
+  nav: "prefix + hjkl = pane nav"
+  reload: "prefix + r = reload"
+  popup: "prefix + t/g/f = popups"
+}
+
+# Flow
+global.env -> universe.config.options: reads
+universe.config.bindings -> keymaps: defines

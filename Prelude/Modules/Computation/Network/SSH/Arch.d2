@@ -1,0 +1,48 @@
+# SSH Architecture
+
+direction: down
+
+title: {
+  label: Network/SSH Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    vars: "SSH_*"
+  }
+  
+  instances: Instances {
+    homemanager: "~/.ssh/config"
+    nixos: "openssh server"
+    darwin: "built-in ssh"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  config: Config {
+    options: Options {
+      port: port
+      forward: forwardAgent
+      compress: compression
+      hosts: hosts
+    }
+    bindings: Bindings {
+      scripts: "ssh-connect, ssh-copy-id-helper"
+    }
+    options -> bindings
+  }
+}
+
+# Flow
+global.env -> universe.config.options: reads
+universe.config.bindings -> global.instances: exports

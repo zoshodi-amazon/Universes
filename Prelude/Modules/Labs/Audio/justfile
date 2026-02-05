@@ -30,9 +30,30 @@
 # ===============================================================================
 
 scripts := "Universe"
+zoo := "Zoo"
 
 default:
     @just --list
+
+# Initialize Audio Lab workspace
+init:
+    #!/usr/bin/env nu
+    mkdir .lab
+    mkdir .lab/assets
+    if not (".lab/sources.json" | path exists) {
+      cp Zoo/sources.json .lab/sources.json
+      print "Initialized .lab/ with default audio sources"
+    } else {
+      print ".lab/ already initialized"
+    }
+
+# List available remote sources
+sources:
+    @nu ../TUI/Universe/Sources/Bindings/Scripts/default.nu '{"action": "list", "sources_path": ".lab/sources.json"}'
+
+# Browse a remote source
+browse source="":
+    @nu ../TUI/Universe/Sources/Bindings/Scripts/default.nu '{"action": "browse", "name": "{{source}}", "sources_path": ".lab/sources.json"}'
 
 # -------------------------------------------------------------------------------
 # ACQUIRE

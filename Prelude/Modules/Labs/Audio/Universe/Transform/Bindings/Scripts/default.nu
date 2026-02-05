@@ -2,8 +2,8 @@
 
 # Interpreter for Transform - reads config, builds ffmpeg filter chain
 # Config: { input, output, transforms: [{type, params}] }
-def main [config_json: string] {
-  let cfg = ($config_json | from json)
+def main [config_json: string]: nothing -> nothing {
+  let cfg: record = ($config_json | from json)
   
   if ($cfg.transforms | is-empty) {
     print "No transforms specified"
@@ -11,24 +11,24 @@ def main [config_json: string] {
   }
   
   # Build filter chain from transforms list
-  let filters = ($cfg.transforms | each {|t|
+  let filters: string = ($cfg.transforms | each {|t|
     match $t.type {
       "pitch" => {
-        let semitones = ($t.params.semitones? | default 0)
-        let factor = (2 ** ($semitones / 12))
+        let semitones: int = ($t.params.semitones? | default 0)
+        let factor: float = (2 ** ($semitones / 12))
         $"asetrate=44100*($factor),aresample=44100"
       }
       "stretch" => {
-        let factor = ($t.params.factor? | default 1.0)
+        let factor: float = ($t.params.factor? | default 1.0)
         $"atempo=($factor)"
       }
       "filter" => {
-        let kind = ($t.params.kind? | default "highpass")
-        let freq = ($t.params.freq? | default 200)
+        let kind: string = ($t.params.kind? | default "highpass")
+        let freq: int = ($t.params.freq? | default 200)
         $"($kind)=f=($freq)"
       }
       "volume" => {
-        let level = ($t.params.level? | default 1.0)
+        let level: float = ($t.params.level? | default 1.0)
         $"volume=($level)"
       }
       "reverb" => {
@@ -40,9 +40,5 @@ def main [config_json: string] {
     }
   } | str join ",")
   
-  print $"Applying transforms: ($filters)"
-  print $"Input: ($cfg.input) -> Output: ($cfg.output)"
-  
-  ffmpeg -y -i $cfg.input -af $filters $cfg.output
-  print $"Created: ($cfg.output)"
+  ffmpeg -y -loglevel error -i $cfg.input -af $filters $cfg.output
 }

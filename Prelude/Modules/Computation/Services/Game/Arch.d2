@@ -1,0 +1,69 @@
+# Services/Game Architecture
+
+direction: down
+
+title: {
+  label: Services/Game Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    aggregates: "Universe/*/Options"
+  }
+  
+  instances: Instances {
+    devshell: "perSystem.devShells.game"
+    package: "perSystem.packages.game"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  core: Core {
+    options: "enable, tickRate"
+    bindings: "Scripts, Commands, Hooks"
+  }
+  
+  input: Input {
+    options: "enable, inputMap"
+    bindings: "Keymaps, State"
+  }
+  
+  render: Render {
+    options: "enable, backend"
+    bindings: "Plugins (shaders)"
+  }
+  
+  state: State {
+    bindings: "State, Hooks (Save)"
+  }
+  
+  audio: Audio {
+    options: "enable"
+  }
+}
+
+# Flow
+universe -> global.instances: exports
+
+# Game Loop
+loop: Game Loop {
+  style.fill: "#e8f5e9"
+  
+  input: Input
+  update: Update
+  render: Render
+  
+  input -> update -> render -> input
+}
+
+global.instances -> loop: runs

@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Freesound",
+    "url": "https://freesound.org",
+    "type": "api",
+    "extensions": ["wav", "flac", "mp3", "ogg"],
+    "tags": ["samples", "sfx", "field-recordings", "cc"]
+  },
+  {
+    "name": "Internet Archive Audio",
+    "url": "https://archive.org/details/audio",
+    "type": "http",
+    "extensions": ["mp3", "flac", "ogg"],
+    "tags": ["music", "spoken", "radio", "public-domain"]
+  },
+  {
+    "name": "BBC Sound Effects",
+    "url": "https://sound-effects.bbcrewind.co.uk",
+    "type": "http",
+    "extensions": ["wav", "mp3"],
+    "tags": ["sfx", "foley", "ambience"]
+  },
+  {
+    "name": "Philharmonia Samples",
+    "url": "https://philharmonia.co.uk/resources/sound-samples",
+    "type": "http",
+    "extensions": ["mp3", "wav"],
+    "tags": ["orchestra", "instruments", "classical"]
+  },
+  {
+    "name": "SampleSwap",
+    "url": "https://sampleswap.org",
+    "type": "http",
+    "extensions": ["wav", "aif"],
+    "tags": ["loops", "drums", "synth", "cc"]
+  },
+  {
+    "name": "NASA Audio",
+    "url": "https://www.nasa.gov/audio-and-ringtones",
+    "type": "http",
+    "extensions": ["mp3", "wav"],
+    "tags": ["space", "science", "public-domain"]
+  }
+]

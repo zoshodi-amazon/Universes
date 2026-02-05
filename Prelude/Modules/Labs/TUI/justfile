@@ -129,6 +129,23 @@ load-preset name:
     @nu {{scripts}}/Presets/Bindings/Scripts/default.nu '{"action": "load", "name": "{{name}}"}'
 
 # -------------------------------------------------------------------------------
+# SOURCES
+# -------------------------------------------------------------------------------
+
+# List configured remote sources
+sources:
+    @nu {{scripts}}/Sources/Bindings/Scripts/default.nu '{"action": "list"}'
+
+# Browse a remote source interactively
+browse source="":
+    @nu {{scripts}}/Sources/Bindings/Scripts/default.nu '{"action": "browse", "name": "{{source}}"}'
+
+# Fetch asset from source
+# ARGS: source - source name, file - filename
+fetch source file:
+    @nu {{scripts}}/Sources/Bindings/Scripts/default.nu '{"action": "fetch", "source": "{{source}}", "file": "{{file}}"}'
+
+# -------------------------------------------------------------------------------
 # LAYOUT
 # -------------------------------------------------------------------------------
 

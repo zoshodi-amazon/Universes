@@ -1,0 +1,59 @@
+# Home Architecture
+
+direction: down
+
+title: {
+  label: Home Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    aggregates: "host options"
+  }
+  
+  instances: Instances {
+    exports: "flake.homeConfigurations.*"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  darwin: Darwin {
+    options: "username, homeDirectory, stateVersion"
+  }
+  
+  clouddev: CloudDev {
+    options: "username, homeDirectory, stateVersion"
+  }
+  
+  cloudnix: CloudNix {
+    options: "username, homeDirectory, stateVersion"
+  }
+  
+  packages: Packages {
+    options: "user packages"
+  }
+}
+
+# Flow
+universe -> global.instances: compose
+
+# Targets
+targets: Targets {
+  style.fill: "#e8f5e9"
+  
+  darwin: homeConfigurations.darwin
+  clouddev: homeConfigurations.cloudDev
+  cloudnix: homeConfigurations.cloudNix
+}
+
+global.instances -> targets

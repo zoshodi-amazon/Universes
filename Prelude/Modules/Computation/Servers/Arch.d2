@@ -1,0 +1,130 @@
+# Servers Architecture
+
+direction: right
+
+title: |md
+  # Servers Capability Graph
+  Self-hosted services via Podman
+|
+
+# Layers
+layers: {
+  data: Data Layer {
+    style.fill: "#e8f5e9"
+  }
+  infra: Infra Layer {
+    style.fill: "#e3f2fd"
+  }
+  apps: Apps Layer {
+    style.fill: "#fff3e0"
+  }
+}
+
+# Data Layer - Foundation
+data: {
+  label: Data
+  style.fill: "#c8e6c9"
+  
+  objectstore: ObjectStore {
+    icon: https://icons.terrastruct.com/aws%2FStorage%2FAmazon-Simple-Storage-Service-S3.svg
+    shape: rectangle
+  }
+  relational: Relational {
+    icon: https://icons.terrastruct.com/aws%2FDatabase%2FAmazon-RDS.svg
+    shape: rectangle
+  }
+  documents: Documents {
+    icon: https://icons.terrastruct.com/essentials%2F092-folder.svg
+    shape: rectangle
+  }
+  registry: Registry {
+    icon: https://icons.terrastruct.com/dev%2Fdocker.svg
+    shape: rectangle
+  }
+  backup: Backup {
+    icon: https://icons.terrastruct.com/aws%2FStorage%2FAmazon-S3-Glacier.svg
+    shape: rectangle
+  }
+}
+
+# Infra Layer - Plumbing
+infra: {
+  label: Infra
+  style.fill: "#bbdefb"
+  
+  gateway: Gateway {
+    icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FAmazon-API-Gateway.svg
+    shape: rectangle
+  }
+  identity: Identity {
+    icon: https://icons.terrastruct.com/aws%2FSecurity%2C%20Identity%2C%20&%20Compliance%2FAWS-Identity-and-Access-Management-IAM.svg
+    shape: rectangle
+  }
+  dns: DNS {
+    icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FAmazon-Route-53.svg
+    shape: rectangle
+  }
+  metrics: Metrics {
+    icon: https://icons.terrastruct.com/aws%2FManagement%20&%20Governance%2FAmazon-CloudWatch.svg
+    shape: rectangle
+  }
+  secrets: Secrets {
+    icon: https://icons.terrastruct.com/aws%2FSecurity%2C%20Identity%2C%20&%20Compliance%2FAWS-Secrets-Manager.svg
+    shape: rectangle
+  }
+}
+
+# Apps Layer - Services
+apps: {
+  label: Apps
+  style.fill: "#ffe0b2"
+  
+  git: Git {
+    icon: https://icons.terrastruct.com/dev%2Fgit.svg
+    shape: rectangle
+  }
+  media: Media {
+    icon: https://icons.terrastruct.com/essentials%2F141-movie.svg
+    shape: rectangle
+  }
+  llm: LLM {
+    icon: https://icons.terrastruct.com/aws%2FMachine%20Learning%2FAmazon-SageMaker.svg
+    shape: rectangle
+  }
+  chat: Chat {
+    icon: https://icons.terrastruct.com/essentials%2F234-chat.svg
+    shape: rectangle
+  }
+}
+
+# Dependency Flow: Apps -> Infra -> Data
+
+# Apps consume Gateway (routing)
+apps.git -> infra.gateway: route
+apps.media -> infra.gateway: route
+apps.llm -> infra.gateway: route
+apps.chat -> infra.gateway: route
+
+# Apps consume Identity (SSO)
+apps.git -> infra.identity: sso
+apps.media -> infra.identity: sso
+apps.chat -> infra.identity: sso
+
+# Apps consume Data (storage)
+apps.git -> data.objectstore: artifacts
+apps.media -> data.objectstore: media files
+apps.git -> data.relational: metadata
+
+# Infra consumes Data
+infra.gateway -> data.relational: config
+infra.identity -> data.relational: users
+infra.metrics -> data.relational: tsdb
+
+# Infra internal wiring
+infra.gateway -> infra.dns: resolve
+infra.identity -> infra.secrets: credentials
+
+# Backup consumes all
+data.backup -> data.objectstore: snapshot
+data.backup -> data.relational: dump
+data.backup -> data.documents: sync

@@ -1,0 +1,55 @@
+# Scripts Architecture
+
+direction: down
+
+title: {
+  label: Scripts Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env
+  instances: Instances
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  discover: Discover {
+    purpose: "List modules"
+    cmd: "just modules"
+  }
+  
+  introspect: Introspect {
+    purpose: "Show features/options"
+    cmd: "just features, just options"
+  }
+  
+  scaffold: Scaffold {
+    purpose: "Create modules/features"
+    cmd: "just new-module, just new-feature"
+  }
+  
+  deploy: Deploy {
+    purpose: "Flash, format, remote build"
+    cmd: "just flash, just format-persist"
+  }
+}
+
+# Flow
+universe -> global.instances: nushell scripts
+
+# Justfile
+justfile: justfile {
+  style.fill: "#e8f5e9"
+  shape: document
+}
+
+global.instances -> justfile: recipes

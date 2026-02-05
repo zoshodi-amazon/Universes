@@ -10,6 +10,7 @@
       enable = true;
       servers = {
         nil_ls.enable = true;        # .nix
+        nushell.enable = true;       # .nu
         pyright.enable = true;       # .py
         rust_analyzer = {            # .rs
           enable = true;

@@ -1,0 +1,61 @@
+# Machines Architecture
+
+direction: down
+
+title: {
+  label: Machines Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    aggregates: "Universe/*/Options"
+  }
+  
+  instances: Instances {
+    exports: "nixosConfigurations, Clan"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  identity: Identity {
+    hostname: hostname
+  }
+  
+  target: Target {
+    arch: "x86_64 | aarch64"
+  }
+  
+  format: Format {
+    type: "iso | vm | sd-image | raw-efi"
+  }
+  
+  persistence: Persistence {
+    strategy: "full | impermanent | ephemeral"
+    device: device
+  }
+}
+
+# Flow
+universe -> global.instances: defines
+
+# Commands
+commands: Commands {
+  style.fill: "#e8f5e9"
+  
+  list: "just list"
+  build: "just build <machine>"
+  flash: "just flash <machine> <disk>"
+  vm: "just vm <machine>"
+}
+
+global.instances -> commands: invokes

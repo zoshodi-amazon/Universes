@@ -21,7 +21,7 @@ def list_dials [cfg: record] {
   let vals = ($cfg.values? | default {})
   
   $defs | each { |d|
-    let norm = ($vals | get -i $d.name | default $d.normalized)
+    let norm = ($vals | get -o $d.name | default $d.normalized)
     let native = (denorm $d $norm)
     {
       name: $d.name,
@@ -38,7 +38,7 @@ def get_dial [cfg: record, name: string] {
   let vals = ($cfg.values? | default {})
   
   let d = ($defs | where name == $name | first)
-  let norm = ($vals | get -i $name | default $d.normalized)
+  let norm = ($vals | get -o $name | default $d.normalized)
   let native = (denorm $d $norm)
   
   { normalized: $norm, native: $native, unit: $d.unit }

@@ -6,7 +6,7 @@
     # ─────────────────────────────────────────────────────────────
     # Diagrams
     # ─────────────────────────────────────────────────────────────
-    { mode = "n"; key = "<leader>pd"; action = "<cmd>!d2 --watch % %:r.svg &<cr>"; options.desc = "D2 live"; }
+    { mode = "n"; key = "<leader>pd"; action = "<cmd>!d2 --watch --browser % %:r.svg &<cr>"; options.desc = "D2 live"; }
     { mode = "n"; key = "<leader>pm"; action = "<cmd>!mmdc -i % -o %:r.svg && open %:r.svg<cr>"; options.desc = "Mermaid render"; }
     { mode = "n"; key = "<leader>pg"; action = "<cmd>!dot -Tsvg % -o %:r.svg && open %:r.svg<cr>"; options.desc = "Graphviz render"; }
     { mode = "n"; key = "<leader>pu"; action = "<cmd>!plantuml -tsvg % && open %:r.svg<cr>"; options.desc = "PlantUML render"; }

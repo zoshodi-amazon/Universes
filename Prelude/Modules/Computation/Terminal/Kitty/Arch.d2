@@ -1,0 +1,44 @@
+# Terminal/Kitty Architecture
+
+direction: down
+
+title: {
+  label: Terminal/Kitty Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    aggregates: "Universe/Config/Options"
+  }
+  
+  instances: Instances {
+    exports: "flake.modules.homeManager.kitty"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  config: Config {
+    options: Options {
+      enable: enable
+      font: font
+      fontsize: fontSize
+      theme: theme
+    }
+    bindings: Bindings
+    options -> bindings
+  }
+}
+
+# Flow
+global.env -> universe.config.options: reads
+universe.config.bindings -> global.instances: exports

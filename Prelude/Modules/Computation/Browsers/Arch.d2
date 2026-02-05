@@ -1,0 +1,44 @@
+# Browsers Architecture
+
+direction: down
+
+title: {
+  label: Browsers Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    aggregates: "Universe/Firefox/Options"
+  }
+  
+  instances: Instances {
+    exports: "flake.modules.homeManager.firefox"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  firefox: Firefox {
+    options: Options {
+      enable: enable
+      default: defaultBrowser
+    }
+    bindings: Bindings {
+      plugins: Plugins (extensions)
+    }
+    options -> bindings
+  }
+}
+
+# Flow
+global.env -> universe.firefox.options: reads
+universe.firefox.bindings -> global.instances: exports

@@ -1,0 +1,55 @@
+# ObjectStore Architecture
+
+direction: right
+
+objectstore: ObjectStore {
+  style.fill: "#c8e6c9"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    endpoint: endpoint
+    buckets: buckets
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    minio: minio/minio
+    garage: dxflrs/garage
+  }
+  
+  options -> bindings: interprets
+}
+
+# Consumers
+consumers: {
+  apps.git: Git {
+    shape: rectangle
+  }
+  apps.media: Media {
+    shape: rectangle
+  }
+  infra.backup: Backup {
+    shape: rectangle
+  }
+}
+
+consumers.apps.git -> objectstore: artifacts
+consumers.apps.media -> objectstore: media files
+consumers.infra.backup -> objectstore: snapshots
+
+# Auto-wiring
+autowire: {
+  gateway: Gateway Route {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+  metrics: Metrics Scrape {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+}
+
+objectstore -> autowire.gateway: s3.domain
+objectstore -> autowire.metrics: :9000/metrics

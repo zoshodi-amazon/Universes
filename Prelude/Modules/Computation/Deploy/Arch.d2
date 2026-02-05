@@ -1,0 +1,53 @@
+# Deploy Architecture
+
+direction: down
+
+title: {
+  label: Deploy Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    aggregates: "Universe/DeployRS/Options"
+  }
+  
+  instances: Instances {
+    exports: "flake.deploy.nodes.*"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  deployrs: DeployRS {
+    options: Options {
+      enable: enable
+      nodes: nodes
+      sshuser: sshUser
+    }
+    bindings: Bindings {
+      scripts: "deploy, rollback"
+    }
+    options -> bindings
+  }
+}
+
+# Flow
+global.env -> universe.deployrs.options: reads
+universe.deployrs.bindings -> global.instances: exports
+
+# Targets
+targets: Remote Hosts {
+  style.fill: "#e8f5e9"
+  shape: cloud
+}
+
+global.instances -> targets: "deploy ."

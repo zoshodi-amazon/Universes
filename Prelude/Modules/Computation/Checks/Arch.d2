@@ -1,0 +1,56 @@
+# Checks Architecture
+
+direction: down
+
+title: {
+  label: Checks Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    vars: "CHECKS_*"
+  }
+  
+  instances: Instances {
+    devshells: devShells.checks
+    checks: checks.*
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  nix: Nix {
+    tools: "nixfmt, deadnix, statix"
+  }
+  
+  python: Python {
+    tools: "ruff, mypy, black"
+  }
+  
+  rust: Rust {
+    tools: "clippy, rustfmt"
+  }
+  
+  eval: Eval {
+    purpose: "Flake evaluation"
+  }
+  
+  invariants: Invariants {
+    moduledirs: ModuleDirs
+    universefeatures: UniverseFeatures
+    bindingssubdirs: BindingsSubdirs
+    nomanualimp: NoManualImports
+  }
+}
+
+# Flow
+universe -> global.instances: pre-commit hooks

@@ -1,0 +1,53 @@
+# Terminal/Shell Architecture
+
+direction: down
+
+title: {
+  label: Terminal/Shell Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    aggregates: "shell feature options"
+  }
+  
+  instances: Instances {
+    fish: "flake.modules.homeManager.fish"
+    nushell: "flake.modules.homeManager.nushell"
+    direnv: "flake.modules.homeManager.direnv"
+    zsh: "flake.modules.homeManager.zsh"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  fish: Fish {
+    options: "enable, plugins"
+    bindings: "Plugins (starship, fzf)"
+  }
+  
+  nushell: Nushell {
+    options: "enable, configPath"
+    bindings: "Plugins, Scripts"
+  }
+  
+  direnv: Direnv {
+    options: "enable, enableFishIntegration"
+  }
+  
+  zsh: Zsh {
+    options: "enable"
+  }
+}
+
+# Flow
+universe -> global.instances: exports

@@ -125,6 +125,7 @@ MUST NEVER VIOLATE:
 17. All nushell scripts strongly typed - explicit annotations, no implicit conversions
 18. Every module requires README.md + Arch.d2 (architecture diagram)
 19. Naming is semantic binding to capability - optimize for best fit
+20. CLI output uses gum styling, external tools run silent (-q, -loglevel error)
 
 ## Capability Discovery & Freezing
 

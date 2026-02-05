@@ -1,0 +1,46 @@
+# Nix Architecture
+
+direction: down
+
+title: {
+  label: Nix Module
+  shape: text
+  style.font-size: 20
+}
+
+# Global Duality
+global: Global Duality {
+  style.fill: "#e1f5fe"
+  
+  env: Env {
+    aggregates: "Universe/Core/Options"
+  }
+  
+  instances: Instances {
+    homemanager: "flake.modules.homeManager.nix-settings"
+    nixos: "flake.modules.nixos.nix-settings"
+    darwin: "flake.modules.darwin.nix-settings"
+  }
+  
+  env -> instances: config
+}
+
+# Universe
+universe: Universe {
+  style.fill: "#fff3e0"
+  
+  core: Core {
+    options: Options {
+      enable: enable
+      gc: "gc.automatic, gc.interval, gc.olderThan"
+      optimise: optimise
+      jobs: "maxJobs, cores"
+    }
+    bindings: Bindings
+    options -> bindings
+  }
+}
+
+# Flow
+global.env -> universe.core.options: reads
+universe.core.bindings -> global.instances: exports
