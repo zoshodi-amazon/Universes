@@ -1,0 +1,128 @@
+# Labs/TUI Architecture
+# Domain-agnostic workbench framework
+
+direction: down
+
+title: Lab TUI Capability Graph {
+  near: top-center
+  shape: text
+  style.font-size: 24
+}
+
+# Core Layer
+core: Core Capabilities {
+  style.fill: "#e1f5fe"
+  
+  storage: Storage {
+    crud: CRUD
+    history: History
+    query: Query
+    export: Export
+  }
+  
+  metrics: Metrics {
+    collect: Collect
+    aggregate: Aggregate
+    compare: Compare
+    alert: Alert
+  }
+  
+  logs: Logs {
+    stream: Stream
+    filter: Filter
+    search: Search
+    persist: Persist
+  }
+  
+  preview: Preview {
+    live: Live View
+    modes: Multi-mode
+    split: Split Panes
+  }
+}
+
+# Interaction Layer
+interaction: Interaction Layer {
+  style.fill: "#fff3e0"
+  
+  knobs: Knobs {
+    explore: Explore
+    adjust: Adjust
+    preview: Preview
+    commit: Commit
+  }
+  
+  session: Session {
+    current: Current
+    stack: Stack
+    undo: Undo/Redo
+    mode: Mode
+  }
+  
+  presets: Presets (Zoo) {
+    global: Global
+    domain: Domain
+    user: User
+  }
+  
+  layout: Layout {
+    explore: Explore
+    compare: Compare
+    export: Export
+    monitor: Monitor
+  }
+}
+
+# Domain Layer
+domain: Domain Layer (Swappable) {
+  style.fill: "#f3e5f5"
+  
+  transforms: Transforms {
+    shape: hexagon
+  }
+  
+  overlays: Overlays {
+    shape: hexagon
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+  }
+}
+
+# Bindings Layer
+stack: Stack {
+  style.fill: "#e8f5e9"
+  
+  nushell: nushell
+  gum: gum
+  tmux: tmux
+  justfile: justfile
+  sqlite: SQLite
+}
+
+# Relationships
+core.storage -> interaction.session: state
+core.metrics -> interaction.knobs: feedback
+core.logs -> interaction.session: debug
+core.preview -> interaction.knobs: live
+
+interaction.knobs -> domain.transforms: apply
+interaction.presets -> domain.transforms: configure
+interaction.layout -> stack.tmux: render
+
+domain.transforms -> core.storage: persist
+domain.overlays -> core.preview: visualize
+domain.bindings -> stack: execute
+
+# Data Flow
+dataflow: Data Flow {
+  style.stroke-dash: 3
+  
+  artifact: Artifact
+  transform: Transform
+  preview: Preview
+  commit: Commit
+  
+  artifact -> transform -> preview -> commit -> artifact
+}

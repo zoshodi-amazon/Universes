@@ -237,6 +237,8 @@ Each `Drv/<package>/default.nix` exports to `perSystem.packages.<package>`.
 15. NO hidden CLI params - all configuration explicit in Options
 16. Justfile recipes use `#!/usr/bin/env nu` shebang when multi-line
 17. All nushell scripts strongly typed - explicit annotations, no implicit conversions
+18. Every module requires README.md + Arch.d2 (architecture diagram)
+19. Naming is semantic binding to capability - optimize for best fit
 ```
 
 ---

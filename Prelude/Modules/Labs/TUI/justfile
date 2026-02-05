@@ -1,23 +1,25 @@
 # ===============================================================================
-# LABS/CORE - Generic Lab TUI Framework
+# LABS/TUI - Domain-Agnostic Workbench Framework
 # ===============================================================================
 #
 # NAME
-#     justfile - Core Lab infrastructure (Library, Session, Watch, Dials, TUI)
+#     justfile - Universal Lab TUI framework
 #
 # SYNOPSIS
 #     just <recipe> [arguments...]
 #     just --list
 #
 # DESCRIPTION
-#     Domain-agnostic Lab framework. Provides persistence, state management,
-#     file watching, and TUI infrastructure for any signal processing domain.
+#     Domain-agnostic Lab framework with 8 core capabilities:
 #
-#     LIBRARY   - SQLite asset persistence with full history
-#     SESSION   - Workspace state (current asset, transform stack)
-#     WATCH     - File change detection via entr
-#     DIALS     - Orthogonal coefficient controls
-#     TUI       - Bubbletea interactive interface
+#     STORAGE   - SQLite persistence with full history
+#     METRICS   - Artifact measurement and comparison
+#     LOGS      - Observability and debugging
+#     PREVIEW   - Live visualization
+#     KNOBS     - Orthogonal transform controls
+#     SESSION   - Workspace state management
+#     PRESETS   - Zoo hierarchy (global/domain/user)
+#     LAYOUT    - Tmux pane presets
 #
 # ===============================================================================
 
@@ -27,80 +29,110 @@ default:
     @just --list
 
 # -------------------------------------------------------------------------------
-# LIBRARY
+# STORAGE
 # -------------------------------------------------------------------------------
 
-# Initialize asset library
-# ARGS: path - library path (default: .lab/library.db)
-init-library path=".lab/library.db":
-    @gum style --border normal --padding "0 1" "Initializing library..."
-    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "init", "db_path": "{{path}}"}'
+# Initialize storage
+# ARGS: path - database path (default: .lab/library.db)
+init-storage path=".lab/library.db":
+    @gum style --border normal --padding "0 1" "Initializing storage..."
+    @nu {{scripts}}/Storage/Bindings/Scripts/default.nu '{"action": "init", "db_path": "{{path}}"}'
 
-# Add asset to library
+# Add artifact to storage
 # ARGS: name - display name, file - file path, source - url/file/generated
-add-asset name file source="file":
-    @gum style --border normal --padding "0 1" "Adding asset: $(gum style --foreground 212 '{{name}}')..."
-    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "add", "name": "{{name}}", "path": "{{file}}", "source": "{{source}}"}'
+add name file source="file":
+    @gum style --border normal --padding "0 1" "Adding: $(gum style --foreground 212 '{{name}}')..."
+    @nu {{scripts}}/Storage/Bindings/Scripts/default.nu '{"action": "add", "name": "{{name}}", "path": "{{file}}", "source": "{{source}}"}'
 
-# List all assets in library
-list-assets:
-    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "list"}'
+# List all artifacts
+list:
+    @nu {{scripts}}/Storage/Bindings/Scripts/default.nu '{"action": "list"}'
 
-# Show asset history
-# ARGS: id - asset ID (optional, shows all if omitted)
-history id="":
-    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "history", "id": "{{id}}"}'
+# Show history
+history:
+    @nu {{scripts}}/Storage/Bindings/Scripts/default.nu '{"action": "history"}'
+
+# -------------------------------------------------------------------------------
+# METRICS
+# -------------------------------------------------------------------------------
+
+# Show metrics summary
+metrics:
+    @nu {{scripts}}/Metrics/Bindings/Scripts/default.nu '{"action": "summary"}'
+
+# Compare two artifacts
+# ARGS: baseline - baseline ID, target - target ID
+compare baseline target:
+    @nu {{scripts}}/Metrics/Bindings/Scripts/default.nu '{"action": "compare", "baseline": "{{baseline}}", "target": "{{target}}"}'
+
+# -------------------------------------------------------------------------------
+# LOGS
+# -------------------------------------------------------------------------------
+
+# Watch files and run command on change
+# ARGS: patterns - glob patterns, command - command to run
+watch patterns command:
+    @gum style --border normal --padding "0 1" "Watching: $(gum style --foreground 212 '{{patterns}}')..."
+    @nu {{scripts}}/Logs/Bindings/Scripts/default.nu '{"patterns": ["{{patterns}}"], "command": "{{command}}"}'
+
+# -------------------------------------------------------------------------------
+# PREVIEW
+# -------------------------------------------------------------------------------
+
+# Launch interactive preview
+# ARGS: domain - lab domain (audio, video, 3d, data)
+preview domain="audio":
+    @nu {{scripts}}/Preview/Bindings/Scripts/default.nu '{"domain": "{{domain}}"}'
+
+# -------------------------------------------------------------------------------
+# KNOBS
+# -------------------------------------------------------------------------------
+
+# List knobs with current values
+knobs:
+    @nu {{scripts}}/Knobs/Bindings/Scripts/default.nu '{"action": "list"}'
 
 # -------------------------------------------------------------------------------
 # SESSION
 # -------------------------------------------------------------------------------
 
-# Initialize session state
+# Initialize session
 init-session:
     @gum style --border normal --padding "0 1" "Initializing session..."
     @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "init"}'
 
-# Show current session state
+# Show session state
 session:
     @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "load"}'
 
-# Set current asset
-# ARGS: id - asset ID
-set-current id:
+# Set current artifact
+# ARGS: id - artifact ID
+current id:
     @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "set-current", "id": "{{id}}"}'
 
-# Push transform to stack
-# ARGS: type - transform type, params - JSON params
-push-transform type params="{}":
-    @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "push", "transform": {"type": "{{type}}", "params": {{params}}}}'
-
-# Pop transform from stack
-pop-transform:
-    @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "pop"}'
-
 # -------------------------------------------------------------------------------
-# WATCH
+# PRESETS
 # -------------------------------------------------------------------------------
 
-# Watch files and run command on change
-# ARGS: patterns - glob patterns (comma-separated), command - command to run
-watch patterns command:
-    @gum style --border normal --padding "0 1" "Watching: $(gum style --foreground 212 '{{patterns}}')..."
-    @nu {{scripts}}/Watch/Bindings/Scripts/default.nu '{"patterns": ["{{patterns}}"], "command": "{{command}}"}'
+# List all presets
+presets:
+    @nu {{scripts}}/Presets/Bindings/Scripts/default.nu '{"action": "list"}'
+
+# Save current knobs as preset
+# ARGS: name - preset name
+save-preset name:
+    @nu {{scripts}}/Presets/Bindings/Scripts/default.nu '{"action": "save", "name": "{{name}}"}'
+
+# Load preset
+# ARGS: name - preset name
+load-preset name:
+    @nu {{scripts}}/Presets/Bindings/Scripts/default.nu '{"action": "load", "name": "{{name}}"}'
 
 # -------------------------------------------------------------------------------
-# DIALS
+# LAYOUT
 # -------------------------------------------------------------------------------
 
-# List all dials with current values
-dials config:
-    @nu {{scripts}}/Dials/Bindings/Scripts/default.nu '{{config}}'
-
-# -------------------------------------------------------------------------------
-# TUI
-# -------------------------------------------------------------------------------
-
-# Launch Lab TUI
-# ARGS: domain - lab domain (audio, video, 3d, data)
-tui domain="audio":
-    @nu {{scripts}}/TUI/Bindings/Scripts/default.nu '{"domain": "{{domain}}"}'
+# Set tmux layout preset
+# ARGS: preset - explore/compare/export/monitor
+layout preset="explore":
+    @nu {{scripts}}/Layout/Bindings/Scripts/default.nu '{"preset": "{{preset}}"}'

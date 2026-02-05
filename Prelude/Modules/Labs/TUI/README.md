@@ -1,69 +1,201 @@
-# Labs/Core
+# Labs/TUI
 
-Generic Lab TUI framework for signal processing workstations.
+Domain-agnostic workbench framework for fast iteration.
 
 ## Overview
 
 | Aspect | Description |
 |--------|-------------|
-| Purpose | Domain-agnostic Lab TUI framework |
-| Pattern | Elm architecture (Model-Update-View) |
-| Navigation | Vim-like (h/j/k/l, modes, :commands) |
-| Persistence | SQLite with full history |
-
-## Features
-
-| Feature | Capability | Binding |
-|---------|------------|---------|
-| Library | Asset persistence with undo/redo | sqlite3 |
-| Session | Workspace state management | JSON |
-| Watch | File change detection | entr |
-| Dials | Orthogonal coefficient controls | - |
-| TUI | Interactive terminal interface | bubbletea |
+| Purpose | Universal Lab TUI framework |
+| Pattern | Capability-indexed, self-contained |
+| Stack | nushell + gum + tmux + justfile |
+| Storage | SQLite (local) / S3/Postgres (remote) |
 
 ## Capability Graph
 
 ```
-Library (persistence)
-    |
-    v
-Session (state) <---> Dials (coefficients)
-    |
-    v
-TUI (interface) ---> Watch (reactivity)
-    |
-    v
-Domain Justfile (Audio, Video, etc.)
+CORE CAPABILITIES
+-----------------
+Storage   - CRUD, history, query, export
+Metrics   - Collect, aggregate, compare, alert
+Logs      - Stream, filter, search, persist
+Preview   - Live view, multi-mode, split panes
+
+INTERACTION LAYER
+-----------------
+Knobs     - Orthogonal transforms, explore/commit
+Session   - Current artifact, stack, undo/redo
+Presets   - Global / Domain / User (Zoo hierarchy)
+Layout    - Tmux presets (explore, compare, export, monitor)
+
+DOMAIN LAYER (Swappable)
+------------------------
+Transforms - Domain-specific operations
+Overlays   - Domain-specific visualizations
+Bindings   - Domain-specific tools (ffmpeg, openscad, etc.)
 ```
 
-## Dials: Orthogonal Basis Representation
+## Core Capabilities
 
-Each dial represents a coefficient in an orthogonal basis:
+### Storage
+Persistence layer with full history.
 
-| Internal | Display | Description |
-|----------|---------|-------------|
-| 0.0-1.0 | Domain-native | Normalized internally, shown in natural units |
+| Operation | Description |
+|-----------|-------------|
+| Create | Add new artifact |
+| Read | Query artifacts |
+| Update | Modify artifact |
+| Delete | Remove artifact |
+| History | Full undo/redo |
+| Export | Output to external format |
 
-Example (Audio):
-- Frequency dial: 0.5 internally = 1000Hz displayed (log scale 20Hz-20kHz)
-- Volume dial: 0.75 internally = -6dB displayed (linear scale -60dB to 0dB)
+### Metrics
+Lightweight measurement and comparison.
 
-## Modes
+| Operation | Description |
+|-----------|-------------|
+| Collect | Gather metrics from artifacts |
+| Aggregate | Sum, avg, min, max, histogram |
+| Compare | Diff against baseline |
+| Alert | Threshold notifications |
 
-| Mode | Key | Purpose |
-|------|-----|---------|
-| BROWSE | b | Navigate library/workspace |
-| EDIT | e | Adjust dials |
-| PREVIEW | p | Live visualization |
-| COMMAND | : | Execute commands |
+### Logs
+Observability and debugging.
 
-## Keybindings
+| Operation | Description |
+|-----------|-------------|
+| Stream | Live tail |
+| Filter | Pattern matching |
+| Search | Full-text search |
+| Persist | Save to storage |
 
-| Key | Action |
-|-----|--------|
-| h/j/k/l | Navigate |
-| gg/G | Top/bottom |
-| / | Search |
-| Enter | Select |
-| Esc | Back/cancel |
-| q | Quit |
+### Preview
+Real-time visualization.
+
+| Mode | Description |
+|------|-------------|
+| Primary | Single artifact view |
+| Split | Side-by-side comparison |
+| Diff | Highlight differences |
+
+### Knobs
+Orthogonal transform controls.
+
+| Phase | Description |
+|-------|-------------|
+| Explore | Interactive adjustment with live preview |
+| Adjust | Fine-tune parameters |
+| Preview | See effect before commit |
+| Commit | Freeze to new artifact |
+
+### Session
+Workspace state management.
+
+| State | Description |
+|-------|-------------|
+| Current | Active artifact ID |
+| Stack | Uncommitted transforms |
+| Mode | explore / compare / export / monitor |
+| Undo | Position in history |
+
+### Presets (Zoo)
+Hierarchical preset library.
+
+| Level | Location | Scope |
+|-------|----------|-------|
+| Global | Labs/TUI/Universe/Presets/ | All domains |
+| Domain | Labs/<Domain>/Universe/Presets/ | Domain-specific |
+| User | .lab/presets/ | Personal |
+
+### Layout
+Tmux pane presets.
+
+| Preset | Layout | Use Case |
+|--------|--------|----------|
+| explore | preview/knobs + library/logs | Interactive creation |
+| compare | preview-a/preview-b + metrics | A/B comparison |
+| export | preview + settings/logs | Final render |
+| monitor | metrics/logs + alerts | Observation |
+
+## Tmux Layouts
+
+### Explore Mode
+```
++-------------+-------------+
+|   PREVIEW   |    KNOBS    |
++-------------+-------------+
+|   LIBRARY   |    LOGS     |
++-------------+-------------+
+```
+
+### Compare Mode
+```
++-------------+-------------+
+|  PREVIEW A  |  PREVIEW B  |
++---------------------------+
+|          METRICS          |
++---------------------------+
+```
+
+### Export Mode
+```
++---------------------------+
+|          PREVIEW          |
++-------------+-------------+
+|  SETTINGS   |    LOGS     |
++-------------+-------------+
+```
+
+### Monitor Mode
+```
++---------------------------+
+|          METRICS          |
++-------------+-------------+
+|    LOGS     |   ALERTS    |
++-------------+-------------+
+```
+
+## Self-Contained Guarantee
+
+Every Lab is fully self-contained:
+
+| Guarantee | Implementation |
+|-----------|----------------|
+| No external refs | All data in `.lab/` |
+| No context switch | All ops via justfile |
+| No manual setup | `just lab` bootstraps |
+| Portable | Copy `.lab/` to move workspace |
+
+## Usage
+
+```bash
+# Launch Lab TUI
+just lab audio
+
+# Initialize storage
+just init-storage
+
+# Add artifact
+just add "name" /path/to/file
+
+# List artifacts
+just list
+
+# Apply transform
+just transform pitch +3
+
+# Export
+just export output.wav
+```
+
+## Domain Extension
+
+To create a new domain Lab:
+
+1. Create `Labs/<Domain>/` with standard module structure
+2. Define domain transforms in `Universe/Transforms/`
+3. Define domain overlays in `Universe/Overlays/`
+4. Define domain bindings in `Universe/Bindings/`
+5. Create justfile inheriting from TUI
+
+The framework (Storage, Metrics, Logs, Preview, Knobs, Session, Presets, Layout) is inherited automatically.
