@@ -169,9 +169,18 @@ remote-build host machine:
 # Switch to home configuration
 # ARGS: host - home configuration name (default: darwin)
 switch host="darwin":
-    @gum style --border normal --padding "0 1" "Switching to $(gum style --foreground 212 '{{host}}')"
-    @gum spin --spinner dot --title "Building..." -- home-manager switch --flake .#{{host}}
-    @gum style --foreground 82 "Switch complete"
+    #!/usr/bin/env nu
+    gum style --border normal --padding "0 1" $"Switching to (gum style --foreground 212 '{{host}}')"
+    let result = (do { home-manager switch --flake $".#{{host}}" } | complete)
+    if $result.exit_code == 0 {
+        gum style --foreground 82 "Switch complete"
+    } else {
+        let output = [$result.stdout $result.stderr] | str join "\n" | str trim
+        if ($output | is-not-empty) {
+            print (gum style --border double --border-foreground 196 --foreground 196 --padding "1 2" $output)
+        }
+        exit 1
+    }
 
 # -------------------------------------------------------------------------------
 # LABS

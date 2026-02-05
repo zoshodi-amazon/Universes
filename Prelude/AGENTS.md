@@ -12,6 +12,12 @@ This is a capability-centric, vendor-agnostic Nix configuration system. The core
 
 When you think "I need to configure tmux", reframe as "I need terminal multiplexing capability." The tool is incidental; the capability is essential.
 
+**Minimize the generating set of capabilities.**
+
+Prefer tools that span multiple capabilities over single-purpose tools. Only introduce new dependencies if existing tools cannot cover the capability. Example: ffmpeg provides audio/video playback, spectrum visualization, waveform rendering, format conversion - use it instead of adding cava, sox, and separate converters.
+
+**New dependency rule:** Add a tool IF AND ONLY IF no existing tool covers the capability.
+
 ## Core Adjunctions
 
 The pattern is built on two adjoint pairs (free-forgetful adjunctions):
@@ -105,7 +111,7 @@ MUST NEVER VIOLATE:
 5. NO manual imports (import-tree auto-imports)
 6. NO vendor names in Options (handle in Bindings)
 7. NO emojis in code or documentation
-8. Standard scripting: Nushell (default.nu)
+8. Standard scripting: Nushell ONLY (default.nu) - NO bash, NO sh, NO zsh
 9. Modules enable themselves: if created, capability is desired
 10. All shell commands go through justfile with man-page documentation
 11. Options define capability space (types), Bindings define term space (inhabitants)
@@ -113,6 +119,7 @@ MUST NEVER VIOLATE:
 13. Options/default.nix is single source of truth for all schema
 14. Scripts are interpreters of Options, not imperative commands
 15. NO hidden CLI params - all configuration explicit in Options
+16. Justfile recipes use `#!/usr/bin/env nu` shebang when multi-line
 
 ## Anti-Patterns
 
@@ -138,6 +145,22 @@ options.store.backend = enum [ "mlflow" "wandb" "local" ];
 ### Capability-Indexed Thinking (CORRECT)
 
 "I need: terminal multiplexing, shell environment, text editing..."
+
+### Broken Binding Blocks Capability (WRONG)
+
+```nix
+# NO: capability blocked because specific tool is broken
+"cava"  # broken in nixpkgs, so no spectrum visualization
+```
+
+### Swap Binding, Preserve Capability (CORRECT)
+
+```nix
+# YES: capability preserved, binding swapped
+# Capability: spectrum visualization
+# Binding options: cava, cli-visualizer, vis
+"cli-visualizer"  # cava broken, swap to alternative
+```
 
 ### Hidden CLI Params in Scripts (WRONG)
 

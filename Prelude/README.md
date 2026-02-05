@@ -15,6 +15,11 @@ Dendritic Nix configuration system.
 | Structure | Two-level adjunction (Global ⊣ Local) |
 | Language | Agnostic (Nix, Python, Rust, etc.) |
 
+**Core Principles:**
+- Index on CAPABILITY, not IMPLEMENTATION
+- Minimize the generating set: prefer tools spanning multiple capabilities
+- New dependency rule: add a tool IF AND ONLY IF no existing tool covers the capability
+
 ---
 
 ## Core Dualities
@@ -224,11 +229,12 @@ Each `Drv/<package>/default.nix` exports to `perSystem.packages.<package>`.
 8. Instances/ consumes config generically (no manual enumeration)
 9. NO manual imports (import-tree auto-imports)
 10. File naming: default.* only
-11. Standard scripting: Nushell (default.nu)
+11. Standard scripting: Nushell ONLY (default.nu) - NO bash, NO sh, NO zsh
 12. Modules enable themselves: if created, capability is desired
 13. Options/default.nix is single source of truth for all schema
 14. Scripts are interpreters of Options, not imperative commands
 15. NO hidden CLI params - all configuration explicit in Options
+16. Justfile recipes use `#!/usr/bin/env nu` shebang when multi-line
 ```
 
 ---
