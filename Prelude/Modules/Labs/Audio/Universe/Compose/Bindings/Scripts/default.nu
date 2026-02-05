@@ -1,8 +1,9 @@
 #!/usr/bin/env nu
 
 # Interpreter for Compose - reads config, sequences or layers audio
-def main [config_path: string] {
-  let cfg = (open $config_path | get audio.compose)
+# Config: { inputs: [], mode: "sequence" | "layer", output }
+def main [config_json: string] {
+  let cfg = ($config_json | from json)
   
   if ($cfg.inputs | length) < 2 {
     print "Need at least 2 inputs to compose"

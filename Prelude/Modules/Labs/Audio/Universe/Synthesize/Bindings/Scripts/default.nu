@@ -1,9 +1,10 @@
 #!/usr/bin/env nu
 
 # Interpreter for Synthesize - reads config, generates audio
-def main [config_path: string] {
-  let cfg = (open $config_path | get audio.synthesize)
-  let env = $cfg.envelope
+# Config: { waveform, frequency, duration, envelope?, output }
+def main [config_json: string] {
+  let cfg = ($config_json | from json)
+  let adsr = ($cfg.envelope? | default {attack: "0.01", release: "0.1"})
   
   print $"Generating ($cfg.waveform) at ($cfg.frequency)Hz for ($cfg.duration)s..."
   
@@ -14,8 +15,13 @@ def main [config_path: string] {
     _ => $"sine=frequency=($cfg.frequency):duration=($cfg.duration)"
   }
   
-  # Apply envelope (fade in/out approximation)
-  let filter = $"($source),afade=t=in:st=0:d=($env.attack),afade=t=out:st=(($cfg.duration | into float) - ($env.release | into float)):d=($env.release)"
+  let attack = ($adsr.attack? | default "0.01")
+  let release = ($adsr.release? | default "0.1")
+  let dur_float = ($cfg.duration | into float)
+  let release_float = ($release | into float)
+  let fade_start = ($dur_float - $release_float)
+  
+  let filter = $"($source),afade=t=in:st=0:d=($attack),afade=t=out:st=($fade_start):d=($release)"
   
   ffmpeg -y -f lavfi -i $filter $cfg.output
   print $"Created: ($cfg.output)"

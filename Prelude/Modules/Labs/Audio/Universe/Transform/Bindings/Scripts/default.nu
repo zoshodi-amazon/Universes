@@ -1,8 +1,9 @@
 #!/usr/bin/env nu
 
 # Interpreter for Transform - reads config, builds ffmpeg filter chain
-def main [config_path: string] {
-  let cfg = (open $config_path | get audio.transform)
+# Config: { input, output, transforms: [{type, params}] }
+def main [config_json: string] {
+  let cfg = ($config_json | from json)
   
   if ($cfg.transforms | is-empty) {
     print "No transforms specified"

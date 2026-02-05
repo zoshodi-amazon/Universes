@@ -40,20 +40,24 @@ default:
 
 # List all modules by category (Computation, Information, Labs, Physical)
 modules:
+    @gum style --border normal --padding "0 1" "Modules"
     @nu {{scripts}}/Discover/Bindings/Scripts/default.nu
 
 # List Universe features in a module
 # ARGS: module - path to module (e.g., Modules/Computation/Terminal/Shell)
 features module:
-    @echo '{"mode": "features", "module": "{{module}}"}' | nu {{scripts}}/Introspect/Bindings/Scripts/default.nu /dev/stdin
+    @gum style --border normal --padding "0 1" "Features in $(gum style --foreground 212 '{{module}}')"
+    @nu {{scripts}}/Introspect/Bindings/Scripts/default.nu '{"mode": "features", "module": "{{module}}"}'
 
 # Show Options type space for all features in a module
 # ARGS: module - path to module (e.g., Modules/Computation/Terminal/Shell)
 options module:
-    @echo '{"mode": "options", "module": "{{module}}"}' | nu {{scripts}}/Introspect/Bindings/Scripts/default.nu /dev/stdin
+    @gum style --border normal --padding "0 1" "Options in $(gum style --foreground 212 '{{module}}')"
+    @nu {{scripts}}/Introspect/Bindings/Scripts/default.nu '{"mode": "options", "module": "{{module}}"}'
 
 # Show machine options schema (capability space for machine definitions)
 schema:
+    @gum style --border normal --padding "0 1" "Machine Schema"
     @echo "machines.<name> = {"
     @echo "  identity.hostname    : str           # What is this machine called?"
     @echo "  target.arch          : enum          # x86_64 | aarch64"
@@ -66,6 +70,7 @@ schema:
 
 # List all defined machines (queries flake.nixosConfigurations)
 list:
+    @gum style --border normal --padding "0 1" "Machines"
     @nix eval .#nixosConfigurations --apply 'x: builtins.attrNames x' 2>/dev/null || echo "(eval error - run on Linux)"
 
 # -------------------------------------------------------------------------------
@@ -75,12 +80,16 @@ list:
 # Scaffold a new module from frozen template (Docs/TEMPLATE.md)
 # ARGS: path - module path (e.g., Modules/Computation/Foo)
 new-module path:
-    @echo '{"mode": "module", "path": "{{path}}"}' | nu {{scripts}}/Scaffold/Bindings/Scripts/default.nu /dev/stdin
+    @gum style --border normal --padding "0 1" "Creating module $(gum style --foreground 212 '{{path}}')"
+    @nu {{scripts}}/Scaffold/Bindings/Scripts/default.nu '{"mode": "module", "path": "{{path}}"}'
+    @gum style --foreground 82 "Module created"
 
 # Add a feature to a module (creates Universe/<name> with Options/Bindings)
 # ARGS: module - path to module, name - feature name (e.g., Core, Config)
 new-feature module name:
-    @echo '{"mode": "feature", "path": "{{module}}", "name": "{{name}}"}' | nu {{scripts}}/Scaffold/Bindings/Scripts/default.nu /dev/stdin
+    @gum style --border normal --padding "0 1" "Creating feature $(gum style --foreground 212 '{{name}}') in $(gum style --foreground 212 '{{module}}')"
+    @nu {{scripts}}/Scaffold/Bindings/Scripts/default.nu '{"mode": "feature", "path": "{{module}}", "name": "{{name}}"}'
+    @gum style --foreground 82 "Feature created"
 
 # -------------------------------------------------------------------------------
 # BUILD
@@ -90,16 +99,21 @@ new-feature module name:
 # ARGS: machine - name of machine (e.g., sovereignty)
 # NOTE: Must run on Linux to build NixOS images
 build machine:
-    nix build .#{{machine}}-iso --print-out-paths
+    @gum style --border normal --padding "0 1" "Building $(gum style --foreground 212 '{{machine}}')"
+    @gum spin --spinner dot --title "Building ISO..." -- nix build .#{{machine}}-iso --print-out-paths
+    @gum style --foreground 82 "Build complete"
 
 # Run machine in QEMU VM for testing before flashing
 # ARGS: machine - name of machine (e.g., sovereignty)
 vm machine:
-    nix run .#{{machine}}-vm
+    @gum style --foreground 212 "Starting VM: {{machine}}"
+    @nix run .#{{machine}}-vm
 
 # Validate all modules (runs nix flake check)
 check:
-    nix flake check
+    @gum style --border normal --padding "0 1" "Checking flake"
+    @gum spin --spinner dot --title "Validating..." -- nix flake check
+    @gum style --foreground 82 "Check passed"
 
 # -------------------------------------------------------------------------------
 # DEPLOY
@@ -109,22 +123,26 @@ check:
 # ARGS: machine - name of machine, disk - target disk (e.g., /dev/disk4)
 # WARNING: Erases all data on target disk
 flash machine disk:
-    @echo '{"mode": "flash", "machine": "{{machine}}", "disk": "{{disk}}"}' | nu {{scripts}}/Deploy/Bindings/Scripts/default.nu /dev/stdin
+    @gum style --border normal --foreground 196 --padding "0 1" "WARNING: This will erase {{disk}}"
+    @gum confirm "Flash {{machine}} to {{disk}}?" && nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "flash", "machine": "{{machine}}", "disk": "{{disk}}"}'
 
 # Unmount all volumes on a disk (required before flashing)
 # ARGS: disk - target disk (e.g., /dev/disk4)
 unmount disk:
+    @gum style --foreground 212 "Unmounting {{disk}}"
     @diskutil unmountDisk {{disk}} 2>/dev/null || echo "Already unmounted"
 
 # Format SD card for persistence (ext4 with label NIXOS_PERSIST)
 # ARGS: disk - target disk (e.g., /dev/sdb)
 # WARNING: Erases all data on target disk
 format-persist disk:
-    @echo '{"mode": "format-persist", "disk": "{{disk}}"}' | nu {{scripts}}/Deploy/Bindings/Scripts/default.nu /dev/stdin
+    @gum style --border normal --foreground 196 --padding "0 1" "WARNING: This will erase {{disk}}"
+    @gum confirm "Format {{disk}} for persistence?" && nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "format-persist", "disk": "{{disk}}"}'
 
 # SSH into a deployed machine
 # ARGS: machine - hostname, user - SSH user (optional)
 ssh machine user="":
+    @gum style --foreground 212 "Connecting to {{machine}}"
     @if [ -z "{{user}}" ]; then ssh {{machine}}; else ssh {{user}}@{{machine}}; fi
 
 # -------------------------------------------------------------------------------
@@ -134,9 +152,23 @@ ssh machine user="":
 # Sync repo to remote host (for building on Linux from macOS)
 # ARGS: host - SSH host (e.g., cloud-dev)
 sync-to host:
-    rsync -avz --delete ~/repos/Universes/ {{host}}:~/repos/Universes/
+    @gum style --border normal --padding "0 1" "Syncing to $(gum style --foreground 212 '{{host}}')"
+    @gum spin --spinner dot --title "Syncing..." -- rsync -avz --delete ~/repos/Universes/ {{host}}:~/repos/Universes/
+    @gum style --foreground 82 "Sync complete"
 
 # Build on remote host and copy ISO back to ~/Downloads/<machine>.iso
 # ARGS: host - SSH host, machine - name of machine
 remote-build host machine:
-    @echo '{"mode": "remote-build", "host": "{{host}}", "machine": "{{machine}}"}' | nu {{scripts}}/Deploy/Bindings/Scripts/default.nu /dev/stdin
+    @gum style --border normal --padding "0 1" "Remote build $(gum style --foreground 212 '{{machine}}') on $(gum style --foreground 212 '{{host}}')"
+    @nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "remote-build", "host": "{{host}}", "machine": "{{machine}}"}'
+
+# -------------------------------------------------------------------------------
+# HOME
+# -------------------------------------------------------------------------------
+
+# Switch to home configuration
+# ARGS: host - home configuration name (default: darwin)
+switch host="darwin":
+    @gum style --border normal --padding "0 1" "Switching to $(gum style --foreground 212 '{{host}}')"
+    @gum spin --spinner dot --title "Building..." -- home-manager switch --flake .#{{host}}
+    @gum style --foreground 82 "Switch complete"

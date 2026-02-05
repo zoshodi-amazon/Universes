@@ -1,8 +1,9 @@
 #!/usr/bin/env nu
 
 # Interpreter for Acquire - reads config, fetches/generates audio
-def main [config_path: string] {
-  let cfg = (open $config_path | get audio.acquire)
+# Config: { source, url?, input?, generate?, output }
+def main [config_json: string] {
+  let cfg = ($config_json | from json)
   
   match $cfg.source {
     "url" => {

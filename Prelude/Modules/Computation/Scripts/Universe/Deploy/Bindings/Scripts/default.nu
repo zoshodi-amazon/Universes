@@ -1,11 +1,11 @@
 #!/usr/bin/env nu
 
 # Deploy interpreter - flash, format-persist, or remote-build
-# Usage: default.nu <config_path>
+# Usage: default.nu <json_config>
 # Config: { mode: "flash" | "format-persist" | "remote-build", ... }
 
-def main [config_path: string] {
-  let cfg = (open $config_path)
+def main [config_json: string] {
+  let cfg = ($config_json | from json)
   
   match $cfg.mode {
     "flash" => {

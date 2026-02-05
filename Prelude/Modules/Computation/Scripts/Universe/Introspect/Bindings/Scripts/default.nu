@@ -1,11 +1,11 @@
 #!/usr/bin/env nu
 
 # Introspect module structure - features or options
-# Usage: default.nu <config_path>
+# Usage: default.nu <json_config>
 # Config: { mode: "features" | "options", module: "<path>" }
 
-def main [config_path: string] {
-  let cfg = (open $config_path)
+def main [config_json: string] {
+  let cfg = ($config_json | from json)
   let module_dir = $cfg.module
   let universe_path = $"($module_dir)/Universe"
   

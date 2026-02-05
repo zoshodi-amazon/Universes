@@ -38,61 +38,101 @@ default:
 # ACQUIRE
 # -------------------------------------------------------------------------------
 
-# Fetch/generate audio from config
-# CONFIG: audio.acquire.{source, url, input, generate, output}
-# SCHEMA: See Universe/Acquire/Options/default.nix
-acquire config:
-    @nu {{scripts}}/Acquire/Bindings/Scripts/default.nu {{config}}
+# Generate a tone
+# ARGS: freq - frequency in Hz, duration - seconds, output - file path
+generate freq="440" duration="1" output="tone.wav":
+    @gum style --border normal --padding "0 1" "Generating $(gum style --foreground 212 '{{freq}}Hz') tone for $(gum style --foreground 212 '{{duration}}s')..."
+    @nu {{scripts}}/Acquire/Bindings/Scripts/default.nu '{"source": "generate", "generate": {"waveform": "sine", "frequency": {{freq}}, "duration": "{{duration}}"}, "output": "{{output}}"}'
+    @gum style --foreground 82 "Created: {{output}}"
+
+# Fetch audio from URL
+# ARGS: url - source URL, output - file path
+fetch url output="downloaded.wav":
+    @gum spin --spinner dot --title "Fetching audio..." -- nu {{scripts}}/Acquire/Bindings/Scripts/default.nu '{"source": "url", "url": "{{url}}", "output": "{{output}}"}'
+    @gum style --foreground 82 "Created: {{output}}"
 
 # -------------------------------------------------------------------------------
 # ANALYZE
 # -------------------------------------------------------------------------------
 
-# Run analysis from config
-# CONFIG: audio.analyze.{input, spectrum, waveform, loudness, outputDir}
-# SCHEMA: See Universe/Analyze/Options/default.nix
-analyze config:
-    @nu {{scripts}}/Analyze/Bindings/Scripts/default.nu {{config}}
+# Analyze audio (spectrum + waveform + loudness)
+# ARGS: input - audio file, outdir - output directory
+analyze input outdir="./analysis":
+    @gum style --border normal --padding "0 1" "Analyzing $(gum style --foreground 212 '{{input}}')..."
+    @gum spin --spinner dot --title "Generating spectrum..." -- nu {{scripts}}/Analyze/Bindings/Scripts/default.nu '{"input": "{{input}}", "spectrum": true, "waveform": true, "loudness": true, "outputDir": "{{outdir}}"}'
+    @gum style --foreground 82 "Analysis complete: {{outdir}}/"
 
 # -------------------------------------------------------------------------------
 # TRANSFORM
 # -------------------------------------------------------------------------------
 
-# Apply transforms from config
-# CONFIG: audio.transform.{input, output, transforms[]}
-# SCHEMA: See Universe/Transform/Options/default.nix
-transform config:
-    @nu {{scripts}}/Transform/Bindings/Scripts/default.nu {{config}}
+# Pitch shift audio
+# ARGS: input - audio file, semitones - shift amount, output - file path
+pitch input semitones output:
+    @gum style --border normal --padding "0 1" "Pitch shifting $(gum style --foreground 212 '{{input}}') by $(gum style --foreground 212 '{{semitones}}') semitones..."
+    @nu {{scripts}}/Transform/Bindings/Scripts/default.nu '{"input": "{{input}}", "output": "{{output}}", "transforms": [{"type": "pitch", "params": {"semitones": {{semitones}}}}]}'
+    @gum style --foreground 82 "Created: {{output}}"
+
+# Time stretch audio
+# ARGS: input - audio file, factor - stretch factor, output - file path
+stretch input factor output:
+    @gum style --border normal --padding "0 1" "Stretching $(gum style --foreground 212 '{{input}}') by $(gum style --foreground 212 '{{factor}}x')..."
+    @nu {{scripts}}/Transform/Bindings/Scripts/default.nu '{"input": "{{input}}", "output": "{{output}}", "transforms": [{"type": "stretch", "params": {"factor": {{factor}}}}]}'
+    @gum style --foreground 82 "Created: {{output}}"
+
+# Apply highpass filter
+# ARGS: input - audio file, freq - cutoff Hz, output - file path
+highpass input freq output:
+    @gum style --border normal --padding "0 1" "Applying highpass $(gum style --foreground 212 '{{freq}}Hz') to $(gum style --foreground 212 '{{input}}')..."
+    @nu {{scripts}}/Transform/Bindings/Scripts/default.nu '{"input": "{{input}}", "output": "{{output}}", "transforms": [{"type": "filter", "params": {"kind": "highpass", "freq": {{freq}}}}]}'
+    @gum style --foreground 82 "Created: {{output}}"
 
 # -------------------------------------------------------------------------------
 # SYNTHESIZE
 # -------------------------------------------------------------------------------
 
-# Generate audio from config
-# CONFIG: audio.synthesize.{waveform, frequency, duration, envelope, output}
-# SCHEMA: See Universe/Synthesize/Options/default.nix
-synthesize config:
-    @nu {{scripts}}/Synthesize/Bindings/Scripts/default.nu {{config}}
+# Generate sine tone
+# ARGS: freq - frequency Hz, duration - seconds, output - file path
+tone freq="440" duration="1" output="tone.wav":
+    @gum style --border normal --padding "0 1" "Synthesizing $(gum style --foreground 212 '{{freq}}Hz') sine for $(gum style --foreground 212 '{{duration}}s')..."
+    @nu {{scripts}}/Synthesize/Bindings/Scripts/default.nu '{"waveform": "sine", "frequency": {{freq}}, "duration": "{{duration}}", "output": "{{output}}"}'
+    @gum style --foreground 82 "Created: {{output}}"
+
+# Generate noise
+# ARGS: duration - seconds, output - file path
+noise duration="1" output="noise.wav":
+    @gum style --border normal --padding "0 1" "Generating noise for $(gum style --foreground 212 '{{duration}}s')..."
+    @nu {{scripts}}/Synthesize/Bindings/Scripts/default.nu '{"waveform": "noise", "frequency": 0, "duration": "{{duration}}", "output": "{{output}}"}'
+    @gum style --foreground 82 "Created: {{output}}"
 
 # -------------------------------------------------------------------------------
 # COMPOSE
 # -------------------------------------------------------------------------------
 
-# Compose audio from config
-# CONFIG: audio.compose.{inputs[], mode, output}
-# SCHEMA: See Universe/Compose/Options/default.nix
-compose config:
-    @nu {{scripts}}/Compose/Bindings/Scripts/default.nu {{config}}
+# Sequence audio files
+# ARGS: output - output file, inputs - space-separated input files
+sequence output +inputs:
+    @gum style --border normal --padding "0 1" "Sequencing files..."
+    @nu {{scripts}}/Compose/Bindings/Scripts/default.nu '{"mode": "sequence", "inputs": {{inputs}}, "output": "{{output}}"}'
+    @gum style --foreground 82 "Created: {{output}}"
+
+# Layer audio files
+# ARGS: output - output file, inputs - space-separated input files  
+layer output +inputs:
+    @gum style --border normal --padding "0 1" "Layering files..."
+    @nu {{scripts}}/Compose/Bindings/Scripts/default.nu '{"mode": "layer", "inputs": {{inputs}}, "output": "{{output}}"}'
+    @gum style --foreground 82 "Created: {{output}}"
 
 # -------------------------------------------------------------------------------
 # EXPORT
 # -------------------------------------------------------------------------------
 
-# Render audio from config
-# CONFIG: audio.export.{input, output, format, bitrate, sampleRate}
-# SCHEMA: See Universe/Export/Options/default.nix
-export config:
-    @nu {{scripts}}/Export/Bindings/Scripts/default.nu {{config}}
+# Render to format
+# ARGS: input - audio file, output - output file, format - mp3/wav/flac, bitrate - e.g. 320k
+render input output format="mp3" bitrate="320k":
+    @gum style --border normal --padding "0 1" "Rendering to $(gum style --foreground 212 '{{format}}') at $(gum style --foreground 212 '{{bitrate}}')..."
+    @nu {{scripts}}/Export/Bindings/Scripts/default.nu '{"input": "{{input}}", "output": "{{output}}", "format": "{{format}}", "bitrate": "{{bitrate}}"}'
+    @gum style --foreground 82 "Created: {{output}}"
 
 # -------------------------------------------------------------------------------
 # PREVIEW
@@ -101,14 +141,17 @@ export config:
 # Visualize waveform in terminal (ASCII)
 # ARGS: input - audio file to visualize
 viz input:
+    @gum style --border normal --padding "0 1" "Visualizing $(gum style --foreground 212 '{{input}}')..."
     @ffmpeg -i {{input}} -f caca -
 
 # Play audio through speakers
 # ARGS: input - audio file to play
 play input:
+    @gum style --foreground 212 "Playing {{input}}..."
     @ffplay -nodisp -autoexit {{input}}
 
 # Show spectrum in terminal
 # ARGS: input - audio file to analyze
 spectrum input:
+    @gum style --foreground 212 "Spectrum: {{input}}"
     @ffplay -f lavfi "amovie={{input}},showspectrum=s=640x480"

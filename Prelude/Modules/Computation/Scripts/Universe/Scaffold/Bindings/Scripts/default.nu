@@ -1,11 +1,11 @@
 #!/usr/bin/env nu
 
 # Scaffold module or feature from frozen template
-# Usage: default.nu <config_path>
+# Usage: default.nu <json_config>
 # Config: { mode: "module" | "feature", path: "<path>", name?: "<feature_name>" }
 
-def main [config_path: string] {
-  let cfg = (open $config_path)
+def main [config_json: string] {
+  let cfg = ($config_json | from json)
   
   match $cfg.mode {
     "module" => {

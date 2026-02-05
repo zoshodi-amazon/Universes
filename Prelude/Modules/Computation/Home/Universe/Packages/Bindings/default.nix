@@ -4,6 +4,7 @@
   config.home.corePackages = [
     # Core CLI
     "just"
+    "gum"
     "ripgrep"
     "fd"
     "jq"
