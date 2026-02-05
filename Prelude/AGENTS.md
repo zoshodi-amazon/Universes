@@ -122,6 +122,33 @@ MUST NEVER VIOLATE:
 14. Scripts are interpreters of Options, not imperative commands
 15. NO hidden CLI params - all configuration explicit in Options
 16. Justfile recipes use `#!/usr/bin/env nu` shebang when multi-line
+17. All nushell scripts strongly typed - explicit annotations, no implicit conversions
+
+## Capability Discovery & Freezing
+
+Tool selection is a statistical best-fit problem:
+
+### Discovery Process
+1. **Define** - Enumerate required capabilities with weights
+2. **Search** - Find candidates (nixpkgs, flakes, codegraph)
+3. **Score** - Evaluate capability coverage per candidate
+4. **Select** - Choose minimal set (no over/underfit)
+5. **Freeze** - Document in Options, never revisit without cause
+
+### Fit Score
+```
+score(tool) = sum(weight_i * has_capability_i) / sum(weight_i)
+```
+Select tool with highest score that satisfies all `required = true`.
+
+## Storage as Capability
+
+| Scope | Capabilities | Binding |
+|-------|--------------|---------|
+| Local (module) | speed, interop, query | SQLite (nushell native) |
+| Global (system) | persistence, sharing, versioning | Self-hosted (Servers/Storage) |
+
+Modules configure `db_path` for local SQLite. Swap to remote by setting `backend = "s3"` or `"postgres"` with `remote.url`.
 
 ## Anti-Patterns
 

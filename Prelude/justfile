@@ -190,4 +190,4 @@ switch host="darwin":
 # ARGS: domain - lab domain (audio, video, 3d, data)
 lab domain="audio":
     @gum style --border normal --padding "0 1" "Launching $(gum style --foreground 212 '{{domain}}') Lab"
-    @cd Modules/Labs/Core && nu Universe/TUI/Bindings/Scripts/default.nu '{"domain": "{{domain}}", "justfile": "../Audio/justfile"}'
+    @cd Modules/Labs/TUI && nu Universe/TUI/Bindings/Scripts/default.nu '{"domain": "{{domain}}", "justfile": "../Audio/justfile"}'

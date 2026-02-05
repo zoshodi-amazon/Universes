@@ -31,8 +31,8 @@ default:
 # -------------------------------------------------------------------------------
 
 # Initialize asset library
-# ARGS: path - library path (default: .lab/library.json)
-init-library path=".lab/library.json":
+# ARGS: path - library path (default: .lab/library.db)
+init-library path=".lab/library.db":
     @gum style --border normal --padding "0 1" "Initializing library..."
     @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "init", "db_path": "{{path}}"}'
 

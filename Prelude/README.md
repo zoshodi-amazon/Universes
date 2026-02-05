@@ -236,6 +236,7 @@ Each `Drv/<package>/default.nix` exports to `perSystem.packages.<package>`.
 14. Scripts are interpreters of Options, not imperative commands
 15. NO hidden CLI params - all configuration explicit in Options
 16. Justfile recipes use `#!/usr/bin/env nu` shebang when multi-line
+17. All nushell scripts strongly typed - explicit annotations, no implicit conversions
 ```
 
 ---
