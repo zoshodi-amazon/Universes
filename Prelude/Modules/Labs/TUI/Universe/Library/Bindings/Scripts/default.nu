@@ -60,6 +60,8 @@ def add_asset [db_path: string, cfg: record]: nothing -> nothing {
     id: $hist_id, asset_id: $id, action: "create", state: $state, timestamp: $now
   }
   
+  # Remove old file before export
+  if ($db_path | path exists) { rm $db_path }
   stor export --file-name $db_path
   print $"Added asset: ($name) [($id)]"
 }
