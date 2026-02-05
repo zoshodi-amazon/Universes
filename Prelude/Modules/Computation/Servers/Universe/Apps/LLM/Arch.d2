@@ -1,0 +1,74 @@
+# LLM Architecture
+
+direction: right
+
+llm: LLM {
+  style.fill: "#ffe0b2"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    models: models
+    gpu: gpu
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    ollama: ollama/ollama
+    localai: localai/localai
+  }
+  
+  options -> bindings: interprets
+}
+
+# Hardware
+hardware: {
+  gpu: GPU {
+    shape: rectangle
+    style.fill: "#ffcdd2"
+  }
+  cpu: CPU {
+    shape: rectangle
+  }
+}
+
+hardware.gpu -> llm: CUDA/ROCm
+hardware.cpu -> llm: fallback
+
+# Infra dependencies
+infra: {
+  gateway: Gateway {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+}
+
+infra.gateway -> llm: llm.domain/api
+
+# Data dependencies
+data: {
+  objectstore: ObjectStore {
+    shape: cylinder
+    style.fill: "#c8e6c9"
+  }
+}
+
+llm -> data.objectstore: model cache
+
+# Clients
+clients: {
+  api: API Clients {
+    shape: rectangle
+  }
+  chat: Chat UI {
+    shape: rectangle
+  }
+  editor: Editor Plugins {
+    shape: rectangle
+  }
+}
+
+clients.api -> llm: /v1/chat
+clients.chat -> llm: web UI
+clients.editor -> llm: completions

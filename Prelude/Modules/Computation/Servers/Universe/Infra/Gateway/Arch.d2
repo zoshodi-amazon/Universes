@@ -1,0 +1,76 @@
+# Gateway Architecture
+
+direction: right
+
+gateway: Gateway {
+  style.fill: "#bbdefb"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    domain: domain
+    acme: acme
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    traefik: traefik:v3
+    caddy: caddy:2
+  }
+  
+  options -> bindings: interprets
+}
+
+# External
+external: {
+  internet: Internet {
+    shape: cloud
+  }
+  dns: DNS {
+    shape: rectangle
+  }
+}
+
+external.internet -> gateway: HTTPS :443
+external.dns -> gateway: resolve
+
+# Auto-discovered routes
+routes: {
+  style.fill: "#f5f5f5"
+  
+  data: {
+    s3: s3.domain
+    sync: sync.domain
+    registry: registry.domain
+  }
+  
+  apps: {
+    git: git.domain
+    media: media.domain
+    llm: llm.domain
+    chat: chat.domain
+  }
+  
+  infra: {
+    auth: auth.domain
+    metrics: metrics.domain
+  }
+}
+
+gateway -> routes.data: proxy
+gateway -> routes.apps: proxy
+gateway -> routes.infra: proxy
+
+# Middleware
+middleware: {
+  identity: Identity (auth) {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+  ratelimit: Rate Limit {
+    shape: rectangle
+  }
+}
+
+gateway -> middleware.identity: forward auth

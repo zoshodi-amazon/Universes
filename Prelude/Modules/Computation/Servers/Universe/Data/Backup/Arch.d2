@@ -1,0 +1,62 @@
+# Backup Architecture
+
+direction: right
+
+backup: Backup {
+  style.fill: "#c8e6c9"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    schedule: schedule
+    retention: retention
+    targets: targets
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    borgbackup: borgbackup
+    restic: restic
+  }
+  
+  options -> bindings: interprets
+}
+
+# Sources (auto-discovered)
+sources: {
+  objectstore: ObjectStore {
+    shape: rectangle
+    style.fill: "#c8e6c9"
+  }
+  relational: Relational {
+    shape: rectangle
+    style.fill: "#c8e6c9"
+  }
+  documents: Documents {
+    shape: rectangle
+    style.fill: "#c8e6c9"
+  }
+  apps: Apps Data {
+    shape: rectangle
+    style.fill: "#ffe0b2"
+  }
+}
+
+sources.objectstore -> backup: snapshot
+sources.relational -> backup: pg_dump
+sources.documents -> backup: sync
+sources.apps -> backup: data dirs
+
+# Targets
+targets: {
+  s3: S3 Bucket {
+    shape: cylinder
+  }
+  remote: Remote Server {
+    shape: cylinder
+  }
+}
+
+backup -> targets.s3: encrypted
+backup -> targets.remote: ssh

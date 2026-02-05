@@ -1,0 +1,54 @@
+# DNS Architecture
+
+direction: right
+
+dns: DNS {
+  style.fill: "#bbdefb"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    domain: domain
+    upstream: upstream
+    adblock: adblock
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    coredns: coredns/coredns
+    pihole: pihole/pihole
+  }
+  
+  options -> bindings: interprets
+}
+
+# Resolution flow
+flow: {
+  clients: Clients {
+    shape: rectangle
+  }
+  local: Local Zone {
+    shape: cylinder
+  }
+  upstream: Upstream {
+    shape: cloud
+  }
+}
+
+flow.clients -> dns: query
+dns -> flow.local: home.local
+dns -> flow.upstream: external
+
+# Auto-discovered records
+records: {
+  style.fill: "#f5f5f5"
+  
+  services: {
+    git: git.home.local
+    media: media.home.local
+    s3: s3.home.local
+  }
+}
+
+dns -> records.services: auto-register

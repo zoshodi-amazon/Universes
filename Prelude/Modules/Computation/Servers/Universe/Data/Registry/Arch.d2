@@ -1,0 +1,50 @@
+# Registry Architecture
+
+direction: right
+
+registry: Registry {
+  style.fill: "#c8e6c9"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    port: port
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    harbor: goharbor/harbor
+    distribution: registry:2
+  }
+  
+  options -> bindings: interprets
+}
+
+# Consumers
+consumers: {
+  machines: Machines {
+    shape: rectangle
+  }
+  ci: CI/CD {
+    shape: rectangle
+  }
+}
+
+consumers.machines -> registry: pull images
+consumers.ci -> registry: push images
+
+# Auto-wiring
+autowire: {
+  gateway: Gateway Route {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+  identity: Identity SSO {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+}
+
+registry -> autowire.gateway: registry.domain
+registry -> autowire.identity: push/pull auth

@@ -1,0 +1,55 @@
+# Relational Architecture
+
+direction: right
+
+relational: Relational {
+  style.fill: "#c8e6c9"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    port: port
+    databases: databases
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    postgres: postgres:16-alpine
+    mariadb: mariadb:11
+  }
+  
+  options -> bindings: interprets
+}
+
+# Consumers
+consumers: {
+  apps.git: Git {
+    shape: rectangle
+  }
+  infra.identity: Identity {
+    shape: rectangle
+  }
+  infra.metrics: Metrics {
+    shape: rectangle
+  }
+}
+
+consumers.apps.git -> relational: metadata
+consumers.infra.identity -> relational: users
+consumers.infra.metrics -> relational: tsdb
+
+# Auto-wiring
+autowire: {
+  backup: Backup (pg_dump) {
+    shape: rectangle
+    style.fill: "#c8e6c9"
+  }
+  metrics: Metrics Exporter {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+}
+
+relational -> autowire.backup: scheduled
+relational -> autowire.metrics: :9187

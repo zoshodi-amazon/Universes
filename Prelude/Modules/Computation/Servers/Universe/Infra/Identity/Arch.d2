@@ -1,0 +1,68 @@
+# Identity Architecture
+
+direction: right
+
+identity: Identity {
+  style.fill: "#bbdefb"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    users: users
+    groups: groups
+    oidc: oidc
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    authelia: authelia/authelia
+    lldap: lldap/lldap
+  }
+  
+  options -> bindings: interprets
+}
+
+# Components
+components: {
+  auth: Authelia {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+  ldap: LLDAP {
+    shape: cylinder
+    style.fill: "#c8e6c9"
+  }
+}
+
+identity -> components.auth: OIDC provider
+identity -> components.ldap: user directory
+components.auth -> components.ldap: lookup
+
+# Consumers
+consumers: {
+  gateway: Gateway {
+    shape: rectangle
+  }
+  apps: Apps {
+    shape: rectangle
+  }
+}
+
+consumers.gateway -> identity: forward auth
+consumers.apps -> identity: OIDC login
+
+# Auto-wiring
+autowire: {
+  secrets: Secrets {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+  relational: Relational {
+    shape: rectangle
+    style.fill: "#c8e6c9"
+  }
+}
+
+identity -> autowire.secrets: credentials
+identity -> autowire.relational: user data

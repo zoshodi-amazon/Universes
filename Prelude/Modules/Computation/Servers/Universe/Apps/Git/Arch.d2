@@ -1,0 +1,73 @@
+# Git Architecture
+
+direction: right
+
+git: Git {
+  style.fill: "#ffe0b2"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    sso: sso
+    actions: actions
+    packages: packages
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    gitea: gitea/gitea
+    forgejo: forgejo/forgejo
+  }
+  
+  options -> bindings: interprets
+}
+
+# Components
+components: {
+  server: Gitea Server {
+    shape: rectangle
+    style.fill: "#ffe0b2"
+  }
+  runner: Actions Runner {
+    shape: rectangle
+  }
+}
+
+git -> components.server: main
+git -> components.runner: CI/CD
+
+# Infra dependencies
+infra: {
+  gateway: Gateway {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+  identity: Identity {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+}
+
+infra.gateway -> git: git.domain
+infra.identity -> git: OIDC
+
+# Data dependencies
+data: {
+  relational: Relational {
+    shape: cylinder
+    style.fill: "#c8e6c9"
+  }
+  objectstore: ObjectStore {
+    shape: cylinder
+    style.fill: "#c8e6c9"
+  }
+  backup: Backup {
+    shape: rectangle
+    style.fill: "#c8e6c9"
+  }
+}
+
+git -> data.relational: metadata
+git -> data.objectstore: LFS/artifacts
+data.backup -> git: repos

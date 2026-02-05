@@ -1,0 +1,82 @@
+# Metrics Architecture
+
+direction: right
+
+metrics: Metrics {
+  style.fill: "#bbdefb"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    retention: retention
+    alertRules: alertRules
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    prometheus: prom/prometheus
+    grafana: grafana/grafana
+    loki: grafana/loki
+  }
+  
+  options -> bindings: interprets
+}
+
+# Components
+components: {
+  prometheus: Prometheus {
+    shape: cylinder
+    style.fill: "#bbdefb"
+  }
+  grafana: Grafana {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+  loki: Loki {
+    shape: cylinder
+    style.fill: "#bbdefb"
+  }
+  alertmanager: Alertmanager {
+    shape: rectangle
+  }
+}
+
+metrics -> components.prometheus: metrics
+metrics -> components.grafana: dashboards
+metrics -> components.loki: logs
+components.prometheus -> components.alertmanager: alerts
+
+# Auto-discovered scrape targets
+targets: {
+  style.fill: "#f5f5f5"
+  
+  data: {
+    objectstore: :9000/metrics
+    relational: :9187
+  }
+  
+  infra: {
+    gateway: :8080/metrics
+    identity: :9959/metrics
+  }
+  
+  apps: {
+    git: :3000/metrics
+  }
+}
+
+components.prometheus -> targets: scrape
+
+# Consumers
+consumers: {
+  gateway: Gateway {
+    shape: rectangle
+  }
+  identity: Identity {
+    shape: rectangle
+  }
+}
+
+consumers.gateway -> components.grafana: route
+consumers.identity -> components.grafana: SSO

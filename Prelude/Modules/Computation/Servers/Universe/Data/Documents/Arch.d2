@@ -1,0 +1,50 @@
+# Documents Architecture
+
+direction: right
+
+documents: Documents {
+  style.fill: "#c8e6c9"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    folders: folders
+    devices: devices
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    syncthing: syncthing/syncthing
+  }
+  
+  options -> bindings: interprets
+}
+
+# Consumers
+consumers: {
+  machines: Machines {
+    shape: rectangle
+  }
+  apps: Apps {
+    shape: rectangle
+  }
+}
+
+consumers.machines -> documents: sync folders
+consumers.apps -> documents: shared config
+
+# Auto-wiring
+autowire: {
+  gateway: Gateway Route {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+  backup: Backup Source {
+    shape: rectangle
+    style.fill: "#c8e6c9"
+  }
+}
+
+documents -> autowire.gateway: sync.domain
+documents -> autowire.backup: versioned

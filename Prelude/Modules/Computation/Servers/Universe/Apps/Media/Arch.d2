@@ -1,0 +1,70 @@
+# Media Architecture
+
+direction: right
+
+media: Media {
+  style.fill: "#ffe0b2"
+  
+  options: Options {
+    shape: document
+    enable: enable
+    backend: backend
+    libraries: libraries
+    transcoding: transcoding
+  }
+  
+  bindings: Bindings {
+    shape: hexagon
+    jellyfin: jellyfin/jellyfin
+    navidrome: deluan/navidrome
+  }
+  
+  options -> bindings: interprets
+}
+
+# Infra dependencies
+infra: {
+  gateway: Gateway {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+  identity: Identity {
+    shape: rectangle
+    style.fill: "#bbdefb"
+  }
+}
+
+infra.gateway -> media: media.domain
+infra.identity -> media: OIDC
+
+# Data dependencies
+data: {
+  objectstore: ObjectStore {
+    shape: cylinder
+    style.fill: "#c8e6c9"
+  }
+  backup: Backup {
+    shape: rectangle
+    style.fill: "#c8e6c9"
+  }
+}
+
+media -> data.objectstore: media files
+data.backup -> media: metadata
+
+# Clients
+clients: {
+  web: Web UI {
+    shape: rectangle
+  }
+  mobile: Mobile Apps {
+    shape: rectangle
+  }
+  tv: Smart TV {
+    shape: rectangle
+  }
+}
+
+clients.web -> media: stream
+clients.mobile -> media: stream
+clients.tv -> media: DLNA
