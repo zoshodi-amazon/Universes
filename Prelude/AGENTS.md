@@ -18,6 +18,8 @@ Prefer tools that span multiple capabilities over single-purpose tools. Only int
 
 **New dependency rule:** Add a tool IF AND ONLY IF no existing tool covers the capability.
 
+**TUI = justfile + gum.** That's it. No additional frameworks needed. gum provides interactive prompts (choose, input, filter, confirm, spin, style, table), justfile provides recipes. Together they form a complete interactive terminal interface.
+
 ## Core Adjunctions
 
 The pattern is built on two adjoint pairs (free-forgetful adjunctions):

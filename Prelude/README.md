@@ -19,6 +19,7 @@ Dendritic Nix configuration system.
 - Index on CAPABILITY, not IMPLEMENTATION
 - Minimize the generating set: prefer tools spanning multiple capabilities
 - New dependency rule: add a tool IF AND ONLY IF no existing tool covers the capability
+- TUI = justfile + gum (no additional frameworks needed)
 
 ---
 

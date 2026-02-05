@@ -30,11 +30,11 @@ default:
 # LIBRARY
 # -------------------------------------------------------------------------------
 
-# Initialize asset library database
-# ARGS: path - database path (default: .lab/library.db)
-init-library path=".lab/library.db":
+# Initialize asset library
+# ARGS: path - library path (default: .lab/library.json)
+init-library path=".lab/library.json":
     @gum style --border normal --padding "0 1" "Initializing library..."
-    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "init", "path": "{{path}}"}'
+    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "init", "db_path": "{{path}}"}'
 
 # Add asset to library
 # ARGS: name - display name, file - file path, source - url/file/generated
@@ -44,7 +44,7 @@ add-asset name file source="file":
 
 # List all assets in library
 list-assets:
-    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "list"}' | from json | table
+    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "list"}'
 
 # Show asset history
 # ARGS: id - asset ID (optional, shows all if omitted)
@@ -103,4 +103,4 @@ dials config:
 # Launch Lab TUI
 # ARGS: domain - lab domain (audio, video, 3d, data)
 tui domain="audio":
-    @lab-tui --domain {{domain}}
+    @nu {{scripts}}/TUI/Bindings/Scripts/default.nu '{"domain": "{{domain}}"}'

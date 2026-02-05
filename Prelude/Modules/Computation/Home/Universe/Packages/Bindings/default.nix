@@ -35,8 +35,5 @@
     "raylib"
     # Labs
     "entr"
-    "sqlite"
-    # Spectrum visualization: ffplay -showmode 1 (waves) or 2 (spectrum)
-    # cava broken in nixpkgs, ffplay provides capability via ffmpeg
   ];
 }
