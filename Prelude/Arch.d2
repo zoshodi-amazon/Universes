@@ -1,0 +1,94 @@
+# Prelude Architecture
+
+direction: down
+
+title: |md
+  # Dendritic Nix Architecture
+  Platform-agnostic containers, hardware-specific systems
+|
+
+# The Two Instance Types
+instances: {
+  style.fill: "#f5f5f5"
+  
+  home: homeConfigurations (PORTABLE) {
+    style.fill: "#c8e6c9"
+    style.stroke: "#2e7d32"
+    style.stroke-width: 3
+    
+    user: User Space {
+      shell: Shell/Editor/Git
+      servers: Servers (Podman) {
+        data: Data Layer
+        infra: Infra Layer
+        apps: Apps Layer
+      }
+    }
+  }
+  
+  nixos: nixosConfigurations (HARDWARE) {
+    style.fill: "#bbdefb"
+    style.stroke: "#1565c0"
+    style.stroke-width: 3
+    
+    system: System Space {
+      boot: Boot/Kernel
+      fs: Filesystems
+      network: Networking
+      persist: Persistence
+    }
+    
+    users: Users {
+      shape: rectangle
+      style.fill: "#c8e6c9"
+    }
+  }
+}
+
+instances.nixos.users -> instances.home: imports
+
+# Deployment Targets
+targets: Deployment Targets {
+  style.fill: "#fff3e0"
+  
+  darwin: aarch64-darwin {
+    shape: rectangle
+  }
+  x86: x86_64-linux {
+    shape: rectangle
+  }
+  arm: aarch64-linux {
+    shape: rectangle
+  }
+}
+
+targets.darwin -> instances.home: home-manager switch
+targets.x86 -> instances.nixos: nixos-rebuild switch
+targets.arm -> instances.nixos: nixos-rebuild switch
+
+# Module Exports
+modules: {
+  style.fill: "#fafafa"
+  
+  hm: flake.modules.homeManager.* {
+    shape: document
+    style.fill: "#c8e6c9"
+  }
+  
+  nixos_mods: flake.modules.nixos.* {
+    shape: document
+    style.fill: "#bbdefb"
+  }
+}
+
+modules.hm -> instances.home.user: defines
+modules.nixos_mods -> instances.nixos.system: defines
+
+# Servers exports to BOTH
+servers_mod: Servers Module {
+  style.fill: "#ffe0b2"
+  shape: hexagon
+}
+
+servers_mod -> modules.hm: exports
+servers_mod -> modules.nixos_mods: exports

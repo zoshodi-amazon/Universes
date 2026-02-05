@@ -2,7 +2,7 @@
 
 Dendritic Nix configuration system.
 
-**Pattern Version: v1.0.3** | **Structure: FROZEN**
+**Pattern Version: v1.0.4** | **Structure: FROZEN**
 
 ---
 
@@ -85,6 +85,58 @@ Is this a universal capability concept?
 Is it a configuration knob users would want to set?
   YES → Add to Options
   NO → Hardcode in Bindings or derive from other Options
+```
+
+---
+
+## Instance Architecture
+
+**FROZEN DECISION (v1.0.4)**: Platform-agnostic containers, hardware-specific systems.
+
+### The Two Instance Types
+
+| Instance | Scope | Contains | Platform |
+|----------|-------|----------|----------|
+| `homeConfigurations` | User-space | shell, editor, servers (podman) | ALL (Darwin, NixOS, WSL) |
+| `nixosConfigurations` | System | boot, kernel, filesystems, imports home configs | NixOS only |
+
+### Containers are Portable
+
+Servers (podman containers) run in user-space and work everywhere:
+
+```nix
+# flake.modules.homeManager.servers - works on Darwin AND NixOS
+# flake.modules.nixos.servers - also available for system-level integration
+```
+
+The same capability exports to BOTH targets. Consumer picks based on platform.
+
+### Hardware is Specific
+
+nixosConfigurations only handles what MUST be system-level:
+
+```nix
+machines.sovereignty = {
+  identity.hostname = "sovereignty";
+  target.arch = "x86_64";
+  persistence.strategy = "impermanent";
+  users = [
+    { name = "root"; }
+    { name = "zoshodi"; }
+  ];
+};
+```
+
+Each user's homeConfiguration is imported, bringing their servers with them.
+
+### Deployment
+
+```bash
+# Darwin (portable)
+home-manager switch --flake .#darwin
+
+# NixOS (hardware + users)
+nixos-rebuild switch --flake .#sovereignty
 ```
 
 ---
@@ -251,6 +303,9 @@ Categories are organizational containers. Modules are capability units with full
 19. Naming is semantic binding to capability - optimize for best fit
 20. CLI output uses gum styling, external tools run silent (-q, -loglevel error)
 21. Justfile is self-documenting: recipes match 1-1 with README capabilities
+22. Containers are portable: Servers/ exports to BOTH homeManager and nixos
+23. nixosConfigurations is for hardware/system only, imports homeConfigurations for users
+24. Deployment target = hardware; Capability = containers (platform-agnostic)
 ```
 
 ---
@@ -462,6 +517,7 @@ nix develop .#checks
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.0.4 | 2026-02-05 | Platform-agnostic containers, invariants 22-24 |
 | v1.0.3 | 2026-01-27 | README.md required, Nushell standard, file naming |
 | v1.0.2 | 2026-01-27 | Plugins in Bindings/, 7 binding types |
 | v1.0.1 | 2026-01-27 | default.nix naming |
@@ -487,4 +543,4 @@ Common pitfalls and lessons learned:
 
 ---
 
-**Pattern Version: v1.0.3** | **Structure: FROZEN** | **Expressiveness: Universe/** | **Interaction: CLI only**
+**Pattern Version: v1.0.4** | **Structure: FROZEN** | **Expressiveness: Universe/** | **Interaction: CLI only**
