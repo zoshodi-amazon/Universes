@@ -33,5 +33,9 @@
     "ffmpeg"
     # Game/Graphics
     "raylib"
+    # Labs
+    "entr"
+    "cava"
+    "sqlite"
   ];
 }

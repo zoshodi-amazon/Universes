@@ -172,3 +172,13 @@ switch host="darwin":
     @gum style --border normal --padding "0 1" "Switching to $(gum style --foreground 212 '{{host}}')"
     @gum spin --spinner dot --title "Building..." -- home-manager switch --flake .#{{host}}
     @gum style --foreground 82 "Switch complete"
+
+# -------------------------------------------------------------------------------
+# LABS
+# -------------------------------------------------------------------------------
+
+# Launch Lab TUI workstation
+# ARGS: domain - lab domain (audio, video, 3d, data)
+lab domain="audio":
+    @gum style --border normal --padding "0 1" "Launching $(gum style --foreground 212 '{{domain}}') Lab"
+    @lab-tui --domain {{domain}} --justfile Modules/Labs/Audio/justfile

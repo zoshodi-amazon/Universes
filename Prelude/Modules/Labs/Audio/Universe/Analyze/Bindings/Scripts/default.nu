@@ -22,7 +22,7 @@ def main [config_json: string] {
   
   if ($cfg.loudness? | default false) {
     print $"Analyzing loudness for ($cfg.input)..."
-    let result = (ffmpeg -i $cfg.input -af loudnorm=print_format=summary -f null - 2>&1)
-    print $result
+    let result = (do { ffmpeg -i $cfg.input -af loudnorm=print_format=summary -f null - } | complete)
+    print $result.stderr
   }
 }

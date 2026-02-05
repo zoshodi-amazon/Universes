@@ -1,0 +1,106 @@
+# ===============================================================================
+# LABS/CORE - Generic Lab TUI Framework
+# ===============================================================================
+#
+# NAME
+#     justfile - Core Lab infrastructure (Library, Session, Watch, Dials, TUI)
+#
+# SYNOPSIS
+#     just <recipe> [arguments...]
+#     just --list
+#
+# DESCRIPTION
+#     Domain-agnostic Lab framework. Provides persistence, state management,
+#     file watching, and TUI infrastructure for any signal processing domain.
+#
+#     LIBRARY   - SQLite asset persistence with full history
+#     SESSION   - Workspace state (current asset, transform stack)
+#     WATCH     - File change detection via entr
+#     DIALS     - Orthogonal coefficient controls
+#     TUI       - Bubbletea interactive interface
+#
+# ===============================================================================
+
+scripts := "Universe"
+
+default:
+    @just --list
+
+# -------------------------------------------------------------------------------
+# LIBRARY
+# -------------------------------------------------------------------------------
+
+# Initialize asset library database
+# ARGS: path - database path (default: .lab/library.db)
+init-library path=".lab/library.db":
+    @gum style --border normal --padding "0 1" "Initializing library..."
+    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "init", "path": "{{path}}"}'
+
+# Add asset to library
+# ARGS: name - display name, file - file path, source - url/file/generated
+add-asset name file source="file":
+    @gum style --border normal --padding "0 1" "Adding asset: $(gum style --foreground 212 '{{name}}')..."
+    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "add", "name": "{{name}}", "path": "{{file}}", "source": "{{source}}"}'
+
+# List all assets in library
+list-assets:
+    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "list"}' | from json | table
+
+# Show asset history
+# ARGS: id - asset ID (optional, shows all if omitted)
+history id="":
+    @nu {{scripts}}/Library/Bindings/Scripts/default.nu '{"action": "history", "id": "{{id}}"}'
+
+# -------------------------------------------------------------------------------
+# SESSION
+# -------------------------------------------------------------------------------
+
+# Initialize session state
+init-session:
+    @gum style --border normal --padding "0 1" "Initializing session..."
+    @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "init"}'
+
+# Show current session state
+session:
+    @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "load"}'
+
+# Set current asset
+# ARGS: id - asset ID
+set-current id:
+    @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "set-current", "id": "{{id}}"}'
+
+# Push transform to stack
+# ARGS: type - transform type, params - JSON params
+push-transform type params="{}":
+    @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "push", "transform": {"type": "{{type}}", "params": {{params}}}}'
+
+# Pop transform from stack
+pop-transform:
+    @nu {{scripts}}/Session/Bindings/Scripts/default.nu '{"action": "pop"}'
+
+# -------------------------------------------------------------------------------
+# WATCH
+# -------------------------------------------------------------------------------
+
+# Watch files and run command on change
+# ARGS: patterns - glob patterns (comma-separated), command - command to run
+watch patterns command:
+    @gum style --border normal --padding "0 1" "Watching: $(gum style --foreground 212 '{{patterns}}')..."
+    @nu {{scripts}}/Watch/Bindings/Scripts/default.nu '{"patterns": ["{{patterns}}"], "command": "{{command}}"}'
+
+# -------------------------------------------------------------------------------
+# DIALS
+# -------------------------------------------------------------------------------
+
+# List all dials with current values
+dials config:
+    @nu {{scripts}}/Dials/Bindings/Scripts/default.nu '{{config}}'
+
+# -------------------------------------------------------------------------------
+# TUI
+# -------------------------------------------------------------------------------
+
+# Launch Lab TUI
+# ARGS: domain - lab domain (audio, video, 3d, data)
+tui domain="audio":
+    @lab-tui --domain {{domain}}
