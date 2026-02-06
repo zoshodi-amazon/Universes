@@ -172,6 +172,7 @@ remote-build-oci host machine:
 # ARGS: machine - name of machine (expects ~/Downloads/<machine>.tar.gz)
 load-oci machine:
     @gum style --border normal --padding "0 1" "Loading OCI $(gum style --foreground 212 '{{machine}}')"
+    @podman machine start 2>/dev/null || true
     @podman load < ~/Downloads/{{machine}}.tar.gz
     @gum style --foreground 82 "Loaded {{machine}}:latest"
 
@@ -179,7 +180,15 @@ load-oci machine:
 # ARGS: machine - name of machine
 run-oci machine:
     @gum style --foreground 212 "Running {{machine}}"
+    @podman machine start 2>/dev/null || true
     @podman run -it {{machine}}:latest
+
+# Initialize podman machine (Darwin only, run once)
+podman-init:
+    @gum style --border normal --padding "0 1" "Initializing podman machine"
+    @podman machine init
+    @podman machine start
+    @gum style --foreground 82 "Podman machine ready"
 
 # -------------------------------------------------------------------------------
 # HOME
