@@ -1,9 +1,9 @@
-# Obs Options - observation space
+# Obs Options - observability looking glass (runtime logs + persistent db)
 { lib, ... }:
 {
   options.rl.obs = {
-    normalize = lib.mkOption { type = lib.types.bool; default = true; };
-    clipRange = lib.mkOption { type = lib.types.nullOr lib.types.float; default = 10.0; };
-    stackFrames = lib.mkOption { type = lib.types.nullOr lib.types.int; default = null; };
+    dbPath = lib.mkOption { type = lib.types.str; default = "./rl.db"; };
+    logDir = lib.mkOption { type = lib.types.str; default = "./logs"; };
+    logLevel = lib.mkOption { type = lib.types.enum [ "debug" "info" "warn" "error" ]; default = "info"; };
   };
 }
