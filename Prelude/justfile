@@ -229,11 +229,25 @@ switch host="darwin":
     }
 
 # -------------------------------------------------------------------------------
+# PRESETS
+# -------------------------------------------------------------------------------
+
+preset_scripts := "Modules/Computation/Scripts/Universe/Preset"
+
+# List available tmux presets
+presets:
+    @nu {{preset_scripts}}/Bindings/Scripts/default.nu list
+
+# Launch tmux preset session
+# ARGS: name - preset name (explore, compare, monitor, develop), domain - lab domain (Audio, Video, etc.)
+preset name domain="Audio":
+    @nu {{preset_scripts}}/Bindings/Scripts/default.nu '{"preset": "{{name}}", "workdir": "Modules/Labs/{{domain}}"}'
+
+# -------------------------------------------------------------------------------
 # LABS
 # -------------------------------------------------------------------------------
 
-# Launch Lab TUI workstation
-# ARGS: domain - lab domain (audio, video, 3d, data)
-lab domain="audio":
-    @gum style --border normal --padding "0 1" "Launching $(gum style --foreground 212 '{{domain}}') Lab"
-    @cd Modules/Labs/TUI && nu Universe/Preview/Bindings/Scripts/default.nu '{"domain": "{{domain}}", "justfile": "../Audio/justfile"}'
+# Launch Lab in explore preset
+# ARGS: domain - lab domain (Audio, Video, 3D, Data)
+lab domain="Audio":
+    @just preset explore {{domain}}

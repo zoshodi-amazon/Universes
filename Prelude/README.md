@@ -2,7 +2,7 @@
 
 Dendritic Nix configuration system.
 
-**Pattern Version: v1.0.4** | **Structure: FROZEN**
+**Pattern Version: v1.0.5** | **Structure: FROZEN**
 
 ---
 
@@ -157,64 +157,61 @@ nixos-rebuild switch --flake .#sovereignty
 
 ## Categorical Organization
 
+**Symmetry basis: Maximum deployment scope.**
+
+Every module is classified by the highest level of the system hierarchy it can coherently target. This is mechanically checkable by inspecting `Instances/default.nix`.
+
 ```
 Modules/
-├── Computation/    # Process: interpreters, editors, services
-├── Information/    # Symbol: code, docs, databases  
-├── Labs/           # Workstation: audio, video, signal processing
-└── Physical/       # Matter: hardware, materials
+├── Labs/     # perSystem — build-time artifacts, devShells, experiments
+├── User/     # homeManager — user-space, platform-agnostic
+├── Host/     # nixos/darwin — OS-level, system configuration
+└── Fleet/    # *Configurations — top-level instantiators
 ```
+
+### Scope Hierarchy
+
+```
+perSystem (build-time only, no deployment state)
+  ⊂ homeManager (user-space, any platform)
+    ⊂ nixos/darwin (system-level, specific OS)
+      ⊂ *Configurations (full instantiation = system + users + hardware)
+```
+
+Each level strictly contains the ones below it — a `nixosConfiguration` imports `homeManager` modules, which can use `perSystem` packages.
 
 ### Category Boundaries
 
-| Category | Essence | Ontological Status | Examples |
-|----------|---------|-------------------|----------|
-| **Computation** | Process | Transformation over time | Interpreters, editors, services, VMs |
-| **Information** | Symbol | Structured representation | Code, docs, databases, git |
-| **Labs** | Workstation | Signal processing environments | Audio, video, synthesis |
-| **Physical** | Matter | Tangible substrate | Hardware, materials, devices |
-
-### Boundary Distinctions
-
-| Boundary | Distinction |
-|----------|-------------|
-| Computation ↔ Information | Process vs Data. Computation *acts on* Information. |
-| Information ↔ Labs | Discrete symbols vs Continuous signals. |
-| Labs ↔ Physical | Signal processing vs Hardware substrate. |
-| Physical ↔ Computation | Hardware vs Software. Physical runs Computation. |
+| Category | Scope | Essence | Target |
+|----------|-------|---------|--------|
+| **Labs** | perSystem | Build-time workspaces, experiments, tooling | devShells, packages, checks |
+| **User** | homeManager | User environment, preferences, tools | flake.modules.homeManager.* |
+| **Host** | nixos/darwin | System-level daemons, OS config, containers | flake.modules.{nixos,darwin}.* |
+| **Fleet** | *Configurations | Instantiators that yield deployable artifacts | flake.{home,nixos}Configurations |
 
 ### Category Decision Tree
 
 ```
-Is it a transformation/process that acts on data?
-  YES → Computation/
-  NO ↓
+Look at Instances/default.nix:
 
-Is it structured, discrete, stored representation?
-  YES → Information/
-  NO ↓
-
-Is it signal processing / waveform manipulation?
-  YES → Labs/
-  NO ↓
-
-Is it tangible hardware/material?
-  YES → Physical/
+Exports flake.*Configurations?            → Fleet/
+Exports flake.modules.{nixos,darwin}.*?   → Host/
+Exports flake.modules.homeManager.* ONLY? → User/
+Exports perSystem.* ONLY?                 → Labs/
 ```
 
 ### Quick Reference
 
 | Thing | Category | Why |
 |-------|----------|-----|
-| Neovim, shells | Computation | Transforms text (process) |
-| Git repo, configs | Information | Stores symbols (data) |
-| Audio workstation | Labs | Signal processing environment |
-| GPU, sensors | Physical | Hardware substrate |
-| Log *file* | Information | Discrete, stored |
-| Audio synthesis | Labs | Signal generation |
-| Trained model file | Information | Static artifact |
-| Video editing | Labs | Signal transform pipeline |
-| Training loop | Computation | Process over time |
+| Audio workstation, RL training | Labs | perSystem devShells/packages |
+| Checks, deploy scripts | Labs | perSystem checks/packages |
+| Neovim, shells, browsers | User | homeManager user preferences |
+| Git config, SSH | User | homeManager user-space |
+| Nix daemon, secrets | Host | Requires nixos/darwin system access |
+| Servers (podman containers) | Host | Requires nixos systemd |
+| Home (homeConfigurations) | Fleet | Instantiates top-level output |
+| Machines (nixosConfigurations) | Fleet | Instantiates top-level output |
 
 ---
 
@@ -285,7 +282,7 @@ Each `Drv/<package>/default.nix` exports to `perSystem.packages.<package>`.
 
 | Level | Location | Has | Example |
 |-------|----------|-----|---------|
-| Category | `Modules/<Cat>/` | `default.nix` only | `Computation/`, `Information/` |
+| Category | `Modules/<Cat>/` | `default.nix` only | `Labs/`, `User/` |
 | Module | `Modules/<Cat>/<Mod>/` | README.md, Arch.d2, Env/, Instances/, Universe/ | `Browsers/`, `Terminal/Shell/` |
 | Feature | `Universe/<Feat>/` | Options/, Bindings/ | `Universe/Firefox/`, `Universe/Config/` |
 
