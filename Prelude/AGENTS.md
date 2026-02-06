@@ -20,6 +20,32 @@ Prefer tools that span multiple capabilities over single-purpose tools. Only int
 
 **TUI = justfile + gum.** That's it. No additional frameworks needed. gum provides interactive prompts (choose, input, filter, confirm, spin, style, table), justfile provides recipes. Together they form a complete interactive terminal interface.
 
+## Execution Stack
+
+```
+Nix (types + packaging) → Nushell (glue + interop) → CLIs (effects)
+```
+
+| Layer | Role | Artifact |
+|-------|------|----------|
+| Nix Options | Type declarations, single source of truth | `Options/default.nix` |
+| Nix Drv | Freeze language-specific logic into CLI | `Drv/<pkg>/default.nix` |
+| Nushell Scripts | Glue layer, typed off Options, calls CLIs | `Bindings/Scripts/default.nu` |
+| CLIs | Effectful programs (Python, Rust, etc.) | `rl train`, `audio-process`, etc. |
+
+**Key principles:**
+- Nix module Options = single source of truth for ALL typing
+- Nushell scripts typed off Nix module Options (config shape = Options type)
+- Language-specific logic frozen in Drv/ with CLI interface
+- Nushell orchestrates CLIs — never calls language APIs directly
+- Arch.d2 = morphism diagram: trace any capability from type → term → effect
+- Implementation is mechanical from a correct Arch.d2
+
+**The morphism chain:**
+```
+Options (types) → ENV vars (config) → Nushell (glue) → CLI (effects) → Data (state)
+```
+
 ## Core Adjunctions
 
 The pattern is built on two adjoint pairs (free-forgetful adjunctions):
@@ -144,6 +170,12 @@ MUST NEVER VIOLATE:
 19. Naming is semantic binding to capability - optimize for best fit
 20. CLI output uses gum styling, external tools run silent (-q, -loglevel error)
 21. Justfile is self-documenting: recipes match 1-1 with README capabilities
+22. Containers are portable: Servers/ exports to BOTH homeManager and nixos
+23. nixosConfigurations is for hardware/system only, imports homeConfigurations for users
+24. Deployment target = hardware; Capability = containers (platform-agnostic)
+25. Nushell scripts typed off Nix module Options — config shape = Options type
+26. Language-specific logic frozen in Drv/ with CLI interface — nushell calls CLIs only
+27. Arch.d2 is the morphism diagram — implementation is mechanical from it
 
 ## Capability Discovery & Freezing
 
@@ -236,6 +268,20 @@ def main [config_path: string] {
   let cfg = (open $config_path)
   # interpret cfg.transforms into ffmpeg calls
 }
+```
+
+### Nushell Calling Language APIs (WRONG)
+
+```nu
+# NO: language-specific logic in glue layer
+python -c "import sb3; model = sb3.PPO('MlpPolicy', 'CartPole-v1'); model.learn(100000)"
+```
+
+### Nushell Calling Frozen CLI (CORRECT)
+
+```nu
+# YES: CLI boundary — Python frozen in Drv/, nushell calls CLI only
+^rl train --env CartPole-v1 --algo ppo --timesteps 100000
 ```
 
 ## Module Structure

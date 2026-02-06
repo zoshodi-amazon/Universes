@@ -23,6 +23,36 @@ Dendritic Nix configuration system.
 
 ---
 
+## Execution Stack
+
+```
+Nix (types + packaging) → Nushell (glue + interop) → CLIs (effects)
+```
+
+| Layer | Role | Artifact |
+|-------|------|----------|
+| Nix Options | Type declarations, single source of truth | `Options/default.nix` |
+| Nix Drv | Freeze language-specific logic into CLI | `Drv/<pkg>/default.nix` |
+| Nushell Scripts | Glue layer, typed off Options, calls CLIs | `Bindings/Scripts/default.nu` |
+| CLIs | Effectful programs (Python, Rust, etc.) | `rl train`, `audio-process`, etc. |
+
+**Key principles:**
+- Nix module Options = single source of truth for ALL typing
+- Nushell scripts are typed off Nix module Options (config shape = Options type)
+- All language-specific logic frozen into Nix derivations with CLI interface
+- Nushell orchestrates CLIs — never calls language APIs directly
+- Arch.d2 = morphism diagram: trace any capability from type → term → effect
+- Implementation is mechanical from a correct Arch.d2
+
+**The morphism chain:**
+```
+Options (types) → ENV vars (config) → Nushell (glue) → CLI (effects) → Data (state)
+```
+
+Every Arch.d2 should read as a commutative diagram — trace any capability from its type declaration through its binding to its effect and verify it commutes.
+
+---
+
 ## Core Dualities
 
 The pattern is built on two adjoint pairs:
@@ -318,6 +348,9 @@ Categories are organizational containers. Modules are capability units with full
 22. Containers are portable: Servers/ exports to BOTH homeManager and nixos
 23. nixosConfigurations is for hardware/system only, imports homeConfigurations for users
 24. Deployment target = hardware; Capability = containers (platform-agnostic)
+25. Nushell scripts typed off Nix module Options — config shape = Options type
+26. Language-specific logic frozen in Drv/ with CLI interface — nushell calls CLIs only
+27. Arch.d2 is the morphism diagram — implementation is mechanical from it
 ```
 
 ---
