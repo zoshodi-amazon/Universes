@@ -2,7 +2,7 @@
 
 Agent-optimized context for the Universes Prelude repository.
 
-Pattern Version: v1.0.3 | Structure: FROZEN
+Pattern Version: v1.0.5 | Structure: FROZEN
 
 ## Philosophy
 
@@ -55,58 +55,65 @@ Options and Bindings MUST remain decoupled:
 
 ## Categorical Organization
 
+**Symmetry basis: Maximum deployment scope.**
+
+Every module is classified by the highest level of the system hierarchy it can coherently target. This is mechanically checkable by inspecting `Instances/default.nix`.
+
 ```
 Modules/
-├── Computation/    # Process: transformation over time
-├── Information/    # Symbol: structured representation
-├── Labs/           # Workstation: signal processing environments
-└── Physical/       # Matter: tangible substrate
+├── Labs/     # perSystem — build-time artifacts, devShells, experiments
+├── User/     # homeManager — user-space, platform-agnostic
+├── Host/     # nixos/darwin — OS-level, system configuration
+└── Fleet/    # *Configurations — top-level instantiators
+```
+
+### Scope Hierarchy
+
+```
+perSystem (build-time only, no deployment state)
+  ⊂ homeManager (user-space, any platform)
+    ⊂ nixos/darwin (system-level, specific OS)
+      ⊂ *Configurations (full instantiation = system + users + hardware)
 ```
 
 ### Category Decision Tree
 
 ```
-Is it a transformation/process that acts on data?
-  YES -> Computation/
-  NO  |
-      v
-Is it structured, discrete, stored representation?
-  YES -> Information/
-  NO  |
-      v
-Is it signal processing / waveform manipulation?
-  YES -> Labs/
-  NO  |
-      v
-Is it tangible hardware/material?
-  YES -> Physical/
+Look at Instances/default.nix:
+
+Exports flake.*Configurations?            → Fleet/
+Exports flake.modules.{nixos,darwin}.*?   → Host/
+Exports flake.modules.homeManager.* ONLY? → User/
+Exports perSystem.* ONLY?                 → Labs/
 ```
 
-### Boundary Distinctions
+### Category Boundaries
 
-| Boundary | Distinction |
-|----------|-------------|
-| Computation <-> Information | Process vs Data. Computation acts on Information. |
-| Information <-> Labs | Discrete symbols vs Continuous signals. |
-| Labs <-> Physical | Signal processing vs Hardware substrate. |
-| Physical <-> Computation | Hardware vs Software. Physical runs Computation. |
+| Category | Scope | Essence | Target |
+|----------|-------|---------|--------|
+| **Labs** | perSystem | Build-time workspaces, experiments, tooling | devShells, packages, checks |
+| **User** | homeManager | User environment, preferences, tools | flake.modules.homeManager.* |
+| **Host** | nixos/darwin | System-level daemons, OS config, containers | flake.modules.{nixos,darwin}.* |
+| **Fleet** | *Configurations | Instantiators that yield deployable artifacts | flake.{home,nixos}Configurations |
 
 ### Quick Reference
 
 | Thing | Category | Why |
 |-------|----------|-----|
-| Neovim, shells, VMs | Computation | Transforms data (process) |
-| Git repo, configs, docs | Information | Stores symbols (data) |
-| Audio workstation | Labs | Signal processing environment |
-| GPU, sensors, USB | Physical | Hardware substrate |
-| Log file | Information | Discrete, stored |
-| Audio synthesis | Labs | Signal generation |
+| Audio workstation, RL training | Labs | perSystem devShells/packages |
+| Checks, deploy scripts | Labs | perSystem checks/packages |
+| Neovim, shells, browsers | User | homeManager user preferences |
+| Git config, SSH | User | homeManager user-space |
+| Nix daemon, secrets | Host | Requires nixos/darwin system access |
+| Servers (podman containers) | Host | Requires nixos systemd |
+| Home (homeConfigurations) | Fleet | Instantiates top-level output |
+| Machines (nixosConfigurations) | Fleet | Instantiates top-level output |
 
 ### Hierarchy
 
 | Level | Location | Has | Example |
 |-------|----------|-----|---------|
-| Category | `Modules/<Cat>/` | `default.nix` only | `Computation/`, `Information/` |
+| Category | `Modules/<Cat>/` | `default.nix` only | `Labs/`, `User/` |
 | Module | `Modules/<Cat>/<Mod>/` | README.md, Arch.d2, Env/, Instances/, Universe/ | `Browsers/`, `Terminal/Shell/` |
 | Feature | `Universe/<Feat>/` | Options/, Bindings/ | `Universe/Firefox/`, `Universe/Config/` |
 
@@ -269,15 +276,15 @@ Is it a configuration knob users would want to set?
 
 ```bash
 just modules                              # List all modules
-just features Modules/Computation/Terminal # List features in module
-just options Modules/Computation/Terminal  # Show capability space
+just features Modules/User/Terminal       # List features in module
+just options Modules/User/Terminal        # Show capability space
 ```
 
 ### 2. Create
 
 ```bash
-just new-module Modules/Computation/Foo    # Scaffold new module
-just new-feature Modules/Computation/Foo Bar # Add feature to module
+just new-module Modules/User/Foo           # Scaffold new module
+just new-feature Modules/User/Foo Bar      # Add feature to module
 ```
 
 ### 3. Build
@@ -296,7 +303,7 @@ just ssh sovereignty                       # Connect to machine
 
 ## Justfile Commands
 
-Thin interface to scripts in `Modules/Computation/Scripts/Universe/*/Bindings/Scripts/`.
+Thin interface to scripts in `Modules/Labs/Scripts/Universe/*/Bindings/Scripts/`.
 
 ### Introspect
 

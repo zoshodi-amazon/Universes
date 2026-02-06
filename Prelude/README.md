@@ -368,25 +368,45 @@ Options/default.nix ≅ Options/index.<lang> ≅ ENV vars ≅ CLI flags
 
 ## Modules
 
-### Computation
+### Labs
 
 | Module | Purpose | Targets |
 |--------|---------|---------|
-| [Browsers](Prelude/Modules/Computation/Browsers/) | Web browsing | homeManager |
-| [Checks](Prelude/Modules/Computation/Checks/) | Linting, invariants | devShells, checks |
-| [Editor](Prelude/Modules/Computation/Editor/) | Text editing | homeManager |
-| [Home](Prelude/Modules/Computation/Home/) | Host configurations | homeConfigurations |
-| [Network](Prelude/Modules/Computation/Network/) | Networking | homeManager |
-| [Servers](Prelude/Modules/Computation/Servers/) | Containers | nixos |
-| [Services](Prelude/Modules/Computation/Services/) | Long-running | devShells, packages |
-| [Terminal](Prelude/Modules/Computation/Terminal/) | Shell, Tmux, Kitty | homeManager |
-| [Virtualization](Prelude/Modules/Computation/Virtualization/) | VMs | nixos |
+| [Audio](Modules/Labs/Audio/) | Signal processing workstation | devShells, packages |
+| [TUI](Modules/Labs/TUI/) | Terminal UI experiments | devShells, packages |
+| [RL](Modules/Labs/RL/) | Reinforcement learning | devShells, packages |
+| [Game](Modules/Labs/Game/) | Game development | devShells, packages |
+| [Checks](Modules/Labs/Checks/) | Linting, invariants | devShells, checks |
+| [Deploy](Modules/Labs/Deploy/) | Deployment scripts | packages |
+| [Scripts](Modules/Labs/Scripts/) | Justfile tooling | packages |
+| [Legal](Modules/Labs/Legal/) | Legal compliance reference | devShells, checks |
+| [Sovereignty](Modules/Labs/Sovereignty/) | Off-grid capability planning | devShells |
 
-### Information
+### User
 
 | Module | Purpose | Targets |
 |--------|---------|---------|
-| [Persist/Git](Prelude/Modules/Information/Persist/Git/) | Version control | homeManager |
+| [Browsers](Modules/User/Browsers/) | Web browsing | homeManager |
+| [Editor](Modules/User/Editor/) | Text editing (Nixvim) | homeManager |
+| [Terminal](Modules/User/Terminal/) | Shell, Tmux, Kitty | homeManager |
+| [Network](Modules/User/Network/) | SSH, connectivity | homeManager |
+| [Git](Modules/User/Git/) | Version control config | homeManager |
+
+### Host
+
+| Module | Purpose | Targets |
+|--------|---------|---------|
+| [Nix](Modules/Host/Nix/) | Nix daemon, store optimization | nixos, darwin, homeManager |
+| [Secrets](Modules/Host/Secrets/) | Encrypted secrets (sops-nix) | nixos, homeManager |
+| [Virtualization](Modules/Host/Virtualization/) | VMs (Lima, MicroVM) | nixos, homeManager |
+| [Servers](Modules/Host/Servers/) | Self-hosted containers | nixos |
+
+### Fleet
+
+| Module | Purpose | Targets |
+|--------|---------|---------|
+| [Home](Modules/Fleet/Home/) | homeConfigurations aggregator | homeConfigurations |
+| [Machines](Modules/Fleet/Machines/) | nixosConfigurations aggregator | nixosConfigurations |
 
 ---
 
@@ -458,19 +478,19 @@ Users interact via: `cool-tool --some-flag` (globally available, no shell needed
 Prevent type mismatches by introspecting module options:
 
 ```bash
-introspect-options Modules/Computation/Services/RL
+introspect-options Modules/Labs/RL
 
 # Output:
-# 📋 Features in Modules/Computation/Services/RL/Universe/
+# Features in Modules/Labs/RL/Universe/
 # 
-# 🔹 Env
-#     • envId
-#     • nEnvs
-#     • seed
-# 🔹 Agent
-#     • algorithm
-#     • policyType
-#     • netArch
+# Env
+#     envId
+#     nEnvs
+#     seed
+# Agent
+#     algorithm
+#     policyType
+#     netArch
 ```
 
 This parses `Universe/*/Options/default.nix` files to show the exact option space.
@@ -528,6 +548,7 @@ nix develop .#checks
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.0.5 | 2026-02-06 | Scope-based categories (Labs/User/Host/Fleet), dissolve Computation/Information/Physical |
 | v1.0.4 | 2026-02-05 | Platform-agnostic containers, invariants 22-24 |
 | v1.0.3 | 2026-01-27 | README.md required, Nushell standard, file naming |
 | v1.0.2 | 2026-01-27 | Plugins in Bindings/, 7 binding types |
@@ -554,4 +575,4 @@ Common pitfalls and lessons learned:
 
 ---
 
-**Pattern Version: v1.0.4** | **Structure: FROZEN** | **Expressiveness: Universe/** | **Interaction: CLI only**
+**Pattern Version: v1.0.5** | **Structure: FROZEN** | **Expressiveness: Universe/** | **Interaction: CLI only**

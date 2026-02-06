@@ -10,7 +10,7 @@
 #     just --list
 #
 # DESCRIPTION
-#     Thin interface to scripts in Modules/Computation/Scripts/.
+#     Thin interface to scripts in Modules/Labs/Scripts/.
 #     Organized by capability, not implementation.
 #
 #     INTROSPECT  - Discover modules, features, and options
@@ -25,11 +25,11 @@
 #     See AGENTS.md for full ontology.
 #
 # SCRIPTS
-#     All scripts live in Modules/Computation/Scripts/Universe/*/Bindings/Scripts/
+#     All scripts live in Modules/Labs/Scripts/Universe/*/Bindings/Scripts/
 #
 # ===============================================================================
 
-scripts := "Modules/Computation/Scripts/Universe"
+scripts := "Modules/Labs/Scripts/Universe"
 
 default:
     @just --list
@@ -38,19 +38,19 @@ default:
 # INTROSPECT
 # -------------------------------------------------------------------------------
 
-# List all modules by category (Computation, Information, Labs, Physical)
+# List all modules by category (Labs, User, Host, Fleet)
 modules:
     @gum style --border normal --padding "0 1" "Modules"
     @nu {{scripts}}/Discover/Bindings/Scripts/default.nu
 
 # List Universe features in a module
-# ARGS: module - path to module (e.g., Modules/Computation/Terminal/Shell)
+# ARGS: module - path to module (e.g., Modules/User/Terminal/Shell)
 features module:
     @gum style --border normal --padding "0 1" "Features in $(gum style --foreground 212 '{{module}}')"
     @nu {{scripts}}/Introspect/Bindings/Scripts/default.nu '{"mode": "features", "module": "{{module}}"}'
 
 # Show Options type space for all features in a module
-# ARGS: module - path to module (e.g., Modules/Computation/Terminal/Shell)
+# ARGS: module - path to module (e.g., Modules/User/Terminal/Shell)
 options module:
     @gum style --border normal --padding "0 1" "Options in $(gum style --foreground 212 '{{module}}')"
     @nu {{scripts}}/Introspect/Bindings/Scripts/default.nu '{"mode": "options", "module": "{{module}}"}'
@@ -78,7 +78,7 @@ list:
 # -------------------------------------------------------------------------------
 
 # Scaffold a new module from frozen template (Docs/TEMPLATE.md)
-# ARGS: path - module path (e.g., Modules/Computation/Foo)
+# ARGS: path - module path (e.g., Modules/User/Foo)
 new-module path:
     @gum style --border normal --padding "0 1" "Creating module $(gum style --foreground 212 '{{path}}')"
     @nu {{scripts}}/Scaffold/Bindings/Scripts/default.nu '{"mode": "module", "path": "{{path}}"}'
@@ -232,7 +232,7 @@ switch host="darwin":
 # PRESETS
 # -------------------------------------------------------------------------------
 
-preset_scripts := "Modules/Computation/Scripts/Universe/Preset"
+preset_scripts := "Modules/Labs/Scripts/Universe/Preset"
 
 # List available tmux presets
 presets:
