@@ -17,6 +17,8 @@
     "nixfmt-rfc-style"
     # Containers
     "podman"
+    # Virtualization
+    "qemu"
     # Diagrams
     "d2"
     "graphviz"
