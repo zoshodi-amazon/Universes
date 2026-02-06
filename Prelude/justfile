@@ -61,7 +61,7 @@ schema:
     @echo "machines.<name> = {"
     @echo "  identity.hostname    : str           # What is this machine called?"
     @echo "  target.arch          : enum          # x86_64 | aarch64"
-    @echo "  format.type          : enum          # iso | vm | sd-image | raw-efi"
+    @echo "  format.type          : enum          # iso | vm | sd-image | raw-efi | oci"
     @echo "  persistence.strategy : enum          # full | impermanent | ephemeral"
     @echo "  persistence.device   : str?          # e.g., /dev/disk/by-label/NIXOS_PERSIST"
     @echo "  persistence.paths    : [str]         # Directories to persist"
@@ -161,6 +161,25 @@ sync-to host:
 remote-build host machine:
     @gum style --border normal --padding "0 1" "Remote build $(gum style --foreground 212 '{{machine}}') on $(gum style --foreground 212 '{{host}}')"
     @nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "remote-build", "host": "{{host}}", "machine": "{{machine}}"}'
+
+# Build OCI image on remote host and copy back to ~/Downloads/<machine>.tar.gz
+# ARGS: host - SSH host, machine - name of machine
+remote-build-oci host machine:
+    @gum style --border normal --padding "0 1" "Remote build OCI $(gum style --foreground 212 '{{machine}}') on $(gum style --foreground 212 '{{host}}')"
+    @nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "remote-build-oci", "host": "{{host}}", "machine": "{{machine}}"}'
+
+# Load OCI image into local podman
+# ARGS: machine - name of machine (expects ~/Downloads/<machine>.tar.gz)
+load-oci machine:
+    @gum style --border normal --padding "0 1" "Loading OCI $(gum style --foreground 212 '{{machine}}')"
+    @podman load < ~/Downloads/{{machine}}.tar.gz
+    @gum style --foreground 82 "Loaded {{machine}}:latest"
+
+# Run OCI image in podman
+# ARGS: machine - name of machine
+run-oci machine:
+    @gum style --foreground 212 "Running {{machine}}"
+    @podman run -it {{machine}}:latest
 
 # -------------------------------------------------------------------------------
 # HOME

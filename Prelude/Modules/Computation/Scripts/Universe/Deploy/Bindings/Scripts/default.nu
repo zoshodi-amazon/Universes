@@ -1,16 +1,16 @@
 #!/usr/bin/env nu
 
-# Deploy interpreter - flash, format-persist, or remote-build
+# Deploy interpreter - flash, format-persist, remote-build, or remote-build-oci
 # Usage: default.nu <json_config>
-# Config: { mode: "flash" | "format-persist" | "remote-build", ... }
+# Config: { mode: "flash" | "format-persist" | "remote-build" | "remote-build-oci", ... }
 
 def main [config_json: string] {
   let cfg = ($config_json | from json)
   
   match $cfg.mode {
     "flash" => {
-      let machine = $cfg.machine
-      let disk = $cfg.disk
+      let machine: string = $cfg.machine
+      let disk: string = $cfg.disk
       
       print $"Unmounting ($disk)..."
       try { diskutil unmountDisk $disk } catch { }
@@ -50,7 +50,7 @@ def main [config_json: string] {
       print "Done! USB is ready to boot."
     }
     "format-persist" => {
-      let disk = $cfg.disk
+      let disk: string = $cfg.disk
       
       print $"WARNING: This will ERASE ALL DATA on ($disk)"
       print "Filesystem: ext4"
@@ -67,8 +67,8 @@ def main [config_json: string] {
       print "Done! SD card is ready for persistence."
     }
     "remote-build" => {
-      let host = $cfg.host
-      let machine = $cfg.machine
+      let host: string = $cfg.host
+      let machine: string = $cfg.machine
       
       print $"Step 1: Syncing repo to ($host)..."
       rsync -avz --delete ~/repos/Universes/ $"($host):~/repos/Universes/"
@@ -84,6 +84,27 @@ def main [config_json: string] {
       print ""
       print $"Done! ISO at ~/Downloads/($machine).iso"
       ls $"($env.HOME)/Downloads/($machine).iso"
+    }
+    "remote-build-oci" => {
+      let host: string = $cfg.host
+      let machine: string = $cfg.machine
+      
+      print $"Step 1: Syncing repo to ($host)..."
+      rsync -avz --delete ~/repos/Universes/ $"($host):~/repos/Universes/"
+      
+      print ""
+      print $"Step 2: Building ($machine) OCI on ($host)..."
+      let oci_path = (ssh $host $"source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes/Prelude && nix build .#($machine)-oci --print-out-paths" | str trim)
+      
+      print ""
+      print $"Step 3: Copying OCI tarball to local..."
+      scp $"($host):($oci_path)" $"($env.HOME)/Downloads/($machine).tar.gz"
+      
+      print ""
+      print $"Done! OCI at ~/Downloads/($machine).tar.gz"
+      print $"Load with: podman load < ~/Downloads/($machine).tar.gz"
+      print $"Run with:  podman run -it ($machine):latest"
+      ls $"($env.HOME)/Downloads/($machine).tar.gz"
     }
   }
 }

@@ -15,6 +15,8 @@
     # Nix
     "nil"
     "nixfmt-rfc-style"
+    # Containers
+    "podman"
     # Diagrams
     "d2"
     "graphviz"

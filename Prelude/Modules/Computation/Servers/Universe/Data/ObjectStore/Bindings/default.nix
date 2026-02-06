@@ -10,6 +10,9 @@ let
   };
 in
 {
+  # Enable ObjectStore by default (module exists = capability desired, invariant 12)
+  config.servers.data.objectStore.enable = lib.mkDefault true;
+  
   config.servers.podman = lib.mkIf cfg.enable {
     enable = true;
     stacks.objectstore = {

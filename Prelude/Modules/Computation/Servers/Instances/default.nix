@@ -1,10 +1,9 @@
-# Instances: exports to BOTH flake.modules.homeManager AND flake.modules.nixos
-# Containers are portable (invariant 22)
-{ config, lib, inputs, ... }:
+# Servers Instances - exports to flake.modules.nixos only
+# Servers are capabilities consumed by Machines, not deployed directly
+{ config, lib, ... }:
 let
   podman = config.servers.podman;
   
-  # Shared podman container definitions
   containerDefs = lib.mapAttrs (name: stack: {
     inherit (stack) image;
     ports = stack.ports;
@@ -14,16 +13,6 @@ let
   }) podman.stacks;
 in
 {
-  # Export to homeManager (portable - Darwin, NixOS, anywhere)
-  config.flake.modules.homeManager.servers = lib.mkIf podman.enable {
-    # home-manager podman integration
-    services.podman = {
-      enable = true;
-      containers = containerDefs;
-    };
-  };
-
-  # Export to nixos (system-level integration when needed)
   config.flake.modules.nixos.servers = lib.mkIf podman.enable {
     virtualisation.podman.enable = true;
     virtualisation.oci-containers.backend = "podman";

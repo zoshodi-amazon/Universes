@@ -91,29 +91,43 @@ Is it a configuration knob users would want to set?
 
 ## Instance Architecture
 
-**FROZEN DECISION (v1.0.4)**: Platform-agnostic containers, hardware-specific systems.
+**FROZEN DECISION (v1.0.4)**: Platform-agnostic deployment, hardware-specific systems.
 
 ### The Two Instance Types
 
 | Instance | Scope | Contains | Platform |
 |----------|-------|----------|----------|
-| `homeConfigurations` | User-space | shell, editor, servers (podman) | ALL (Darwin, NixOS, WSL) |
-| `nixosConfigurations` | System | boot, kernel, filesystems, imports home configs | NixOS only |
+| `homeConfigurations` | User-space | shell, editor, dev tools | ALL (Darwin, NixOS, WSL) |
+| `nixosConfigurations` | System | boot, kernel, filesystems, servers | NixOS or OCI |
 
-### Containers are Portable
+### Deployment Formats
 
-Servers (podman containers) run in user-space and work everywhere:
+nixosConfigurations can be deployed in multiple formats:
 
-```nix
-# flake.modules.homeManager.servers - works on Darwin AND NixOS
-# flake.modules.nixos.servers - also available for system-level integration
+| Format | Use Case | Command |
+|--------|----------|---------|
+| `iso` | Bootable USB | `just flash <machine> /dev/diskN` |
+| `vm` | Local testing | `just vm <machine>` |
+| `sd-image` | Raspberry Pi | `just build <machine>` |
+| `raw-efi` | Direct disk | `just build <machine>` |
+| `oci` | Container (anywhere) | `just remote-build-oci <host> <machine>` |
+
+### OCI = Platform Agnostic
+
+For running NixOS configurations on Darwin:
+
+```bash
+# Build on Linux (remote)
+just remote-build-oci cloud-dev sovereignty
+
+# Load and run on Darwin
+just load-oci sovereignty
+just run-oci sovereignty
 ```
 
-The same capability exports to BOTH targets. Consumer picks based on platform.
+### Servers are Capabilities
 
-### Hardware is Specific
-
-nixosConfigurations only handles what MUST be system-level:
+Servers/ defines capabilities (objectStore, git, etc.) consumed by Machines:
 
 ```nix
 machines.sovereignty = {
