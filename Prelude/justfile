@@ -201,6 +201,19 @@ run-vm-remote host machine:
     @gum style --foreground 212 "Running VM {{machine}} on {{host}}"
     @ssh -Y {{host}} "source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes/Prelude && nix run .#{{machine}}-vm"
 
+# Build and run MicroVM on remote host (stays running in foreground)
+# ARGS: host - SSH host, machine - name of machine (must have format.type = "microvm")
+remote-microvm host machine:
+    @gum style --border normal --padding "0 1" "MicroVM $(gum style --foreground 212 '{{machine}}') on $(gum style --foreground 212 '{{host}}')"
+    @just sync-to {{host}}
+    @ssh -t {{host}} "source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes/Prelude && nix run .#{{machine}}-microvm"
+
+# SSH into running MicroVM on remote host (via port forward 2222)
+# ARGS: host - SSH host where microvm is running, user - guest user (default: root)
+ssh-microvm host user="root":
+    @gum style --foreground 212 "SSH to MicroVM via {{host}}:2222"
+    @ssh -J {{host}} -p 2222 {{user}}@localhost
+
 # Initialize podman machine (Darwin only, run once)
 podman-init:
     @gum style --border normal --padding "0 1" "Initializing podman machine"

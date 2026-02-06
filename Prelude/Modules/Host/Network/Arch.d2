@@ -1,0 +1,29 @@
+# Network Module Architecture
+direction: right
+
+title: {
+  label: Host/Network
+  near: top-center
+  shape: text
+  style.font-size: 24
+}
+
+Universe: {
+  Core: {
+    Options: {
+      shape: document
+      label: "dhcp\nfirewall\nssh\nwireless"
+    }
+    Bindings: {
+      shape: hexagon
+    }
+    Options -> Bindings: configures
+  }
+}
+
+Instances: {
+  shape: cylinder
+  label: "flake.modules.nixos.network-config"
+}
+
+Universe.Core.Bindings -> Instances: exports

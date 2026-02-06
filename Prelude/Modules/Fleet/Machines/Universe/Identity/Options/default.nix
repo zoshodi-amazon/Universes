@@ -41,7 +41,7 @@ let
       
       # Format - How do I deploy it?
       format.type = lib.mkOption {
-        type = lib.types.enum [ "iso" "vm" "sd-image" "raw-efi" "oci" ];
+        type = lib.types.enum [ "iso" "vm" "sd-image" "raw-efi" "oci" "microvm" ];
         default = "vm";
         description = "Deployment format";
       };

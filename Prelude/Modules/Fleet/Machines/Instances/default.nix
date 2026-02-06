@@ -9,6 +9,8 @@ let
     aarch64 = "aarch64-linux";
   };
   
+  nixosModules = lib.attrValues config.flake.modules.nixos;
+
   mkNixosConfig = name: cfg: inputs.nixpkgs.lib.nixosSystem {
     system = archToSystem.${cfg.target.arch};
     specialArgs = { inherit inputs; };
@@ -27,8 +29,40 @@ let
           };
         }) cfg.users);
       }
+    ]
+    ++ lib.optionals (cfg.format.type != "microvm") [
       "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-    ] 
+    ]
+    ++ nixosModules
+    ++ lib.optionals (cfg.format.type == "microvm") [
+      inputs.microvm.nixosModules.microvm
+      {
+        microvm = {
+          hypervisor = config.microvm-config.hypervisor;
+          mem = config.microvm-config.mem;
+          vcpu = config.microvm-config.vcpu;
+          cpu = "max";
+          interfaces = [{
+            type = "user";
+            id = "usernet";
+            mac = "02:00:00:00:00:01";
+          }];
+          forwardPorts = [{
+            from = "host";
+            host.port = 2222;
+            guest.port = 22;
+          }];
+          shares = [{
+            tag = "ro-store";
+            source = "/nix/store";
+            mountPoint = "/nix/.ro-store";
+          }];
+        };
+        services.openssh.enable = true;
+        services.openssh.settings.PermitRootLogin = "yes";
+        users.users.root.initialPassword = "root";
+      }
+    ]
     ++ lib.optionals (cfg.persistence.strategy == "impermanent") [
       inputs.impermanence.nixosModules.impermanence
       {
@@ -78,7 +112,13 @@ in
           };
         };
       }) machines;
+      
+      # MicroVM runner
+      microvmPackages = lib.mapAttrsToList (name: cfg: {
+        name = "${name}-microvm";
+        value = config.flake.nixosConfigurations.${name}.config.microvm.declaredRunner or pkgs.hello;
+      }) (lib.filterAttrs (n: c: c.format.type == "microvm") machines);
     in
-    lib.listToAttrs (formatPackages ++ ociPackages);
+    lib.listToAttrs (formatPackages ++ ociPackages ++ microvmPackages);
   };
 }

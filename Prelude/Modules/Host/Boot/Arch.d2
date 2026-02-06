@@ -1,0 +1,29 @@
+# Boot Module Architecture
+direction: right
+
+title: {
+  label: Host/Boot
+  near: top-center
+  shape: text
+  style.font-size: 24
+}
+
+Universe: {
+  Core: {
+    Options: {
+      shape: document
+      label: "loader\nefi\nkernelPackages\ninitrd"
+    }
+    Bindings: {
+      shape: hexagon
+    }
+    Options -> Bindings: configures
+  }
+}
+
+Instances: {
+  shape: cylinder
+  label: "flake.modules.nixos.boot-config"
+}
+
+Universe.Core.Bindings -> Instances: exports

@@ -1,0 +1,29 @@
+# Display Module Architecture
+direction: right
+
+title: {
+  label: Host/Display
+  near: top-center
+  shape: text
+  style.font-size: 24
+}
+
+Universe: {
+  Core: {
+    Options: {
+      shape: document
+      label: "enable\nbackend\ngreeter"
+    }
+    Bindings: {
+      shape: hexagon
+    }
+    Options -> Bindings: configures
+  }
+}
+
+Instances: {
+  shape: cylinder
+  label: "flake.modules.nixos.display"
+}
+
+Universe.Core.Bindings -> Instances: exports

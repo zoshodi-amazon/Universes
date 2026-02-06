@@ -111,6 +111,7 @@ nixosConfigurations can be deployed in multiple formats:
 | `sd-image` | Raspberry Pi | `just build <machine>` |
 | `raw-efi` | Direct disk | `just build <machine>` |
 | `oci` | Container (anywhere) | `just remote-build-oci <host> <machine>` |
+| `microvm` | Fast cloud testing | `just remote-microvm <host> <machine>` |
 
 ### OCI = Platform Agnostic
 
@@ -373,7 +374,6 @@ Options/default.nix ≅ Options/index.<lang> ≅ ENV vars ≅ CLI flags
 | Module | Purpose | Targets |
 |--------|---------|---------|
 | [Audio](Modules/Labs/Audio/) | Signal processing workstation | devShells, packages |
-| [TUI](Modules/Labs/TUI/) | Terminal UI experiments | devShells, packages |
 | [RL](Modules/Labs/RL/) | Reinforcement learning | devShells, packages |
 | [Game](Modules/Labs/Game/) | Game development | devShells, packages |
 | [Checks](Modules/Labs/Checks/) | Linting, invariants | devShells, checks |
@@ -396,9 +396,11 @@ Options/default.nix ≅ Options/index.<lang> ≅ ENV vars ≅ CLI flags
 
 | Module | Purpose | Targets |
 |--------|---------|---------|
+| [Boot](Modules/Host/Boot/) | Boot loader, kernel | nixos |
+| [Network](Modules/Host/Network/) | System networking, firewall, SSH daemon | nixos |
+| [Display](Modules/Host/Display/) | Graphical environment (opt-in) | nixos |
 | [Nix](Modules/Host/Nix/) | Nix daemon, store optimization | nixos, darwin, homeManager |
 | [Secrets](Modules/Host/Secrets/) | Encrypted secrets (sops-nix) | nixos, homeManager |
-| [Virtualization](Modules/Host/Virtualization/) | VMs (Lima, MicroVM) | nixos, homeManager |
 | [Servers](Modules/Host/Servers/) | Self-hosted containers | nixos |
 
 ### Fleet
