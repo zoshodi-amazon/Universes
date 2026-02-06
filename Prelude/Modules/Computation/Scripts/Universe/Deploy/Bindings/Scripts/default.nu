@@ -115,17 +115,11 @@ def main [config_json: string] {
       
       print ""
       print $"Step 2: Building ($machine) VM on ($host)..."
-      let vm_path = (ssh $host $"source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes/Prelude && nix build .#($machine)-vm --print-out-paths" | str trim)
+      ssh $host $"source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes/Prelude && nix build .#($machine)-vm"
       
       print ""
-      print $"Step 3: Copying VM to local..."
-      mkdir -p $"($env.HOME)/VMs/($machine)"
-      rsync -avz --progress $"($host):($vm_path)/" $"($env.HOME)/VMs/($machine)/"
-      
-      print ""
-      print $"Done! VM at ~/VMs/($machine)"
-      print $"Run with: just run-vm ($machine)"
-      ls $"($env.HOME)/VMs/($machine)"
+      print $"Done! VM built on ($host)"
+      print $"Run with: just run-vm-remote ($host) ($machine)"
     }
   }
 }

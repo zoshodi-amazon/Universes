@@ -195,6 +195,12 @@ run-vm machine:
     @gum style --foreground 212 "Running VM {{machine}}"
     @~/VMs/{{machine}}/bin/run-*-vm
 
+# Run VM on remote host via SSH (with X11 forwarding)
+# ARGS: host - SSH host, machine - name of machine
+run-vm-remote host machine:
+    @gum style --foreground 212 "Running VM {{machine}} on {{host}}"
+    @ssh -Y {{host}} "source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes/Prelude && nix run .#{{machine}}-vm"
+
 # Initialize podman machine (Darwin only, run once)
 podman-init:
     @gum style --border normal --padding "0 1" "Initializing podman machine"

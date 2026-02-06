@@ -41,6 +41,7 @@
     "entr"
     #Git
     "lazygit"
+    "gh"
     #Tree
     "tree"
   ];
