@@ -44,5 +44,8 @@
     "gh"
     #Tree
     "tree"
+    # AI
+    "opencode"
+    "ollama"
   ];
 }
