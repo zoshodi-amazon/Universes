@@ -37,8 +37,11 @@ node_modules/
 
 # Logs
 *.log
-logs/
 .cache/
+# Note: Nix Modules use Universe/Logs/ (capital) - don't ignore those
+!**/Universe/Logs/
+/.logs/
+.lab/logs/
 
 # RL artifacts
 models/

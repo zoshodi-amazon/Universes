@@ -1,27 +1,43 @@
 # RL Module Architecture
-# Type-theoretic capability graph: Options (types) → Bindings (terms) → Effects (runtime)
-#
-# Stack: Nix (types + packaging) → Nushell (glue + interop) → CLIs (effects)
-# Arch.d2 = morphism diagram. Trace any capability from type → term → effect.
+# Morphism diagram: Options (types) -> Bindings (terms) -> Effects (runtime)
+# Stack: Nix (types) -> Nushell (glue) -> CLIs (effects)
 
 direction: right
 
 # =============================================================================
-# LAYER 1: OPTIONS (Product Types — the capability schema)
+# OPTIONS (Types)
 # =============================================================================
-# Every option is a type declaration. Nushell scripts receive these as typed config.
-# Nix module options = single source of truth for ALL typing.
 
 Options: {
   label: "Options (Types)"
   style.fill: "#e1f5fe"
 
+  Data: {
+    label: "Data : DataSpec"
+    shape: class
+    provider: "enum [csv yahoo alpaca ccxt]"
+    tickers: "list str = [AAPL]"
+    interval: "enum [1m 5m 15m 1h 1d]"
+    startDate: "str = 2020-01-01"
+    endDate: "str = 2023-12-31"
+    indicators: "list str = [macd rsi_30]"
+    dataDir: "str = .lab/data"
+  }
+
   Env: {
     label: "Env : EnvSpec"
     shape: class
-    envId: "str = CartPole-v1"
+    envId: "str = stocks-v0"
     nEnvs: "int = 4"
     seed: "int? = null"
+  }
+
+  Observation: {
+    label: "Observation : ObsSpec"
+    shape: class
+    normalize: "enum [none running fixed]"
+    clipRange: "str = 10.0"
+    stackFrames: "int? = null"
   }
 
   Agent: {
@@ -51,8 +67,14 @@ Options: {
   Infer: {
     label: "Infer : InferSpec"
     shape: class
-    modelPath: "str = ./models/best.zip"
     device: "enum [auto cpu cuda mps]"
+  }
+
+  Execution: {
+    label: "Execution : ExecSpec"
+    shape: class
+    provider: "enum [backtest paper live]"
+    maxPosition: "str = 100"
   }
 
   Store: {
@@ -61,98 +83,111 @@ Options: {
     backend: "enum [local mlflow wandb]"
     modelDir: "str = ./models"
     checkpointFreq: "int = 10000"
-    trackingUri: "str"
-    experimentName: "str"
   }
 
-  Obs: {
-    label: "Obs : ObsSpec"
+  Registry: {
+    label: "Registry : RegistrySpec"
+    shape: class
+    dbPath: "str = ./rl.db"
+    minReward: "str = 0"
+    keepTopN: "int = 10"
+  }
+
+  Metrics: {
+    label: "Metrics : OTEL"
+    shape: class
+    enable: "bool = false"
+    trackReward: "bool = true"
+  }
+
+  Traces: {
+    label: "Traces : OTEL"
+    shape: class
+    enable: "bool = false"
+    traceEpisodes: "bool = true"
+  }
+
+  Logs: {
+    label: "Logs : OTEL"
+    shape: class
+    enable: "bool = false"
+    level: "enum [debug info warn error]"
+  }
+
+  Telemetry: {
+    label: "Telemetry : LookingGlass"
     shape: class
     dbPath: "str = ./rl.db"
     logDir: "str = ./logs"
-    logLevel: "enum [debug info warn error]"
   }
 }
 
 # =============================================================================
-# LAYER 2: BINDINGS (Morphisms — nushell scripts interpreting Options)
+# BINDINGS (Terms)
 # =============================================================================
-# Each binding is a morphism: Options → Effect
-# Nushell = glue layer. Receives typed config from Nix, calls CLIs.
-# All scripts strongly typed off Nix module Options.
 
 Bindings: {
   label: "Bindings (Terms)"
   style.fill: "#fff3e0"
 
+  data_nu: {
+    label: "Data/Scripts/default.nu"
+    shape: page
+    signature: "DataSpec -> OHLCV"
+  }
+
   train_nu: {
     label: "Train/Scripts/default.nu"
     shape: page
-    signature: "TrainSpec → Effect"
-    impl: |md
-      let cfg = (open $config_path)
-      ^rl train
-        --env $cfg.env.envId
-        --algo $cfg.agent.algorithm
-        --timesteps $cfg.train.totalTimesteps
-        --lr $cfg.train.learningRate
-        --db $cfg.obs.dbPath
-    |
+    signature: "TrainSpec -> Effect"
   }
 
   eval_nu: {
     label: "Eval/Scripts/default.nu"
     shape: page
-    signature: "EvalSpec → Effect"
-    impl: |md
-      let cfg = (open $config_path)
-      ^rl eval
-        --model (db_best_model $cfg.obs.dbPath)
-        --episodes $cfg.eval.episodes
-    |
+    signature: "EvalSpec -> Effect"
   }
 
   infer_nu: {
     label: "Infer/Scripts/default.nu"
     shape: page
-    signature: "InferSpec → Effect"
-    impl: |md
-      let cfg = (open $config_path)
-      ^rl infer
-        --model (db_best_model $cfg.obs.dbPath)
-        --device $cfg.infer.device
-    |
+    signature: "InferSpec -> Effect"
   }
 
-  db_nu: {
-    label: "Obs/Scripts/default.nu"
+  registry_nu: {
+    label: "Registry/Scripts/default.nu"
     shape: page
-    signature: "ObsSpec → Table"
-    impl: |md
-      # Native nushell SQLite interop
-      open $cfg.obs.dbPath
-        | query db "SELECT * FROM runs
-           ORDER BY mean_reward DESC"
-    |
+    signature: "RegistrySpec -> Table"
   }
 
-  store_nu: {
+  exec_nix: {
+    label: "Execution/Bindings/default.nix"
+    shape: page
+    signature: "ExecSpec -> ENV"
+  }
+
+  store_nix: {
     label: "Store/Bindings/default.nix"
     shape: page
-    signature: "StoreSpec → ENV"
-    impl: |md
-      backend=mlflow → MLFLOW_TRACKING_URI
-      backend=wandb  → WANDB_BASE_URL
-      backend=local  → RL_STORE_MODEL_DIR
-    |
+    signature: "StoreSpec -> ENV"
+  }
+
+  data_nix: {
+    label: "Data/Bindings/default.nix"
+    shape: page
+    signature: "DataSpec -> ENV"
+  }
+
+  secrets: {
+    label: "Execution/Secrets"
+    shape: page
+    signature: "Provider -> Credentials"
   }
 }
 
 # =============================================================================
-# LAYER 3: DERIVATIONS (Frozen CLIs — language-specific logic)
+# DERIVATIONS (Frozen CLIs)
 # =============================================================================
-# Python/sb3/gymnasium frozen into a single Nix derivation.
-# Exposes `rl` CLI with subcommands. Nushell never touches Python.
 
 Drv: {
   label: "Drv/ (Frozen CLIs)"
@@ -162,129 +197,101 @@ Drv: {
     label: "rl (Python CLI)"
     shape: package
     subcommands: |md
-      rl train  — sb3 model.learn()
-      rl eval   — sb3 evaluate_policy()
-      rl infer  — sb3 model.predict()
+      rl data preview  -- dataset summary
+      rl data download -- fetch from provider
+      rl train         -- sb3 learn + checkpoints
+      rl eval          -- sb3 evaluate_policy
+      rl infer         -- sb3 predict
+      rl registry      -- SQLite CRUD
     |
-    deps: "sb3, gymnasium, gym-anytrading"
   }
 }
 
 # =============================================================================
-# LAYER 4: DATA (Effects — runtime + persistent state)
+# DATA (Effects)
 # =============================================================================
-# Obs = looking glass into two scopes:
-#   Runtime: logs (tail -f), stdout
-#   Persistent: SQLite db (nushell native query)
 
-Data: {
+Data_layer: {
   label: "Data (Effects)"
   style.fill: "#e8f5e9"
+
+  csv: {
+    label: "CSV (.lab/data/)"
+    shape: cylinder
+  }
 
   sqlite: {
     label: "SQLite (rl.db)"
     shape: cylinder
-    schema: |md
-      runs: id, env_id, algorithm,
-        timesteps, mean_reward,
-        std_reward, model_path,
-        hyperparams, validated,
-        timestamp
-    |
   }
 
   logs: {
     label: "Logs (./logs/)"
     shape: document
-    content: "training stdout, checkpoints, errors"
   }
 
   models: {
     label: "Models (./models/)"
     shape: document
-    content: "*.zip model checkpoints"
   }
 }
 
 # =============================================================================
-# LAYER 5: INSTANCES (Nix targets — what gets exported)
-# =============================================================================
-
-Instances: {
-  label: "Instances (Exports)"
-  style.fill: "#e8f5e9"
-
-  devShell: {
-    label: "perSystem.devShells.rl"
-    shape: hexagon
-    contains: "rl CLI, nushell, sqlite, ENV vars"
-  }
-
-  cmds: {
-    label: "perSystem.packages.*"
-    shape: hexagon
-    exports: |md
-      rl-train  (nushell → rl train)
-      rl-eval   (nushell → rl eval)
-      rl-infer  (nushell → rl infer)
-      rl-db     (nushell → sqlite query)
-    |
-  }
-}
-
-# =============================================================================
-# LAYER 6: TMUX PRESET (IDE layout — panes map to capabilities)
+# TMUX PRESET
 # =============================================================================
 
 IDE: {
-  label: "Tmux Preset: lab RL"
+  label: "just lab (tmux rl-lab)"
   style.fill: "#fce4ec"
 
   layout: |md
-    +------------------+-------------+
-    | Shell (just/nu)  | Logs (tail) |
-    |  rl-train        |  ./logs/    |
-    |  rl-eval         |             |
-    +------------------+-------------+
-    | DB (nu query)    | Metrics     |
-    |  open rl.db      |  rl-db      |
-    |  | query db ...  |  | table    |
-    +------------------+-------------+
+    +---------------------------+---------------------------+
+    | 1. Shell                  | 2. Train (just train)     |
+    +---------------------------+---------------------------+
+    | 3. Registry (just watch)  | 4. Data (just data)       |
+    +---------------------------+---------------------------+
+    | 5. Logs (just logs)       | 6. Status (just status)   |
+    +---------------------------+---------------------------+
   |
 }
 
 # =============================================================================
-# MORPHISMS (Type-theoretic flow)
+# MORPHISMS
 # =============================================================================
 
-# Options → Nushell scripts (config injection)
+# Data flow
+Options.Data -> Bindings.data_nix: "ENV vars"
+Options.Data -> Bindings.data_nu: "config"
+Bindings.data_nu -> Drv.rl: "^rl data"
+Drv.rl -> Data_layer.csv: "read/write OHLCV"
+
+# Execution flow
+Options.Execution -> Bindings.exec_nix: "ENV vars"
+Options.Execution -> Bindings.secrets: "credential refs"
+
+# Compute flow
 Options.Env -> Bindings.train_nu: "config"
 Options.Agent -> Bindings.train_nu: "config"
 Options.Train -> Bindings.train_nu: "config"
-Options.Eval -> Bindings.eval_nu: "config"
-Options.Infer -> Bindings.infer_nu: "config"
-Options.Store -> Bindings.store_nu: "config"
-Options.Obs -> Bindings.db_nu: "config"
-
-# Nushell scripts → CLI (glue boundary)
 Bindings.train_nu -> Drv.rl: "^rl train"
+
+Options.Eval -> Bindings.eval_nu: "config"
 Bindings.eval_nu -> Drv.rl: "^rl eval"
+
+Options.Infer -> Bindings.infer_nu: "config"
 Bindings.infer_nu -> Drv.rl: "^rl infer"
-Bindings.db_nu -> Data.sqlite: "open | query db"
 
-# CLI → Data (effects)
-Drv.rl -> Data.sqlite: "write runs"
-Drv.rl -> Data.logs: "stdout/stderr"
-Drv.rl -> Data.models: "save checkpoints"
+# Information flow
+Options.Store -> Bindings.store_nix: "config"
+Options.Registry -> Bindings.registry_nu: "config"
+Bindings.registry_nu -> Drv.rl: "^rl registry"
 
-# Bindings → Instances (exports)
-Bindings.train_nu -> Instances.cmds: "rl-train"
-Bindings.eval_nu -> Instances.cmds: "rl-eval"
-Bindings.infer_nu -> Instances.cmds: "rl-infer"
-Bindings.db_nu -> Instances.cmds: "rl-db"
-Bindings.store_nu -> Instances.devShell: "ENV vars"
+# Effects
+Drv.rl -> Data_layer.sqlite: "write runs"
+Drv.rl -> Data_layer.logs: "stdout/stderr"
+Drv.rl -> Data_layer.models: "checkpoints"
 
-# IDE panes → capabilities
-IDE -> Instances.cmds: "shell pane"
-IDE -> Data.logs: "logs pane"
-IDE -> Data.sqlite: "db pane"
+# IDE
+IDE -> Data_layer.csv: "data pane"
+IDE -> Data_layer.sqlite: "registry pane"
+IDE -> Data_layer.logs: "logs pane"

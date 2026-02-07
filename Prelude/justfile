@@ -260,7 +260,12 @@ preset name domain="Audio":
 # LABS
 # -------------------------------------------------------------------------------
 
-# Launch Lab in explore preset
-# ARGS: domain - lab domain (Audio, Video, 3D, Data)
+# Launch Lab in domain-specific preset (rl for RL, explore for others)
+# ARGS: domain - lab domain (Audio, RL, Game, etc.)
 lab domain="Audio":
-    @just preset explore {{domain}}
+    #!/usr/bin/env nu
+    let preset: string = match "{{domain}}" {
+      "RL" => "rl"
+      _ => "explore"
+    }
+    nu Modules/Labs/Scripts/Universe/Preset/Bindings/Scripts/default.nu $'{"preset": "($preset)", "workdir": "Modules/Labs/{{domain}}"}'

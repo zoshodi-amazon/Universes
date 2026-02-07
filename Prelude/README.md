@@ -51,6 +51,37 @@ Options (types) → ENV vars (config) → Nushell (glue) → CLI (effects) → D
 
 Every Arch.d2 should read as a commutative diagram — trace any capability from its type declaration through its binding to its effect and verify it commutes.
 
+### Toolchain
+
+Each layer in the stack has a minimal, purpose-fit tool:
+
+| Tool | Layer | Role |
+|------|-------|------|
+| Nix Options | Types | Declare capability space, single source of truth |
+| uv | Packaging | Install Python deps into venv inside Nix derivation — fast, reliable, no nixpkgs breakage |
+| makeWrapper | CLI | Wrap a Python/Rust/etc binary with correct PATH/PYTHONPATH — produces a clean CLI entry point |
+| Nushell | Glue | Typed pipeline scripting — orchestrate CLIs, parse config, structured data flow |
+| justfile | Interface | Self-documenting recipes — thin wrapper over nushell scripts, the user-facing API |
+| gum | Formatting | Styled terminal output (borders, colors, prompts) — no TUI framework needed |
+
+**Python packaging pattern (Drv/):**
+```nix
+# Use uv to install deps, makeWrapper to produce CLI
+buildPhase = ''
+  uv venv $out/venv --python ${python}/bin/python
+  uv pip install --python $out/venv/bin/python <deps>
+'';
+installPhase = ''
+  makeWrapper $out/venv/bin/python $out/bin/<cli-name> \
+    --add-flags "$out/lib/main.py"
+'';
+```
+
+This avoids fighting nixpkgs' broken/missing Python packages (e.g. ale-py on aarch64-darwin). uv resolves and installs from PyPI directly inside the Nix sandbox. The result is a hermetic derivation with a clean CLI.
+
+**Why not buildPythonApplication with nixpkgs deps?**
+Transitive dependency hell. A single unsupported platform in a deep transitive dep (e.g. `gymnasium → ale-py → aarch64-darwin`) blocks the entire build. uv sidesteps this entirely — it installs wheels from PyPI, handles platform-specific resolution, and is fast.
+
 ---
 
 ## Core Dualities
@@ -351,6 +382,99 @@ Categories are organizational containers. Modules are capability units with full
 25. Nushell scripts typed off Nix module Options — config shape = Options type
 26. Language-specific logic frozen in Drv/ with CLI interface — nushell calls CLIs only
 27. Arch.d2 is the morphism diagram — implementation is mechanical from it
+28. NO string interpolation in nushell — use typed variables, `print` with arguments, structured data. Prefer `[$a $b] | str join " "` over `$"($a) ($b)"`. Strong typing over string templating.
+```
+
+---
+
+## Nushell Type Discipline
+
+Nushell is the glue layer in the execution stack. All nushell code MUST follow these typing rules to maintain the morphism chain from Nix Options through to CLI effects.
+
+### Principle: Strong Typing Over String Templating
+
+Nushell has a structural type system with `record<>`, `list<>`, `table<>`, typed function signatures (`def foo []: input -> output`), and `match` for dispatch. Use it. String interpolation (`$"..."`) bypasses the type system entirely — it is untyped string templating that produces opaque strings from typed values. This is the exact opposite of what we want.
+
+### The Rules
+
+```
+1. Every `let` binding MUST have an explicit type annotation
+2. Every `def` parameter MUST have a type annotation
+3. Every `def` MUST declare input/output types via `[]: input -> output`
+4. Use `str join` for string assembly — never `$"..."`
+5. Use `| into int`, `| into string` for explicit type conversions
+6. Use `match` for dispatch over values — never if/else chains on strings
+7. Use `record<>` and `list<>` compound types where structure is known
+8. Data flows through typed pipelines — not through string formatting
+```
+
+### Type Signature Reference
+
+```nu
+# Variable declarations — always annotate
+let x: int = 9
+let name: string = "hello"
+let items: list<string> = ["a" "b" "c"]
+let cfg: record<name: string, count: int> = {name: "foo", count: 3}
+
+# Function signatures — annotate params AND input/output
+def process [path: string, n: int]: nothing -> list<string> {
+  open $path | lines | first $n
+}
+
+# Multiple input/output type pairs
+def transform []: [
+  string -> list<string>
+  list<string> -> table
+] { }
+
+# Closures — annotate parameters
+do {|nums: list<int>| $nums | math sum } [1 2 3]
+```
+
+### String Assembly (CORRECT)
+
+```nu
+# str join with typed values — not string interpolation
+let count: int = 42
+let dir: string = "/tmp"
+print ["Found" ($count | into string) "items in" $dir] | str join " "
+
+# Multi-part output: build list, join, print
+let parts: list<string> = [
+  "  total:" ($total | into string)
+  "validated:" ($validated | into string)
+  "best:" $best_str
+]
+$parts | str join " " | print
+```
+
+### Record Pattern for Status/Config
+
+```nu
+# Build typed records, print fields — not interpolated strings
+let status: record = {
+  env: ($env.RL_ENV_ID? | default "stocks-v0")
+  algo: ($env.RL_AGENT_ALGORITHM? | default "ppo")
+  provider: ($env.RL_DATA_PROVIDER? | default "csv")
+}
+print ["  Env:" $status.env] | str join " "
+print ["  Agent:" $status.algo] | str join " "
+```
+
+### Match for Dispatch
+
+```nu
+# WRONG: if/else chain on strings
+if $provider == "csv" { ... } else if $provider == "yahoo" { ... }
+
+# CORRECT: match (exhaustive pattern matching)
+match $provider {
+  "csv" => { open $file }
+  "yahoo" => { ^rl data download --provider yahoo }
+  "alpaca" => { ^rl data download --provider alpaca }
+  _ => { error make {msg: "unknown provider"} }
+}
 ```
 
 ---

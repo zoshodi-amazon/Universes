@@ -1,5 +1,5 @@
 #!/usr/bin/env nu
-# Train binding: TrainSpec → Effect
+# Train binding: TrainSpec -> Effect
 # Typed off Nix module Options — config shape = Options type
 
 def main [config_path: string]: nothing -> nothing {
@@ -10,5 +10,5 @@ def main [config_path: string]: nothing -> nothing {
     --algo $cfg.agent.algorithm
     --timesteps $cfg.train.totalTimesteps
     --lr $cfg.train.learningRate
-    --db $cfg.obs.dbPath)
+    --db $cfg.registry.dbPath)
 }

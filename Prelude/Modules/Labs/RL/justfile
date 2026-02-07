@@ -1,0 +1,270 @@
+# ===============================================================================
+# RL LAB - Reinforcement Learning Pipeline
+# ===============================================================================
+#
+# NAME
+#     justfile - Declarative RL pipeline with built-in observability
+#
+# SYNOPSIS
+#     just <recipe> [arguments...]
+#     just --list
+#
+# DESCRIPTION
+#     Capability-centric RL workstation. All configuration via Options.
+#     Pipeline: Data -> Observation -> Env -> Agent -> Train -> Eval -> Infer
+#
+#     DATA        - Fetch, preview, manage market data
+#     TRAIN       - Training loop with checkpoint callbacks
+#     EVAL        - Evaluate models against environment
+#     INFER       - Run inference with best validated model
+#     REGISTRY    - SQLite model metadata, validation, hotswap
+#     TELEMETRY   - Logs, metrics, traces (OTEL)
+#     CONFIG      - Introspect options and current configuration
+#     LAB         - Tmux IDE with auto-running panes
+#
+# ===============================================================================
+
+scripts := "Universe"
+session := "rl-lab"
+
+default:
+    @just --list
+
+# -------------------------------------------------------------------------------
+# LAB
+# -------------------------------------------------------------------------------
+
+# Open tmux IDE with 4 auto-running panes
+lab:
+    #!/usr/bin/env nu
+    do { ^tmux kill-session -t {{session}} } | complete | ignore
+    just init 2>/dev/null
+    let workdir: string = (pwd)
+    let json: string = ({preset: "rl", workdir: $workdir} | to json -r)
+    nu (glob "../../Scripts/Universe/Preset/Bindings/Scripts/default.nu" | first) $json
+
+# Reattach to existing lab session
+lab-attach:
+    @tmux attach-session -t {{session}} 2>/dev/null || echo "No session. Run: just lab"
+
+# Kill lab session
+lab-kill:
+    @tmux kill-session -t {{session}} 2>/dev/null || echo "No session running"
+
+# -------------------------------------------------------------------------------
+# INIT
+# -------------------------------------------------------------------------------
+
+# Initialize RL Lab workspace with sample data
+init:
+    #!/usr/bin/env nu
+    mkdir .lab
+    mkdir .lab/data
+    mkdir .lab/models
+    mkdir .lab/logs
+    if not (".lab/data/sample.csv" | path exists) {
+      cp Zoo/sample.csv .lab/data/sample.csv
+      print "Initialized .lab/ with sample OHLCV data"
+    } else {
+      print ".lab/ already initialized"
+    }
+
+# Show lab status (registry + data + config summary)
+status:
+    #!/usr/bin/env nu
+    print (gum style --border normal --padding "0 1" "RL Lab Status")
+    if (".lab/data/sample.csv" | path exists) {
+      let rows: int = (open .lab/data/sample.csv | length)
+      ["  Data: .lab/data/sample.csv" ($rows | into string) "rows"] | str join " " | print
+    } else {
+      print "  Data: (none) - run: just init"
+    }
+    if (".lab/rl.db" | path exists) {
+      let total: int = (open .lab/rl.db | query db "SELECT count(*) as n FROM runs" | get 0.n)
+      let validated: int = (open .lab/rl.db | query db "SELECT count(*) as n FROM runs WHERE validated=1" | get 0.n)
+      let best = (open .lab/rl.db | query db "SELECT mean_reward FROM runs WHERE validated=1 ORDER BY mean_reward DESC LIMIT 1")
+      let best_str: string = if ($best | is-empty) { "---" } else { $best.0.mean_reward | into string }
+      ["  Models:" ($total | into string) "total," ($validated | into string) "validated, best=" $best_str] | str join " " | print
+    } else {
+      print "  Registry: (none)"
+    }
+    let env_id: string = ($env.RL_ENV_ID? | default "stocks-v0")
+    let algo: string = ($env.RL_AGENT_ALGORITHM? | default "ppo")
+    let data_prov: string = ($env.RL_DATA_PROVIDER? | default "csv")
+    let exec_prov: string = ($env.RL_EXEC_PROVIDER? | default "backtest")
+    ["  Env:" $env_id] | str join " " | print
+    ["  Agent:" $algo] | str join " " | print
+    ["  Data provider:" $data_prov] | str join " " | print
+    ["  Execution:" $exec_prov] | str join " " | print
+
+# -------------------------------------------------------------------------------
+# DATA
+# -------------------------------------------------------------------------------
+
+# Preview current dataset
+data:
+    #!/usr/bin/env nu
+    print (gum style --border normal --padding "0 1" "Dataset")
+    if (".lab/data/sample.csv" | path exists) {
+      let df = (open .lab/data/sample.csv)
+      let rows: int = ($df | length)
+      let cols: string = ($df | columns | str join ", ")
+      print "  File: .lab/data/sample.csv"
+      ["  Rows:" ($rows | into string)] | str join " " | print
+      ["  Columns:" $cols] | str join " " | print
+      print ""
+      $df | first 10 | table | print
+    } else {
+      print (gum style --foreground 196 "No data. Run: just init")
+    }
+
+# Download data from provider (yahoo/alpaca)
+download:
+    @gum style --border normal --padding "0 1" "Downloading data"
+    @rl-data download
+
+# -------------------------------------------------------------------------------
+# TRAIN
+# -------------------------------------------------------------------------------
+
+# Train agent with current Options configuration
+train:
+    #!/usr/bin/env nu
+    gum style --border normal --padding "0 1" "Training"
+    ^rl train --db .lab/rl.db
+    gum style --foreground 82 "Training complete"
+
+# Train with specific environment
+# ARGS: env - gymnasium environment ID, timesteps - total steps
+train-env env timesteps="100000":
+    #!/usr/bin/env nu
+    let env_name: string = "{{env}}"
+    let steps: string = "{{timesteps}}"
+    gum style --border normal --padding "0 1" "Training"
+    ["  env:" $env_name "steps:" $steps] | str join " " | print
+    ^rl train --env $env_name --timesteps ($steps | into int) --db .lab/rl.db
+
+# -------------------------------------------------------------------------------
+# EVAL
+# -------------------------------------------------------------------------------
+
+# Evaluate best validated model
+eval:
+    #!/usr/bin/env nu
+    gum style --border normal --padding "0 1" "Evaluating best model"
+    let best: string = (^rl registry best --db .lab/rl.db)
+    ^rl eval --model $best --db .lab/rl.db
+    gum style --foreground 82 "Evaluation complete"
+
+# Evaluate specific model by registry ID
+# ARGS: id - model registry ID
+eval-id id:
+    #!/usr/bin/env nu
+    let model_id: int = ("{{id}}" | into int)
+    gum style --border normal --padding "0 1" "Evaluating model"
+    let query: string = "SELECT model_path FROM runs WHERE id = ?"
+    let path: string = (open .lab/rl.db | query db $query --params [$model_id] | get 0.model_path)
+    ^rl eval --model $path --db .lab/rl.db
+
+# -------------------------------------------------------------------------------
+# INFER
+# -------------------------------------------------------------------------------
+
+# Run inference with best validated model
+infer:
+    #!/usr/bin/env nu
+    gum style --border normal --padding "0 1" "Inference"
+    let best: string = (^rl registry best --db .lab/rl.db)
+    ^rl infer --model $best
+
+# Run inference in loop mode
+infer-loop:
+    #!/usr/bin/env nu
+    let best: string = (^rl registry best --db .lab/rl.db)
+    ^rl infer --model $best --loop
+
+# -------------------------------------------------------------------------------
+# REGISTRY
+# -------------------------------------------------------------------------------
+
+# List all models in registry
+models:
+    @rl registry list --db .lab/rl.db
+
+# List validated models only
+validated:
+    @rl registry list --db .lab/rl.db --validated
+
+# Show best validated model path
+best:
+    @rl registry best --db .lab/rl.db
+
+# Validate a model by ID
+# ARGS: id - model registry ID
+validate id:
+    @rl registry validate --db .lab/rl.db --id {{id}}
+
+# Prune old/low-performing models
+prune:
+    @gum confirm "Prune registry?" && rl registry prune --db .lab/rl.db
+
+# Query registry with custom SQL
+# ARGS: sql - SQL query against runs table
+query sql:
+    #!/usr/bin/env nu
+    let q: string = "{{sql}}"
+    open .lab/rl.db | query db $q | table | print
+
+# -------------------------------------------------------------------------------
+# TELEMETRY
+# -------------------------------------------------------------------------------
+
+# Tail training logs
+logs:
+    @gum style --foreground 212 "Tailing logs..."
+    @tail -f .lab/logs/rl.log 2>/dev/null || echo "No logs yet. Run: just train"
+
+# Watch registry for changes (refreshes every 2s)
+watch:
+    #!/usr/bin/env nu
+    loop {
+      clear
+      print (gum style --border normal --padding "0 1" "RL Registry (live)")
+      if (".lab/rl.db" | path exists) {
+        open .lab/rl.db
+          | query db "SELECT id, env_id, algorithm, timesteps, mean_reward, validated FROM runs ORDER BY timestamp DESC LIMIT 20"
+          | table
+          | print
+      }
+      sleep 2sec
+    }
+
+# -------------------------------------------------------------------------------
+# SMOKE
+# -------------------------------------------------------------------------------
+
+# Run smoke tests for all features (or one: just smoke data)
+smoke feature="":
+    #!/usr/bin/env nu
+    let f: string = "{{feature}}"
+    if ($f | is-empty) {
+      nu {{scripts}}/Smoke/Bindings/Scripts/default.nu
+    } else {
+      nu {{scripts}}/Smoke/Bindings/Scripts/default.nu $f
+    }
+
+# Alias: just test = just smoke
+test feature="":
+    @just smoke {{feature}}
+
+# -------------------------------------------------------------------------------
+# CONFIG
+# -------------------------------------------------------------------------------
+
+# Show full Options type space for this module
+options:
+    @nu ../../Scripts/Universe/Introspect/Bindings/Scripts/default.nu '{"mode": "options", "module": "Modules/Labs/RL"}'
+
+# Show Universe features
+features:
+    @nu ../../Scripts/Universe/Introspect/Bindings/Scripts/default.nu '{"mode": "features", "module": "Modules/Labs/RL"}'

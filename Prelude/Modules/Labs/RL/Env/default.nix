@@ -1,4 +1,4 @@
-# RL Env - self-enable (invariant 12)
+# RL Env - aggregates Options -> ENV vars
 { ... }:
 {
   config.rl.enable = true;

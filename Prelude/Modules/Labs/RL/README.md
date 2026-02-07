@@ -4,151 +4,257 @@ Declarative Reinforcement Learning pipeline with built-in observability.
 
 ## Capability Space
 
-The RL pipeline decomposes into these orthogonal capabilities:
+### Computation (pipeline stages)
 
-| Feature | Purpose | Signature | Category |
-|---------|---------|-----------|----------|
-| Env | Environment definition (Gym/Gymnasium) | `EnvSpec → Env` | Computation |
-| Obs | Observation/state space & preprocessing | `RawObs → ProcessedObs` | Computation |
-| Feature | Feature engineering & embeddings | `Obs → Features` | Computation |
-| Agent | Policy/algorithm selection | `(Obs, Action) → Policy` | Computation |
-| Train | Training loop & hyperparameters | `(Env, Agent) → Model` | Computation |
-| Eval | Evaluation & validation | `(Model, Env) → Metrics` | Computation |
-| Infer | Inference/deployment | `(Model, Obs) → Action` | Computation |
-| Store | Experiment tracking | `Experiment → Artifacts` | Information |
-| Registry | Model metadata & validation | `Model → Metadata` | Information |
-| Metrics | Runtime telemetry (reward, loss) | `Step → Metrics` | Signal |
-| Traces | Episode/step spans | `Episode → Trace` | Signal |
-| Logs | Structured events | `Event → Log` | Signal |
+| Feature | Purpose | Signature |
+|---------|---------|-----------|
+| Env | Environment definition (Gym/Gymnasium) | `EnvSpec -> Env` |
+| Observation | State space preprocessing | `RawObs -> ProcessedObs` |
+| Feature | Feature engineering (folded into Agent.netArch) | `Obs -> Features` |
+| Agent | Policy/algorithm selection | `(Obs, Action) -> Policy` |
+| Train | Training loop with checkpoint callbacks | `(Env, Agent) -> Model` |
+| Eval | Evaluation and validation | `(Model, Env) -> Metrics` |
+| Infer | Inference/deployment | `(Model, Obs) -> Action` |
+
+### Data (market data acquisition)
+
+| Feature | Purpose | Signature |
+|---------|---------|-----------|
+| Data | Abstract data contract (provider-agnostic) | `DataSpec -> OHLCV` |
+
+Providers: csv (default), yahoo, alpaca, ccxt
+
+### Execution (trade execution)
+
+| Feature | Purpose | Signature |
+|---------|---------|-----------|
+| Execution | Abstract execution contract (provider-agnostic) | `Order -> Fill` |
+
+Providers: backtest (default), paper, live. Credentials via Secrets binding.
+
+### Information (persistent state)
+
+| Feature | Purpose | Signature |
+|---------|---------|-----------|
+| Store | Experiment tracking (MLflow/Wandb/local) | `Experiment -> Artifacts` |
+| Registry | Model metadata, validation, hotswap (SQLite) | `Model -> Metadata` |
+
+### Signal (runtime telemetry via OTEL)
+
+| Feature | Purpose | Signature |
+|---------|---------|-----------|
+| Metrics | Reward, loss, entropy, FPS gauges | `Step -> Metric` |
+| Traces | Episode/step/eval spans | `Episode -> Trace` |
+| Logs | Structured events (checkpoint, error) | `Event -> Log` |
+
+### Observability (looking glass)
+
+| Feature | Purpose | Signature |
+|---------|---------|-----------|
+| Telemetry | Aggregated view into db + logs | `Config -> Table` |
 
 ## Pipeline Flow
 
 ```
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
-│   Env   │───▶│   Obs   │───▶│ Feature │───▶│  Agent  │
-└─────────┘    └─────────┘    └─────────┘    └─────────┘
-                                                  │
-                                                  ▼
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
-│  Infer  │◀───│Registry │◀───│  Eval   │◀───│  Train  │
-└─────────┘    └─────────┘    └─────────┘    └─────────┘
-                   │              │              │
-                   │              │              │
-              ┌────┴────┐    ┌───┴───┐    ┌────┴────┐
-              │  Store  │    │Metrics│    │ Traces  │
-              │(MLflow) │    │(OTEL) │    │ (OTEL)  │
-              └─────────┘    └───────┘    └─────────┘
+Data (fetch OHLCV) -> Observation (preprocess) -> Env (gym env with data)
+  -> Agent (policy) -> Train (learn) -> Registry (checkpoint)
+  -> Eval (backtest) -> Registry (validate) -> Infer (paper/live via Execution)
 ```
 
-## Observability Stack
-
-| Component | Purpose | Backend | Data Type |
-|-----------|---------|---------|-----------|
-| **Registry** | Model metadata, validation, hotswap | SQLite | Information (discrete) |
-| **Store** | Experiment tracking, artifacts | MLflow/Wandb/Local | Information (discrete) |
-| **Metrics** | Reward, loss, entropy streams | OTEL → Prometheus | Signal (continuous) |
-| **Traces** | Episode/step spans | OTEL → Jaeger | Signal (continuous) |
-| **Logs** | Checkpoint events, errors | OTEL → Loki | Signal (continuous) |
-
-### SQLite + OTEL Pairing
-
 ```
-Training Loop (Computation)
-├─ Emits OTEL Metrics ────────▶ Signal/Metrics/ (reward, loss per step)
-├─ Emits OTEL Traces ─────────▶ Signal/Traces/ (episode spans)
-├─ Emits OTEL Logs ───────────▶ Signal/Logs/ (checkpoint saved)
-└─ Writes Model Metadata ─────▶ SQLite Registry (model_id, metrics, path)
-
-Validation Layer
-├─ Queries SQLite ────────────▶ "Best validated model?"
-└─ Checks Metrics ────────────▶ "Training converged?"
-
-Hotswap
-└─ Loads from SQLite ─────────▶ model_path (validated models only)
++-----------+    +-------------+    +---------+    +---------+
+|   Data    |--->| Observation |--->|   Env   |--->|  Agent  |
+| (csv/api) |    | (normalize) |    |(gym env)|    | (ppo..) |
++-----------+    +-------------+    +---------+    +---------+
+                                                       |
+                                                       v
++-----------+    +----------+    +----------+    +---------+
+|   Infer   |<---|  Registry|<---|   Eval   |<---|  Train  |
+| (execute) |    | (sqlite) |    |(backtest)|    | (learn) |
++-----------+    +----------+    +----------+    +---------+
+     |                |              |               |
+     v                v              v               v
++-----------+    +---------+    +--------+    +-----------+
+| Execution |    |  Store  |    |Metrics |    |  Traces   |
+|(paper/live)|   |(mlflow) |    | (OTEL) |    |  (OTEL)   |
++-----------+    +---------+    +--------+    +-----------+
 ```
 
 ## Options (Type Space)
 
+### Data
+- `provider`: csv, yahoo, alpaca, ccxt (default: csv)
+- `tickers`: list of ticker symbols (default: ["AAPL"])
+- `interval`: 1m, 5m, 15m, 1h, 1d (default: 1d)
+- `startDate`: start date string (default: "2020-01-01")
+- `endDate`: end date string (default: "2023-12-31")
+- `indicators`: technical indicators (default: ["macd" "rsi_30"])
+- `dataDir`: data storage directory (default: "./.lab/data")
+
+### Execution
+- `provider`: backtest, paper, live (default: backtest)
+- `maxPosition`: max position size string (default: "100")
+
 ### Env
-- `envId`: Gymnasium environment ID or custom
-- `nEnvs`: Number of parallel environments
-- `seed`: Random seed
+- `envId`: Gymnasium environment ID (default: "stocks-v0")
+- `nEnvs`: parallel environments (default: 4)
+- `seed`: random seed (default: null)
 
-### Obs
-- `normalize`: Normalization strategy
-- `clipRange`: Clipping bounds
-- `stackFrames`: Frame stacking (null or int)
-
-### Feature
-- `encoder`: CNN, MLP, Transformer, custom
-- `embedDim`: Embedding dimension
+### Observation
+- `normalize`: none, running, fixed (default: none)
+- `clipRange`: clipping bounds (default: "10.0")
+- `stackFrames`: frame stacking (default: null)
 
 ### Agent
-- `algorithm`: PPO, A2C, DQN, SAC, TD3
-- `policyType`: MlpPolicy, CnnPolicy, MultiInputPolicy
-- `netArch`: Network architecture
+- `algorithm`: ppo, a2c, dqn, sac, td3 (default: ppo)
+- `policyType`: MlpPolicy, CnnPolicy, MultiInputPolicy (default: MlpPolicy)
+- `netArch`: network architecture (default: [64 64])
 
 ### Train
-- `totalTimesteps`: Total training steps
-- `learningRate`: Learning rate (string for scientific notation)
-- `batchSize`: Batch size
-- `gamma`: Discount factor
+- `totalTimesteps`: total training steps (default: 100000)
+- `learningRate`: learning rate string (default: "3e-4")
+- `batchSize`: batch size (default: 64)
+- `gamma`: discount factor string (default: "0.99")
 
 ### Eval
-- `episodes`: Number of evaluation episodes
-- `deterministic`: Use deterministic actions
+- `episodes`: evaluation episodes (default: 10)
+- `deterministic`: deterministic actions (default: true)
 
 ### Infer
-- `modelPath`: Path to trained model
-- `device`: cpu, cuda, mps
+- `modelPath`: path to model (default: "./models/best_model.zip")
+- `device`: auto, cpu, cuda, mps (default: auto)
 
 ### Store
-- `backend`: local, s3, mlflow, wandb
-- `trackingUri`: Generic tracking endpoint
-- `experimentName`: Generic experiment name
-- `modelDir`: Model save directory
-- `checkpointFreq`: Checkpoint frequency
+- `backend`: local, s3, mlflow, wandb (default: local)
+- `modelDir`: model save directory (default: "./models")
+- `checkpointFreq`: checkpoint frequency (default: 10000)
+- `trackingUri`: tracking endpoint (default: "http://localhost:5000")
+- `experimentName`: experiment name (default: "rl-experiment")
 
-### Registry (SQLite)
-- `enable`: Enable model registry
-- `dbPath`: SQLite database path
-- `minReward`: Minimum reward threshold for validation
-- `minEpisodes`: Minimum episodes for validation
-- `keepTopN`: Retain top N models
-- `maxAge`: Maximum model age in days
+### Registry
+- `enable`: enable model registry (default: true)
+- `dbPath`: SQLite path (default: "./rl.db")
+- `minReward`: minimum reward for validation (default: "0")
+- `minEpisodes`: minimum episodes (default: 5)
+- `keepTopN`: retain top N models (default: 10)
+- `maxAge`: max model age in days (default: 30)
 
 ### Metrics (OTEL)
-- `enable`: Enable metrics export
-- `endpoint`: OTEL collector endpoint
-- `protocol`: grpc or http
-- `exportInterval`: Export interval in seconds
-- `trackReward`: Track reward metric
-- `trackLoss`: Track loss metric
-- `trackEntropy`: Track entropy metric
-- `trackFps`: Track FPS metric
+- `enable`: enable metrics (default: false)
+- `endpoint`: collector endpoint (default: "http://localhost:4317")
+- `protocol`: grpc, http, console (default: console)
+- `exportInterval`: seconds (default: 10)
+- `trackReward`, `trackLoss`, `trackEntropy`, `trackFps`: booleans
 
 ### Traces (OTEL)
-- `enable`: Enable trace export
-- `endpoint`: OTEL collector endpoint
-- `sampleRate`: Trace sampling rate (0.0-1.0)
-- `traceEpisodes`: Trace episode spans
-- `traceSteps`: Trace step spans (high volume)
-- `traceEvals`: Trace evaluation spans
+- `enable`: enable traces (default: false)
+- `endpoint`: collector endpoint (default: "http://localhost:4317")
+- `sampleRate`: 0.0-1.0 (default: "1.0")
+- `traceEpisodes`, `traceSteps`, `traceEvals`: booleans
 
 ### Logs (OTEL)
-- `enable`: Enable log export
-- `endpoint`: OTEL collector endpoint
-- `level`: debug, info, warn, error
+- `enable`: enable log export (default: false)
+- `endpoint`: collector endpoint (default: "http://localhost:4317")
+- `level`: debug, info, warn, error (default: info)
+
+### Telemetry
+- `dbPath`: SQLite path (default: "./rl.db")
+- `logDir`: log directory (default: "./logs")
+- `logLevel`: debug, info, warn, error (default: info)
+
+## Tmux Preset: `just lab`
+
+6 panes, all auto-running:
+
+```
++---------------------------+---------------------------+
+| 1. Shell                  | 2. Train (just train)     |
+|    interactive commands    |    live training output    |
++---------------------------+---------------------------+
+| 3. Registry (just watch)  | 4. Data (just data)       |
+|    live model table        |    dataset status/preview  |
++---------------------------+---------------------------+
+| 5. Logs (just logs)       | 6. Status (just status)   |
+|    tail -f rl.log          |    lab summary + config    |
++---------------------------+---------------------------+
+```
+
+Session is named `rl-lab`, resumable via `tmux attach -t rl-lab`.
+
+## End-to-End Walkthrough
+
+```bash
+cd Modules/Labs/RL
+
+# 1. Initialize lab workspace with sample CSV data
+just init
+
+# 2. Preview dataset
+just data
+
+# 3. Train agent (PPO on stocks-v0 with CSV data)
+just train
+
+# 4. Evaluate best model
+just eval
+
+# 5. Run inference
+just infer
+
+# 6. Open full lab IDE (all panes auto-run)
+just lab
+```
+
+## Lab Justfile
+
+```bash
+just --list
+
+# DATA
+just data                     # Preview dataset
+just download                 # Fetch from provider (yahoo/alpaca)
+
+# TRAIN
+just train                    # Train with current config
+just train-env stocks-v0      # Train specific env
+
+# EVAL
+just eval                     # Evaluate best model
+just eval-id 5                # Evaluate model #5
+
+# INFER
+just infer                    # Inference with best model
+
+# REGISTRY
+just models                   # List all models
+just validated                # List validated only
+just best                     # Show best model path
+just validate 5               # Validate model #5
+just prune                    # Clean old models
+
+# TELEMETRY
+just logs                     # Tail training logs
+just watch                    # Live registry view
+just status                   # Lab summary
+
+# CONFIG
+just options                  # Show Options type space
+just features                 # Show Universe features
+
+# LAB
+just lab                      # Open tmux IDE (6 panes, auto-running)
+just lab-kill                 # Kill tmux session
+just lab-attach               # Reattach to existing session
+```
 
 ## Bindings (Implementation Space)
 
-Each feature maps to stable-baselines3 / gymnasium / OTEL APIs:
-
 | Feature | Primary Binding | ENV Prefix |
 |---------|-----------------|------------|
+| Data | csv/yfinance/alpaca API | `RL_DATA_` |
+| Execution | backtest/paper/live | `RL_EXEC_` |
 | Env | `gymnasium.make()` | `RL_ENV_` |
-| Obs | `gymnasium.spaces` | `RL_OBS_` |
-| Feature | `sb3.common.torch_layers` | `RL_FEAT_` |
+| Observation | `gymnasium.spaces` | `RL_OBS_` |
 | Agent | `sb3.{PPO,A2C,DQN,...}` | `RL_AGENT_` |
 | Train | `model.learn()` | `RL_TRAIN_` |
 | Eval | `sb3.common.evaluation` | `RL_EVAL_` |
@@ -157,226 +263,40 @@ Each feature maps to stable-baselines3 / gymnasium / OTEL APIs:
 | Registry | `sqlite3` | `RL_REGISTRY_` |
 | Metrics | `opentelemetry-api` | `OTEL_METRICS_` |
 | Traces | `opentelemetry-sdk` | `OTEL_TRACES_` |
-| Logs | `opentelemetry-instrumentation` | `OTEL_LOGS_` |
-
-### ENV ≅ CLI ≅ Options Isomorphism
-
-```
-Options                    ENV                           CLI
--------                    ---                           ---
-trackingUri                RL_STORE_TRACKING_URI         --tracking-uri
-experimentName             RL_STORE_EXPERIMENT_NAME      --experiment-name
-backend="mlflow"           RL_STORE_BACKEND=mlflow       --backend mlflow
-registry.dbPath            RL_REGISTRY_DB=./reg.db       --registry-db
-registry.minReward         RL_REGISTRY_MIN_REWARD=0.9    --min-reward
-metrics.enable             RL_METRICS_ENABLE=1           --metrics
-metrics.endpoint           OTEL_EXPORTER_OTLP_ENDPOINT   --metrics-endpoint
-traces.sampleRate          RL_TRACES_SAMPLE_RATE=1.0     --trace-sample-rate
-logs.level                 RL_LOGS_LEVEL=info            --log-level
-```
-
-### SQLite Registry Schema
-
-```sql
-CREATE TABLE models (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  model_path TEXT NOT NULL,
-  algorithm TEXT NOT NULL,
-  env_id TEXT NOT NULL,
-  timestamp INTEGER NOT NULL,
-  total_timesteps INTEGER,
-  mean_reward REAL,
-  std_reward REAL,
-  mean_episode_length REAL,
-  hyperparams TEXT,  -- JSON
-  git_commit TEXT,
-  validated BOOLEAN DEFAULT 0
-);
-
-CREATE INDEX idx_timestamp ON models(timestamp);
-CREATE INDEX idx_mean_reward ON models(mean_reward);
-CREATE INDEX idx_validated ON models(validated);
-```
-
-### Validation Layer
-
-```python
-def validate_model(model_id: int) -> bool:
-    row = registry.query("SELECT * FROM models WHERE id = ?", model_id)
-    
-    checks = [
-        row.mean_reward >= cfg.minReward if cfg.minReward else True,
-        row.total_timesteps >= cfg.minEpisodes * row.mean_episode_length,
-        row.std_reward < row.mean_reward * 0.5,  # Stability check
-    ]
-    
-    if all(checks):
-        registry.execute("UPDATE models SET validated = 1 WHERE id = ?", model_id)
-        return True
-    return False
-```
-
-### Hotswap Flow
-
-```
-1. Training loop saves checkpoint
-2. Checkpoint callback writes to Registry (validated=0)
-3. Eval callback runs evaluation
-4. Eval writes metrics to Registry row
-5. Validation layer checks criteria → validated=1 if passed
-6. Inference queries: SELECT model_path FROM models WHERE validated=1 ORDER BY mean_reward DESC LIMIT 1
-7. Load model from path
-```
-
-## Usage
-
-```nix
-{
-  rl = {
-    enable = true;
-    
-    # Core pipeline
-    env.envId = "CartPole-v1";  # or "forex-v0", "stocks-v0" for gym-anytrading
-    env.nEnvs = 8;
-    agent.algorithm = "ppo";
-    agent.netArch = [ 64 64 ];
-    train.totalTimesteps = 100000;
-    train.learningRate = "3e-4";
-    eval.episodes = 10;
-    
-    # Experiment tracking (optional)
-    store.backend = "mlflow";
-    store.trackingUri = "http://localhost:5000";
-    store.experimentName = "cartpole-ppo";
-    
-    # Model registry (default: enabled)
-    registry.enable = true;
-    registry.dbPath = "./rl_registry.db";
-    registry.minReward = 195.0;  # CartPole-v1 solved threshold
-    registry.keepTopN = 10;
-    
-    # Observability (optional)
-    metrics.enable = true;
-    metrics.trackReward = true;
-    metrics.trackLoss = true;
-    traces.enable = true;
-    traces.traceEpisodes = true;
-    logs.enable = true;
-    logs.level = "info";
-  };
-}
-```
-
-```bash
-# No need for nix develop - interact via CLI directly
-rl-train                              # Training with automatic registry tracking
-rl-registry-list --validated --top-n 5  # Query registry
-rl-registry-validate <model_id>       # Validate model
-rl-infer --load-best                  # Load best model for inference
-rl-eval --model-id <id>               # Evaluation
-```
-
-## Module Wrapping Philosophy
-
-Once wrapped as a Nix module, you interact via CLI/ENV vars only. No shells, no per-system package management. The module handles:
-
-1. **Options** → Abstract capability (vendor-agnostic)
-2. **Bindings** → ENV vars + CLI commands (vendor-specific)
-3. **Instances** → Nix packages/commands exported globally
-
-This prevents per-system breakage and maintains the Options ⊣ Bindings adjunction.
-
-## Environment Discovery
-
-```bash
-# Introspect available options for any module
-introspect-options Modules/Labs/RL
-
-# Output:
-# 📋 Features in Modules/Labs/RL/Universe/
-# 
-# 🔹 Env
-#     • envId
-#     • nEnvs
-#     • seed
-# 🔹 Agent
-#     • algorithm
-#     • policyType
-#     • netArch
-# ...
-```
-
-## Supported Environments
-
-| Environment | envId | Source | Notes |
-|-------------|-------|--------|-------|
-| CartPole | `CartPole-v1` | gymnasium | Classic control |
-| LunarLander | `LunarLander-v2` | gymnasium | Box2D |
-| MuJoCo Ant | `Ant-v4` | gymnasium | Robotics |
-| FOREX Trading | `forex-v0` | gym-anytrading | Financial (custom Drv) |
-| Stock Trading | `stocks-v0` | gym-anytrading | Financial (custom Drv) |
-
-Any Gymnasium-compatible environment works via `envId` option.
-
-## Nixpkgs Dependencies
-
-All dependencies are wrapped as Nix derivations in `Drv/`:
-
-| Package | Purpose | Status |
-|---------|---------|--------|
-| `stable-baselines3` | RL algorithms | Custom Drv |
-| `mlflow` | Experiment tracking | Custom Drv |
-| `gym-anytrading` | Trading environments | Custom Drv |
-| `sqlite` | Model registry | nixpkgs ✓ |
-| `opentelemetry-*` | Observability | nixpkgs ✓ |
+| Logs | `opentelemetry-sdk` | `OTEL_LOGS_` |
+| Telemetry | `nushell sqlite` | `RL_TELEMETRY_` |
 
 ## Targets
 
 | Target | Purpose |
 |--------|---------|
-| `perSystem.devShells.rl` | Development environment with sb3 + gymnasium + sqlite + otel |
+| `perSystem.devShells.rl` | Development environment |
 | `perSystem.packages.rl-train` | Training script |
 | `perSystem.packages.rl-eval` | Evaluation script |
 | `perSystem.packages.rl-infer` | Inference script |
-| `perSystem.packages.rl-registry-list` | List models in registry |
-| `perSystem.packages.rl-registry-validate` | Validate model by ID |
+| `perSystem.packages.rl-data` | Data preview/download |
+| `perSystem.packages.rl-db` | Telemetry query |
+| `perSystem.packages.rl-registry` | Registry management |
+| `perSystem.packages.rl-logs` | Log tailing |
 
-## Implementation Phases
+## Supported Environments
 
-### Phase 1: Registry (SQLite) ✓
-- [x] `Universe/Registry/Options/default.nix`
-- [x] `Universe/Registry/Bindings/default.nix` with schema init
-- [ ] `Universe/Registry/Bindings/Scripts/default.nu` (CLI helpers)
-- [ ] Wire in `Env/default.nix`
-- [ ] Update `Instances/default.nix`
-
-### Phase 2: Metrics (OTEL)
-- [ ] `Universe/Metrics/Options/default.nix`
-- [ ] `Universe/Metrics/Bindings/default.nix`
-- [ ] Integrate with `Train/Bindings/`
-
-### Phase 3: Traces (OTEL)
-- [ ] `Universe/Traces/Options/default.nix`
-- [ ] `Universe/Traces/Bindings/default.nix`
-- [ ] Add span decorators
-
-### Phase 4: Logs (OTEL)
-- [ ] `Universe/Logs/Options/default.nix`
-- [ ] `Universe/Logs/Bindings/default.nix`
-- [ ] Structured logging
-
-### Phase 5: Integration
-- [ ] `Store/Bindings/` writes to Registry on checkpoint
-- [ ] Validation layer checks before model load
-- [ ] Hotswap: `rl-load-best` queries Registry
-- [ ] `Eval/Bindings/` writes results to Registry
+| Environment | envId | Source |
+|-------------|-------|--------|
+| Stock Trading | `stocks-v0` | gym-anytrading |
+| FOREX Trading | `forex-v0` | gym-anytrading |
+| CartPole | `CartPole-v1` | gymnasium |
+| LunarLander | `LunarLander-v2` | gymnasium |
+| MuJoCo Ant | `Ant-v4` | gymnasium |
 
 ## Notes
 
 | Issue | Solution |
 |-------|----------|
 | Float literals in Nix | Use `lib.types.str` for scientific notation like "3e-4" |
-| OTEL backend choice | Start with file export, add collector later |
-| Registry vs Store | Registry = models (local), Store = experiments (MLflow/Wandb) |
-| Metrics granularity | Per-episode default, per-step optional (high volume) |
-| Model hotswap | Query Registry for best validated model, load path |
+| OTEL backend choice | Start with console exporter, add collector later |
+| Registry vs Store | Registry = models (local SQLite), Store = experiments (MLflow/Wandb) |
+| Data vs Execution | Data = market data feed, Execution = order placement. Can be same or different provider |
+| Obs vs Telemetry | Observation = state preprocessing, Telemetry = runtime observability |
+| Credentials | Execution/Bindings/Secrets wires sops-nix refs per provider |
+| Default test | csv provider + backtest execution = zero external deps |
