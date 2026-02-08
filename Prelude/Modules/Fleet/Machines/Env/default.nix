@@ -5,10 +5,15 @@
     identity.hostname = "sovereignty";
     target.arch = "x86_64";
     format.type = "iso";
+    disk = {
+      layout = "standard";
+      device = "/dev/sda";
+      persistLabel = "NIXOS_PERSIST";
+    };
     persistence.strategy = "impermanent";
     persistence.device = "/dev/disk/by-label/NIXOS_PERSIST";
     users = [
-      { name = "zoshodi"; home = "darwin"; }  # maps to homeConfigurations.darwin
+      { name = "zoshodi"; home = "darwin"; }
     ];
   };
 

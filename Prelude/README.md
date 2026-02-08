@@ -553,12 +553,12 @@ Options/default.nix ≅ Options/index.<lang> ≅ ENV vars ≅ CLI flags
 
 | Module | Purpose | Targets |
 |--------|---------|---------|
-| [Boot](Modules/Host/Boot/) | Boot loader, kernel | nixos |
+| [Boot](Modules/Host/Boot/) | Boot loader, kernel, disk partitioning (disko) | nixos |
 | [Network](Modules/Host/Network/) | System networking, firewall, SSH daemon | nixos |
 | [Display](Modules/Host/Display/) | Graphical environment (opt-in) | nixos |
 | [Nix](Modules/Host/Nix/) | Nix daemon, store optimization | nixos, darwin, homeManager |
 | [Secrets](Modules/Host/Secrets/) | Encrypted secrets (sops-nix) | nixos, homeManager |
-| [Servers](Modules/Host/Servers/) | Self-hosted containers | nixos |
+| [Servers](Modules/Host/Servers/) | Self-hosted services (containers, data, infra, apps) | nixos |
 
 ### Fleet
 

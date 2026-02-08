@@ -1,5 +1,5 @@
 {
-  description = "Prelude - Base Site";
+  description = "Universes - Dendritic Nix Configuration System";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -17,6 +17,15 @@
     deploy-rs.inputs.nixpkgs.follows = "nixpkgs";
     arion.url = "github:hercules-ci/arion";
     arion.inputs.nixpkgs.follows = "nixpkgs";
+    impermanence.url = "github:nix-community/impermanence";
+    clan-core.url = "https://git.clan.lol/clan/clan-core/archive/main.tar.gz";
+    clan-core.inputs.nixpkgs.follows = "nixpkgs";
+    nix2container.url = "github:nlewo/nix2container";
+    nix2container.inputs.nixpkgs.follows = "nixpkgs";
+    microvm.url = "github:astro/microvm.nix";
+    microvm.inputs.nixpkgs.follows = "nixpkgs";
+    disko.url = "github:nix-community/disko";
+    disko.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   nixConfig = {
@@ -30,5 +39,5 @@
     ];
   };
 
-  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./Modules);
+  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./Prelude/Modules);
 }

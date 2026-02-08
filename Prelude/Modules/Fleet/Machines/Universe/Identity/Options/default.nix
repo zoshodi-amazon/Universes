@@ -31,21 +31,40 @@ let
         type = lib.types.str;
         description = "Machine hostname";
       };
-      
+
       # Target - What architecture?
       target.arch = lib.mkOption {
         type = lib.types.enum [ "x86_64" "aarch64" ];
         default = "x86_64";
         description = "Target architecture";
       };
-      
+
       # Format - How do I deploy it?
       format.type = lib.mkOption {
         type = lib.types.enum [ "iso" "vm" "sd-image" "raw-efi" "oci" "microvm" ];
         default = "vm";
         description = "Deployment format";
       };
-      
+
+      # Disk - What does the disk layout look like?
+      disk = {
+        layout = lib.mkOption {
+          type = lib.types.enum [ "standard" "custom" "none" ];
+          default = "none";
+          description = "Disk layout strategy (standard = GPT+EFI+root+persist)";
+        };
+        device = lib.mkOption {
+          type = lib.types.str;
+          default = "/dev/sda";
+          description = "Target block device for partitioning";
+        };
+        persistLabel = lib.mkOption {
+          type = lib.types.str;
+          default = "NIXOS_PERSIST";
+          description = "Label for persistent partition";
+        };
+      };
+
       # Persistence - What survives reboot? Where?
       persistence = {
         strategy = lib.mkOption {
@@ -64,7 +83,7 @@ let
           description = "Directories to persist";
         };
       };
-      
+
       # Users - Who can use this machine?
       users = lib.mkOption {
         type = lib.types.listOf userSubmodule;

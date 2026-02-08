@@ -1,8 +1,8 @@
 # Servers
 
-Self-hosted services via Podman containers.
+Self-hosted services via container orchestration.
 
-**Pattern Version: v1.0.3** | **Structure: FROZEN**
+**Pattern Version: v1.0.5** | **Structure: FROZEN**
 
 ## Capability
 
@@ -16,36 +16,29 @@ Self-hosted services via Podman containers.
 
 ```
 Universe/
+├── Containers/ # Runtime layer (podman, arion)
 ├── Data/       # Persistence layer
-├── Infra/      # Plumbing layer  
+├── Infra/      # Plumbing layer
 └── Apps/       # Application layer
 ```
 
 | Layer | Essence | Capabilities |
 |-------|---------|--------------|
-| **Data** | Storage | ObjectStore, Relational, Documents, Registry, Backup |
+| **Containers** | Runtime | Container orchestration (backend: podman, arion) |
+| **Data** | Storage | Persistence, ObjectStore, Relational, Documents, Registry, Backup |
 | **Infra** | Plumbing | Gateway, Identity, DNS, Metrics, Secrets |
 | **Apps** | Services | Git, Media, LLM, Chat |
 
 ## Dependency Flow
 
 ```
-Apps --> Infra --> Data
+Apps --> Infra --> Data --> Containers
 ```
 
 - Apps consume Infra (auth, routing) and Data (storage)
 - Infra consumes Data (config persistence)
-- Data is foundational (no dependencies)
-
-## Auto-Wiring
-
-Enabling a capability auto-registers it with dependent layers:
-
-| When you enable... | It auto-registers in... |
-|--------------------|-------------------------|
-| `data.objectStore` | Gateway routes, Metrics scrape targets |
-| `apps.git` | Gateway routes, Identity SSO, Backup sources |
-| `infra.identity` | All Apps get SSO config |
+- Data is foundational storage capabilities
+- Containers is the runtime layer all others bind to
 
 ## Global Duality
 
@@ -55,10 +48,17 @@ Enabling a capability auto-registers it with dependent layers:
 
 ## Local Duality (Universe)
 
+### Containers Layer
+
+| Feature | Capability | Bindings |
+|---------|------------|----------|
+| Containers | Container orchestration | podman, arion |
+
 ### Data Layer
 
 | Feature | Capability | Bindings |
 |---------|------------|----------|
+| Persistence | Cross-module storage backend | local (SQLite), s3, postgres |
 | ObjectStore | S3-compatible blob storage | minio, garage |
 | Relational | SQL databases | postgres, mariadb |
 | Documents | File synchronization | syncthing |
@@ -88,16 +88,18 @@ Enabling a capability auto-registers it with dependent layers:
 
 | Option | Type | Default |
 |--------|------|---------|
-| `servers.data.<cap>.enable` | bool | false |
-| `servers.data.<cap>.backend` | enum | varies |
+| `servers.containers.enable` | bool | true |
+| `servers.containers.backend` | enum | "podman" |
+| `servers.containers.stacks` | attrsOf stack | {} |
+| `servers.data.<cap>.enable` | bool | varies |
 | `servers.infra.<cap>.enable` | bool | false |
 | `servers.apps.<cap>.enable` | bool | false |
 
 ## Usage
 
 ```nix
-# Env/default.nix - enable capabilities
 servers = {
+  containers.backend = "podman";
   infra.gateway.enable = true;
   infra.identity.enable = true;
   data.objectStore.enable = true;

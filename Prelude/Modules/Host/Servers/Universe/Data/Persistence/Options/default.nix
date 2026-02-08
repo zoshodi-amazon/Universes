@@ -1,17 +1,16 @@
+# Persistence Options - cross-module storage backend selection
 { lib, ... }:
 {
-  options.storage = {
+  options.servers.data.persistence = {
     backend = lib.mkOption {
       type = lib.types.enum [ "local" "s3" "postgres" ];
       default = "local";
-      description = "Storage backend";
+      description = "Storage backend for module-local data";
     };
-    local = {
-      path = lib.mkOption {
-        type = lib.types.str;
-        default = ".lab/storage.db";
-        description = "Local SQLite database path (per-module)";
-      };
+    local.path = lib.mkOption {
+      type = lib.types.str;
+      default = ".lab/storage.db";
+      description = "Local SQLite database path (per-module)";
     };
     remote = {
       url = lib.mkOption {

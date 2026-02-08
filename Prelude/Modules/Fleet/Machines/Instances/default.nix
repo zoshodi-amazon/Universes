@@ -3,13 +3,49 @@
 let
   machines = config.machines;
   stateVersion = "25.05";
-  
+
   archToSystem = {
     x86_64 = "x86_64-linux";
     aarch64 = "aarch64-linux";
   };
-  
+
   nixosModules = lib.attrValues config.flake.modules.nixos;
+
+  # Generate standard disko config from machine disk options
+  mkStandardDisko = cfg: {
+    imports = [ inputs.disko.nixosModules.disko ];
+    disko.devices.disk.main = {
+      type = "disk";
+      device = cfg.disk.device;
+      content = {
+        type = "gpt";
+        partitions = {
+          ESP = {
+            size = "512M";
+            content = { type = "filesystem"; format = "vfat"; mountpoint = "/boot"; };
+          };
+          root = {
+            size = "100%";
+            content = { type = "filesystem"; format = "ext4"; mountpoint = "/"; };
+          };
+        } // lib.optionalAttrs (cfg.persistence.strategy == "impermanent") {
+          persist = {
+            size = "50%";
+            content = {
+              type = "filesystem";
+              format = "ext4";
+              mountpoint = "/persistent";
+              mountOptions = [ "defaults" ];
+            };
+          };
+          root = {
+            size = "50%";
+            content = { type = "filesystem"; format = "ext4"; mountpoint = "/"; };
+          };
+        };
+      };
+    };
+  };
 
   mkNixosConfig = name: cfg: inputs.nixpkgs.lib.nixosSystem {
     system = archToSystem.${cfg.target.arch};
@@ -30,8 +66,11 @@ let
         }) cfg.users);
       }
     ]
-    ++ lib.optionals (cfg.format.type != "microvm") [
+    ++ lib.optionals (cfg.format.type == "iso") [
       "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+    ]
+    ++ lib.optionals (cfg.disk.layout == "standard") [
+      (mkStandardDisko cfg)
     ]
     ++ nixosModules
     ++ lib.optionals (cfg.format.type == "microvm") [
@@ -91,16 +130,17 @@ let
 in
 {
   config.flake.nixosConfigurations = lib.mapAttrs mkNixosConfig machines;
-  
+
   config.perSystem = { system, pkgs, ... }: lib.mkIf (system == "x86_64-linux" || system == "aarch64-linux") {
     packages = let
-      # Standard formats from system.build
-      formatPackages = lib.flatten (lib.mapAttrsToList (name: cfg: [
-        { name = "${name}-iso"; value = config.flake.nixosConfigurations.${name}.config.system.build.isoImage; }
-        { name = "${name}-vm"; value = config.flake.nixosConfigurations.${name}.config.system.build.vm; }
-      ]) machines);
-      
-      # OCI/Docker image via dockerTools
+      formatPackages = lib.flatten (lib.mapAttrsToList (name: cfg:
+        lib.optionals (cfg.format.type == "iso") [
+          { name = "${name}-iso"; value = config.flake.nixosConfigurations.${name}.config.system.build.isoImage; }
+        ] ++ [
+          { name = "${name}-vm"; value = config.flake.nixosConfigurations.${name}.config.system.build.vm; }
+        ]
+      ) machines);
+
       ociPackages = lib.mapAttrsToList (name: cfg: {
         name = "${name}-oci";
         value = pkgs.dockerTools.buildLayeredImage {
@@ -112,12 +152,11 @@ in
           };
         };
       }) machines;
-      
-      # MicroVM runner
+
       microvmPackages = lib.mapAttrsToList (name: cfg: {
         name = "${name}-microvm";
         value = config.flake.nixosConfigurations.${name}.config.microvm.declaredRunner or pkgs.hello;
-      }) (lib.filterAttrs (n: c: c.format.type == "microvm") machines);
+      }) (lib.filterAttrs (_: c: c.format.type == "microvm") machines);
     in
     lib.listToAttrs (formatPackages ++ ociPackages ++ microvmPackages);
   };

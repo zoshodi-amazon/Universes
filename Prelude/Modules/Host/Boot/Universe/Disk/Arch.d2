@@ -1,0 +1,22 @@
+# Disk Architecture
+# Options (types) -> Bindings (disko format) -> Instances (nixos module)
+
+direction: right
+
+Options: {
+  shape: rectangle
+  label: "boot-config.disk\n(devices, partitions)"
+}
+
+Bindings: {
+  shape: rectangle
+  label: "disko format\n(GPT, EFI, ext4, swap)"
+}
+
+Instances: {
+  shape: rectangle
+  label: "flake.modules.nixos.disk-config\n(disko.nixosModules.disko)"
+}
+
+Options -> Bindings: "map partition types"
+Bindings -> Instances: "wire to disko"

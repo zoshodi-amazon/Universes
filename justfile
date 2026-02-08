@@ -1,47 +1,288 @@
-# Universes - Universal Nix/Flake Commands
-# Usage: just <command> [args]
+# ===============================================================================
+# UNIVERSES - Dendritic Nix Configuration System
+# ===============================================================================
+#
+# NAME
+#     justfile - Capability-centric module and machine management
+#
+# SYNOPSIS
+#     just <recipe> [arguments...]
+#     just --list
+#
+# DESCRIPTION
+#     Single source of truth for all Universes operations.
+#     Organized by capability, not implementation.
+#
+#     INTROSPECT  - Discover modules, features, and options
+#     CREATE      - Scaffold new modules and features
+#     BUILD       - Compile and validate
+#     DEPLOY      - Flash and connect to machines
+#     SYNC        - Remote build operations
+#     FLAKE       - Flake inspection and management
+#     STORE       - Nix store operations
+#
+# PHILOSOPHY
+#     Index on CAPABILITY, not IMPLEMENTATION.
+#     Options define types (what), Bindings define terms (how).
+#     See Prelude/AGENTS.md for full ontology.
+#
+# ===============================================================================
 
-set shell := ["bash", "-c"]
-default_host := "cloud-dev"
-modules_dir := "Modules"
+scripts := "Prelude/Modules/Labs/Scripts/Universe"
 
-# List all available commands
-list:
+default:
     @just --list
 
-# ─────────────────────────────────────────────────────────────
-# Scaffolding
-# ─────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
+# INTROSPECT
+# -------------------------------------------------------------------------------
 
-# Scaffold a new module (e.g., just scaffold-module Computation/MyTool)
-scaffold-module path:
-    mkdir -p {{modules_dir}}/{{path}}/{Env,Instances,Universe}
-    touch {{modules_dir}}/{{path}}/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{path}}/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{path}}/Env/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{path}}/Instances/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{path}}/Universe/default.nix
-    @echo "Created module at {{modules_dir}}/{{path}}/"
-    @echo "Next: Add README.md and create Universe/<Feature>/{Options,Bindings}"
+# List all modules by category (Labs, User, Host, Fleet)
+modules:
+    @gum style --border normal --padding "0 1" "Modules"
+    @nu {{scripts}}/Discover/Bindings/Scripts/default.nu
 
-# Scaffold a Universe feature (e.g., just scaffold-feature Computation/Editor/Nixvim Core)
-scaffold-feature module feature:
-    mkdir -p {{modules_dir}}/{{module}}/Universe/{{feature}}/{Options,Bindings}
-    echo '{ ... }: { }' > {{modules_dir}}/{{module}}/Universe/{{feature}}/Options/default.nix
-    echo '{ ... }: { }' > {{modules_dir}}/{{module}}/Universe/{{feature}}/Bindings/default.nix
-    @echo "Created feature at {{modules_dir}}/{{module}}/Universe/{{feature}}/"
+# List Universe features in a module
+# ARGS: module - path to module (e.g., Prelude/Modules/User/Terminal/Shell)
+features module:
+    @gum style --border normal --padding "0 1" "Features in $(gum style --foreground 212 '{{module}}')"
+    @nu {{scripts}}/Introspect/Bindings/Scripts/default.nu '{"mode": "features", "module": "{{module}}"}'
 
-# ─────────────────────────────────────────────────────────────
-# Flake Operations
-# ─────────────────────────────────────────────────────────────
+# Show Options type space for all features in a module
+# ARGS: module - path to module (e.g., Prelude/Modules/User/Terminal/Shell)
+options module:
+    @gum style --border normal --padding "0 1" "Options in $(gum style --foreground 212 '{{module}}')"
+    @nu {{scripts}}/Introspect/Bindings/Scripts/default.nu '{"mode": "options", "module": "{{module}}"}'
+
+# Show machine options schema (capability space for machine definitions)
+schema:
+    @gum style --border normal --padding "0 1" "Machine Schema"
+    @echo "machines.<name> = {"
+    @echo "  identity.hostname    : str           # What is this machine called?"
+    @echo "  target.arch          : enum          # x86_64 | aarch64"
+    @echo "  format.type          : enum          # iso | vm | sd-image | raw-efi | oci"
+    @echo "  persistence.strategy : enum          # full | impermanent | ephemeral"
+    @echo "  persistence.device   : str?          # e.g., /dev/disk/by-label/NIXOS_PERSIST"
+    @echo "  persistence.paths    : [str]         # Directories to persist"
+    @echo "  disk.layout          : enum          # standard | custom | none"
+    @echo "  disk.device          : str           # e.g., /dev/sda"
+    @echo "  disk.persistLabel    : str           # e.g., NIXOS_PERSIST"
+    @echo "  users                : [user]        # Users on this machine"
+    @echo "};"
+
+# List all defined machines (queries flake.nixosConfigurations)
+list:
+    @gum style --border normal --padding "0 1" "Machines"
+    @nix eval .#nixosConfigurations --apply 'x: builtins.attrNames x' 2>/dev/null || echo "(eval error - run on Linux)"
+
+# -------------------------------------------------------------------------------
+# CREATE
+# -------------------------------------------------------------------------------
+
+# Scaffold a new module from frozen template
+# ARGS: path - module path (e.g., Prelude/Modules/User/Foo)
+new-module path:
+    @gum style --border normal --padding "0 1" "Creating module $(gum style --foreground 212 '{{path}}')"
+    @nu {{scripts}}/Scaffold/Bindings/Scripts/default.nu '{"mode": "module", "path": "{{path}}"}'
+    @gum style --foreground 82 "Module created"
+
+# Add a feature to a module (creates Universe/<name> with Options/Bindings)
+# ARGS: module - path to module, name - feature name
+new-feature module name:
+    @gum style --border normal --padding "0 1" "Creating feature $(gum style --foreground 212 '{{name}}') in $(gum style --foreground 212 '{{module}}')"
+    @nu {{scripts}}/Scaffold/Bindings/Scripts/default.nu '{"mode": "feature", "path": "{{module}}", "name": "{{name}}"}'
+    @gum style --foreground 82 "Feature created"
+
+# -------------------------------------------------------------------------------
+# BUILD
+# -------------------------------------------------------------------------------
+
+# Build a machine image based on its format.type option
+# ARGS: machine - name of machine (e.g., sovereignty)
+build machine:
+    @gum style --border normal --padding "0 1" "Building $(gum style --foreground 212 '{{machine}}')"
+    @gum spin --spinner dot --title "Building ISO..." -- nix build .#{{machine}}-iso --print-out-paths
+    @gum style --foreground 82 "Build complete"
+
+# Run machine in QEMU VM for testing before flashing
+# ARGS: machine - name of machine
+vm machine:
+    @gum style --foreground 212 "Starting VM: {{machine}}"
+    @nix run .#{{machine}}-vm
+
+# Validate all modules (runs nix flake check)
+check:
+    @gum style --border normal --padding "0 1" "Checking flake"
+    @gum spin --spinner dot --title "Validating..." -- nix flake check
+    @gum style --foreground 82 "Check passed"
+
+# -------------------------------------------------------------------------------
+# DEPLOY
+# -------------------------------------------------------------------------------
+
+# Flash ISO to USB drive
+# ARGS: machine - name of machine, disk - target disk (e.g., /dev/disk4)
+flash machine disk:
+    @gum style --border normal --foreground 196 --padding "0 1" "WARNING: This will erase {{disk}}"
+    @gum confirm "Flash {{machine}} to {{disk}}?" && nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "flash", "machine": "{{machine}}", "disk": "{{disk}}"}'
+
+# Unmount all volumes on a disk (required before flashing)
+# ARGS: disk - target disk (e.g., /dev/disk4)
+unmount disk:
+    @gum style --foreground 212 "Unmounting {{disk}}"
+    @diskutil unmountDisk {{disk}} 2>/dev/null || echo "Already unmounted"
+
+# Format SD card for persistence (ext4 with label NIXOS_PERSIST)
+# ARGS: disk - target disk (e.g., /dev/sdb)
+format-persist disk:
+    @gum style --border normal --foreground 196 --padding "0 1" "WARNING: This will erase {{disk}}"
+    @gum confirm "Format {{disk}} for persistence?" && nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "format-persist", "disk": "{{disk}}"}'
+
+# SSH into a deployed machine
+# ARGS: machine - hostname, user - SSH user (optional)
+ssh machine user="":
+    @gum style --foreground 212 "Connecting to {{machine}}"
+    @if [ -z "{{user}}" ]; then ssh {{machine}}; else ssh {{user}}@{{machine}}; fi
+
+# Install to remote machine via nixos-anywhere + disko
+# ARGS: host - SSH host, machine - machine name
+remote-install host machine:
+    @gum style --border normal --padding "0 1" "Installing $(gum style --foreground 212 '{{machine}}') on $(gum style --foreground 212 '{{host}}') via nixos-anywhere"
+    @just sync-to {{host}}
+    @ssh -t {{host}} "source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes && nix run github:nix-community/nixos-anywhere -- --flake .#{{machine}} root@localhost"
+
+# -------------------------------------------------------------------------------
+# SYNC
+# -------------------------------------------------------------------------------
+
+# Sync repo to remote host (for building on Linux from macOS)
+# ARGS: host - SSH host (e.g., cloud-dev)
+sync-to host:
+    @gum style --border normal --padding "0 1" "Syncing to $(gum style --foreground 212 '{{host}}')"
+    @gum spin --spinner dot --title "Syncing..." -- rsync -avz --delete ~/repos/Universes/ {{host}}:~/repos/Universes/
+    @gum style --foreground 82 "Sync complete"
+
+# Build on remote host and copy ISO back to ~/Downloads/<machine>.iso
+# ARGS: host - SSH host, machine - name of machine
+remote-build host machine:
+    @gum style --border normal --padding "0 1" "Remote build $(gum style --foreground 212 '{{machine}}') on $(gum style --foreground 212 '{{host}}')"
+    @nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "remote-build", "host": "{{host}}", "machine": "{{machine}}"}'
+
+# Build OCI image on remote host and copy back
+# ARGS: host - SSH host, machine - name of machine
+remote-build-oci host machine:
+    @gum style --border normal --padding "0 1" "Remote build OCI $(gum style --foreground 212 '{{machine}}') on $(gum style --foreground 212 '{{host}}')"
+    @nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "remote-build-oci", "host": "{{host}}", "machine": "{{machine}}"}'
+
+# Build VM on remote host and run locally via QEMU
+# ARGS: host - SSH host, machine - name of machine
+remote-build-vm host machine:
+    @gum style --border normal --padding "0 1" "Remote build VM $(gum style --foreground 212 '{{machine}}') on $(gum style --foreground 212 '{{host}}')"
+    @nu {{scripts}}/Deploy/Bindings/Scripts/default.nu '{"mode": "remote-build-vm", "host": "{{host}}", "machine": "{{machine}}"}'
+
+# Load OCI image into local podman
+# ARGS: machine - name of machine
+load-oci machine:
+    @gum style --border normal --padding "0 1" "Loading OCI $(gum style --foreground 212 '{{machine}}')"
+    @podman machine start 2>/dev/null || true
+    @podman load < ~/Downloads/{{machine}}.tar.gz
+    @gum style --foreground 82 "Loaded {{machine}}:latest"
+
+# Run OCI image in podman (privileged for NixOS system containers)
+# ARGS: machine - name of machine
+run-oci machine:
+    @gum style --foreground 212 "Running {{machine}}"
+    @podman machine start 2>/dev/null || true
+    @podman run -it --privileged {{machine}}:latest
+
+# Run VM locally via QEMU
+# ARGS: machine - name of machine
+run-vm machine:
+    @gum style --foreground 212 "Running VM {{machine}}"
+    @~/VMs/{{machine}}/bin/run-*-vm
+
+# Run VM on remote host via SSH (with X11 forwarding)
+# ARGS: host - SSH host, machine - name of machine
+run-vm-remote host machine:
+    @gum style --foreground 212 "Running VM {{machine}} on {{host}}"
+    @ssh -Y {{host}} "source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes && nix run .#{{machine}}-vm"
+
+# Build and run MicroVM on remote host
+# ARGS: host - SSH host, machine - name of machine (must have format.type = "microvm")
+remote-microvm host machine:
+    @gum style --border normal --padding "0 1" "MicroVM $(gum style --foreground 212 '{{machine}}') on $(gum style --foreground 212 '{{host}}')"
+    @just sync-to {{host}}
+    @ssh -t {{host}} "source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes && nix run .#{{machine}}-microvm"
+
+# SSH into running MicroVM on remote host (via port forward 2222)
+# ARGS: host - SSH host, user - guest user (default: root)
+ssh-microvm host user="root":
+    @gum style --foreground 212 "SSH to MicroVM via {{host}}:2222"
+    @ssh -J {{host}} -p 2222 {{user}}@localhost
+
+# Initialize podman machine (Darwin only, run once)
+podman-init:
+    @gum style --border normal --padding "0 1" "Initializing podman machine"
+    @podman machine init
+    @podman machine start
+    @gum style --foreground 82 "Podman machine ready"
+
+# -------------------------------------------------------------------------------
+# HOME
+# -------------------------------------------------------------------------------
+
+# Switch to home configuration
+# ARGS: host - home configuration name (default: darwin)
+switch host="darwin":
+    #!/usr/bin/env nu
+    gum style --border normal --padding "0 1" $"Switching to (gum style --foreground 212 '{{host}}')"
+    let result = (do { home-manager switch --flake $".#{{host}}" } | complete)
+    if $result.exit_code == 0 {
+        gum style --foreground 82 "Switch complete"
+    } else {
+        let output = [$result.stdout $result.stderr] | str join "\n" | str trim
+        if ($output | is-not-empty) {
+            print (gum style --border double --border-foreground 196 --foreground 196 --padding "1 2" $output)
+        }
+        exit 1
+    }
+
+# -------------------------------------------------------------------------------
+# PRESETS
+# -------------------------------------------------------------------------------
+
+preset_scripts := "Prelude/Modules/Labs/Scripts/Universe/Preset"
+
+# List available tmux presets
+presets:
+    @nu {{preset_scripts}}/Bindings/Scripts/default.nu list
+
+# Launch tmux preset session
+# ARGS: name - preset name, domain - lab domain (Audio, Video, etc.)
+preset name domain="Audio":
+    @nu {{preset_scripts}}/Bindings/Scripts/default.nu '{"preset": "{{name}}", "workdir": "Prelude/Modules/Labs/{{domain}}"}'
+
+# -------------------------------------------------------------------------------
+# LABS
+# -------------------------------------------------------------------------------
+
+# Launch Lab in domain-specific preset
+# ARGS: domain - lab domain (Audio, RL, Game, etc.)
+lab domain="Audio":
+    #!/usr/bin/env nu
+    let preset: string = match "{{domain}}" {
+      "RL" => "rl"
+      _ => "explore"
+    }
+    nu Prelude/Modules/Labs/Scripts/Universe/Preset/Bindings/Scripts/default.nu $'{"preset": "($preset)", "workdir": "Prelude/Modules/Labs/{{domain}}"}'
+
+# -------------------------------------------------------------------------------
+# FLAKE
+# -------------------------------------------------------------------------------
 
 # Show all flake outputs
 show:
     nix flake show
-
-# Run checks for current system only
-check:
-    nix flake check --system $(nix eval --raw --impure --expr 'builtins.currentSystem')
 
 # Update all inputs
 update:
@@ -51,41 +292,9 @@ update:
 update-input input:
     nix flake update {{input}}
 
-# ─────────────────────────────────────────────────────────────
-# Home Manager
-# ─────────────────────────────────────────────────────────────
-
-# List available hosts
-hosts:
-    @nix eval --json '.#homeConfigurations' --apply 'builtins.attrNames' | jq -r '.[]'
-
-# Switch to home configuration
-switch host=default_host:
-    home-manager switch --flake .#{{host}}
-
-# Build home configuration (no switch)
-build-home host=default_host:
-    nix build .#homeConfigurations.{{host}}.activationPackage
-
-# ─────────────────────────────────────────────────────────────
-# Modules
-# ─────────────────────────────────────────────────────────────
-
-# List all modules by class
-modules:
-    @nix eval --json '.#modules' --apply 'builtins.mapAttrs (k: v: builtins.attrNames v)' | jq
-
-# List homeManager modules
-modules-home:
-    @nix eval --json '.#modules.homeManager' --apply 'builtins.attrNames' | jq -r '.[]'
-
-# List nixos modules
-modules-nixos:
-    @nix eval --json '.#modules.nixos' --apply 'builtins.attrNames' | jq -r '.[]'
-
-# ─────────────────────────────────────────────────────────────
-# Config Inspection
-# ─────────────────────────────────────────────────────────────
+# Run REPL with flake
+repl:
+    nix repl .#
 
 # Eval any config path
 eval path:
@@ -99,52 +308,28 @@ eval-json path:
 keys path:
     @nix eval --json '.#{{path}}' --apply 'builtins.attrNames' | jq -r '.[]'
 
+# List homeManager modules
+modules-home:
+    @nix eval --json '.#modules.homeManager' --apply 'builtins.attrNames' | jq -r '.[]'
+
+# List nixos modules
+modules-nixos:
+    @nix eval --json '.#modules.nixos' --apply 'builtins.attrNames' | jq -r '.[]'
+
 # Show nixvim keymaps
-keymaps host=default_host:
+keymaps host="darwin":
     @nix eval '.#homeConfigurations.{{host}}.config.programs.nixvim.keymaps' 2>&1 \
         | grep -oE 'key = "[^"]+";.*desc = "[^"]+"' \
         | sed 's/key = "//; s/";.*desc = "/ → /; s/"$//'
 
 # Show enabled plugins
-plugins host=default_host:
+plugins host="darwin":
     @nix eval --json '.#homeConfigurations.{{host}}.config.programs.nixvim.plugins' \
         --apply 'p: builtins.filter (n: n != "__unfix__") (builtins.attrNames p)' | jq -r '.[]'
 
-# ─────────────────────────────────────────────────────────────
-# Development
-# ─────────────────────────────────────────────────────────────
-
-# Enter dev shell
-dev shell="default":
-    nix develop .#{{shell}}
-
-# Enter checks dev shell
-dev-checks:
-    nix develop .#checks
-
-# Run REPL with flake
-repl:
-    nix repl .#
-
-# ─────────────────────────────────────────────────────────────
-# Nixpkgs
-# ─────────────────────────────────────────────────────────────
-
-# Search nixpkgs
-search query:
-    nix search nixpkgs {{query}}
-
-# Show package meta
-info pkg:
-    nix eval --json '{{pkg}}.meta' | jq
-
-# Run package without installing
-run pkg *args:
-    nix run {{pkg}} -- {{args}}
-
-# ─────────────────────────────────────────────────────────────
-# Store & GC
-# ─────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
+# STORE
+# -------------------------------------------------------------------------------
 
 # Garbage collect (default: older than 7 days)
 gc days="7":
@@ -158,9 +343,21 @@ size path="./result":
 optimize:
     nix store optimise
 
-# ─────────────────────────────────────────────────────────────
-# Invariants
-# ─────────────────────────────────────────────────────────────
+# Search nixpkgs
+search query:
+    nix search nixpkgs {{query}}
+
+# Show package meta
+info pkg:
+    nix eval --json '{{pkg}}.meta' | jq
+
+# Run package without installing
+run pkg *args:
+    nix run {{pkg}} -- {{args}}
+
+# -------------------------------------------------------------------------------
+# INVARIANTS
+# -------------------------------------------------------------------------------
 
 # Run all invariant checks for current system
 invariants:
@@ -171,15 +368,19 @@ invariants:
     nix build .#checks.$sys.invariant-bindings-subdirs
     nix build .#checks.$sys.invariant-no-manual-imports
 
-# ─────────────────────────────────────────────────────────────
-# Quick Aliases
-# ─────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
+# ALIASES
+# -------------------------------------------------------------------------------
 
 # Shorthand: build and switch
-bs host=default_host: (switch host)
+bs host="darwin": (switch host)
 
 # Shorthand: check and switch
-cs host=default_host: check (switch host)
+cs host="darwin": check (switch host)
 
-# Shorthand: update and switch  
-us host=default_host: update (switch host)
+# Shorthand: update and switch
+us host="darwin": update (switch host)
+
+# Enter dev shell
+dev shell="default":
+    nix develop .#{{shell}}
