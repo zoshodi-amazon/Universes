@@ -247,6 +247,14 @@ switch host="darwin":
         exit 1
     }
 
+# Sync to remote host and switch home configuration there
+# ARGS: host - SSH host (e.g., cloud-dev), config - home configuration name (default: cloud-dev)
+remote-switch host config="cloud-dev":
+    @just sync-to {{host}}
+    @gum style --border normal --padding "0 1" "Switching $(gum style --foreground 212 '{{config}}') on $(gum style --foreground 212 '{{host}}')"
+    @ssh -t {{host}} "source ~/.nix-profile/etc/profile.d/nix.sh && cd ~/repos/Universes && home-manager switch --flake .#{{config}}"
+    @gum style --foreground 82 "Remote switch complete"
+
 # -------------------------------------------------------------------------------
 # PRESETS
 # -------------------------------------------------------------------------------

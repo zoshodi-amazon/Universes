@@ -1,69 +1,84 @@
-# Services/Game Architecture
+# Game Lab Architecture
 
 direction: down
 
 title: {
-  label: Services/Game Module
+  label: Labs/Game - Compositional Design Lab
   shape: text
   style.font-size: 20
 }
 
-# Global Duality
 global: Global Duality {
   style.fill: "#e1f5fe"
-  
+
   env: Env {
-    aggregates: "Universe/*/Options"
+    aggregates: "Universe/*/Options -> ENV vars"
   }
-  
+
   instances: Instances {
     devshell: "perSystem.devShells.game"
-    package: "perSystem.packages.game"
+    packages: "perSystem.packages.game-*"
   }
-  
+
   env -> instances: config
 }
 
-# Universe
 universe: Universe {
   style.fill: "#fff3e0"
-  
+
   core: Core {
-    options: "enable, tickRate"
-    bindings: "Scripts, Commands, Hooks"
+    options: "enable, projectDir"
+    bindings: "Scripts (init, status)"
   }
-  
-  input: Input {
-    options: "enable, inputMap"
-    bindings: "Keymaps, State"
-  }
-  
+
   render: Render {
-    options: "enable, backend"
-    bindings: "Plugins (shaders)"
+    options: "dimension, resolution, backend, palette"
+    bindings: "Scripts (render-2d, render-3d)"
   }
-  
-  state: State {
-    bindings: "State, Hooks (Save)"
+
+  preview: Preview {
+    options: "method, watchExtensions, port"
+    bindings: "Scripts (watch, serve)"
   }
-  
+
+  sprite: Sprite {
+    options: "width, height, palette, frames"
+    bindings: "Scripts (create, sheet, animate)"
+  }
+
   audio: Audio {
-    options: "enable"
+    options: "delegates to Labs/Audio"
+    bindings: "Scripts (preview, spectrum)"
+  }
+
+  simulate: Simulate {
+    options: "engine, timeStep, gravity"
+    bindings: "Scripts (run)"
+  }
+
+  fabricate: Fabricate {
+    options: "format, layerHeight, infill"
+    bindings: "Scripts (slice, export)"
+  }
+
+  asset: Asset {
+    options: "backend, storePath, catalogDb"
+    bindings: "Scripts (fetch, catalog, list)"
   }
 }
 
-# Flow
 universe -> global.instances: exports
 
-# Game Loop
-loop: Game Loop {
+pipeline: Design Pipeline {
   style.fill: "#e8f5e9"
-  
-  input: Input
-  update: Update
-  render: Render
-  
-  input -> update -> render -> input
+
+  edit: "Edit (nvim)"
+  watch: "Watch (watchexec)"
+  render: "Render (aseprite/blender)"
+  preview: "Preview (chafa/browser)"
+
+  edit -> watch -> render -> preview
+  preview -> edit: iterate
 }
 
-global.instances -> loop: runs
+global.instances -> pipeline: runs
