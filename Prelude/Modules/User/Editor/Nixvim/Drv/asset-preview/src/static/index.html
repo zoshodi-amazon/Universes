@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Asset Preview</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1b26;color:#c0caf5;font-family:'JetBrains Mono',monospace;overflow:hidden;height:100vh}
+#status{position:fixed;top:8px;left:8px;z-index:100;font-size:11px;padding:4px 10px;border-radius:4px;background:#24283b}
+#status.connected{color:#9ece6a}
+#status.disconnected{color:#f7768e}
+#warning{position:fixed;top:8px;right:8px;z-index:100;font-size:11px;padding:4px 10px;border-radius:4px;background:#e0af68;color:#1a1b26;display:none}
+#info{position:fixed;bottom:8px;left:8px;z-index:100;font-size:11px;padding:4px 10px;border-radius:4px;background:#24283b;color:#565f89}
+#container{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+#waiting{text-align:center;color:#565f89}
+#waiting h2{font-weight:400;font-size:18px;margin-bottom:8px}
+#waiting p{font-size:12px}
+#img-view{max-width:100%;max-height:100%;object-fit:contain}
+#video-view{max-width:100%;max-height:100%}
+#audio-wrap{width:80%;max-width:800px}
+#audio-view{width:100%}
+#waveform{width:100%;height:200px;margin-top:16px}
+#text-view{width:90%;max-width:900px;max-height:90vh;overflow:auto;padding:24px;background:#24283b;border-radius:8px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+#md-view{width:90%;max-width:900px;max-height:90vh;overflow:auto;padding:24px;background:#24283b;border-radius:8px;font-size:14px;line-height:1.7}
+#md-view h1,#md-view h2,#md-view h3{color:#7aa2f7;margin:16px 0 8px}
+#md-view code{background:#1a1b26;padding:2px 6px;border-radius:3px;font-size:12px}
+#md-view pre{background:#1a1b26;padding:12px;border-radius:6px;overflow-x:auto}
+#md-view a{color:#7dcfff}
+#table-wrap{width:90%;max-width:1000px;max-height:90vh;overflow:auto}
+#table-wrap table{width:100%;border-collapse:collapse;font-size:12px}
+#table-wrap th{background:#7aa2f7;color:#1a1b26;padding:6px 10px;text-align:left;position:sticky;top:0}
+#table-wrap td{padding:4px 10px;border-bottom:1px solid #24283b}
+#font-view{width:80%;max-width:800px;text-align:center}
+#font-view .specimen{margin:16px 0}
+#pdf-view{width:100%;height:100%}
+#shader-canvas{width:100%;height:100%}
+#three-container{width:100%;height:100%}
+#scene-controls{position:fixed;top:40px;right:8px;z-index:100;display:none;font-size:11px}
+#scene-controls button{display:block;margin:2px 0;padding:4px 10px;background:#24283b;color:#c0caf5;border:1px solid #565f89;border-radius:3px;cursor:pointer;font-size:11px}
+#scene-controls button:hover{background:#414868}
+#sprite-canvas{image-rendering:pixelated}
+</style>
+</head>
+<body>
+<div id="status" class="disconnected">disconnected</div>
+<div id="warning"></div>
+<div id="info"></div>
+<div id="scene-controls">
+  <button onclick="toggleWireframe()">wireframe</button>
+  <button onclick="toggleGrid()">grid</button>
+  <button onclick="toggleNormals()">normals</button>
+  <button onclick="cycleEnv()">environment</button>
+  <button onclick="resetCamera()">reset camera</button>
+</div>
+<div id="container">
+  <div id="waiting"><h2>asset preview</h2><p>waiting for file...</p></div>
+</div>
+<script>
+const CDN={
+  three:'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js',
+  threeAddons:'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/',
+  wavesurfer:'https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/wavesurfer.esm.js',
+  marked:'https://cdn.jsdelivr.net/npm/marked@15/lib/marked.esm.js',
+  glslCanvas:'https://cdn.jsdelivr.net/npm/glslCanvas@0.2.6/dist/GlslCanvas.min.js',
+};
+const loaded={};
+async function loadModule(key){if(loaded[key])return loaded[key];loaded[key]=await import(CDN[key]);return loaded[key]}
+async function loadScript(url){if(loaded[url])return;return new Promise((res,rej)=>{const s=document.createElement('script');s.src=url;s.onload=()=>{loaded[url]=true;res()};s.onerror=rej;document.head.appendChild(s)})}
+
+let ws,threeState=null,wavesurferInst=null;
+const container=document.getElementById('container');
+const statusEl=document.getElementById('status');
+const warningEl=document.getElementById('warning');
+const infoEl=document.getElementById('info');
+const sceneControls=document.getElementById('scene-controls');
+
+function connect(){
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  ws=new WebSocket(proto+'//'+location.host+'/ws');
+  ws.onopen=()=>{statusEl.textContent='connected';statusEl.className='connected'};
+  ws.onclose=()=>{statusEl.textContent='disconnected';statusEl.className='disconnected';setTimeout(connect,2000)};
+  ws.onmessage=e=>{const msg=JSON.parse(e.data);if(msg.warning){warningEl.textContent=msg.warning;warningEl.style.display='block'}else{warningEl.style.display='none'}infoEl.textContent=msg.file+' ('+msg.type+')';render(msg)};
+}
+connect();
+window.previewFile=function(path){if(ws&&ws.readyState===1)ws.send(JSON.stringify({file:path}))};
+
+function cleanup(){
+  if(threeState){threeState.renderer.dispose();if(threeState.animId)cancelAnimationFrame(threeState.animId);threeState=null}
+  if(wavesurferInst){wavesurferInst.destroy();wavesurferInst=null}
+  sceneControls.style.display='none';container.innerHTML='';
+}
+
+async function render(msg){
+  cleanup();const t=msg.type,url=msg.url;
+  try{await _render(msg,t,url)}catch(e){const div=document.createElement('div');div.id='text-view';div.style.color='#f7768e';div.textContent='Render error: '+e.message+'\n\nStack: '+e.stack;container.appendChild(div)}
+}
+async function _render(msg,t,url){
+  if(['png','jpg','jpeg','gif','webp','svg','bmp','tga','ico'].includes(t))renderImage(url);
+  else if(['mp3','ogg','wav','flac','aac'].includes(t))await renderAudio(url);
+  else if(['mp4','webm'].includes(t))renderVideo(url);
+  else if(['glb','gltf','obj','stl'].includes(t))await render3D(url,t);
+  else if(msg.file&&msg.file.endsWith('.scene.json'))await renderScene(url);
+  else if(['glsl','frag','vert'].includes(t))await renderShader(url);
+  else if(t==='md')await renderMarkdown(url);
+  else if(t==='html')renderHTML(url);
+  else if(t==='pdf')renderPDF(url);
+  else if(['ttf','otf','woff','woff2'].includes(t))renderFont(url,msg.file);
+  else if(['json','yaml','yml','toml'].includes(t))await renderData(url,t);
+  else if(t==='csv')await renderCSV(url);
+  else if(msg.file&&msg.file.endsWith('.atlas.json'))await renderSpriteSheet(url,msg.file);
+  else renderText(url);
+}
+
+function renderImage(url){const img=document.createElement('img');img.id='img-view';img.src=url;container.appendChild(img)}
+
+async function renderAudio(url){
+  const wrap=document.createElement('div');wrap.id='audio-wrap';
+  const audio=document.createElement('audio');audio.id='audio-view';audio.controls=true;audio.src=url;wrap.appendChild(audio);
+  const waveDiv=document.createElement('div');waveDiv.id='waveform';wrap.appendChild(waveDiv);container.appendChild(wrap);
+  try{const WS=await loadModule('wavesurfer');wavesurferInst=WS.default.create({container:waveDiv,waveColor:'#7aa2f7',progressColor:'#9ece6a',barWidth:2,barGap:1,height:200,media:audio})}catch(e){}
+}
+
+function renderVideo(url){const v=document.createElement('video');v.id='video-view';v.controls=true;v.autoplay=true;v.src=url;container.appendChild(v)}
+
+async function render3D(url,type){
+  const THREE=await loadModule('three');
+  const{OrbitControls}=await import(CDN.threeAddons+'controls/OrbitControls.js');
+  const loaderMod=type==='obj'?await import(CDN.threeAddons+'loaders/OBJLoader.js'):type==='stl'?await import(CDN.threeAddons+'loaders/STLLoader.js'):await import(CDN.threeAddons+'loaders/GLTFLoader.js');
+  const div=document.createElement('div');div.id='three-container';container.appendChild(div);sceneControls.style.display='block';
+  const scene=new THREE.Scene();scene.background=new THREE.Color(0x1a1b26);
+  const camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.01,1000);camera.position.set(2,2,2);
+  const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(window.devicePixelRatio);renderer.toneMapping=THREE.ACESFilmicToneMapping;div.appendChild(renderer.domElement);
+  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;
+  scene.add(new THREE.AmbientLight(0xffffff,0.4));
+  const dir=new THREE.DirectionalLight(0xffffff,1);dir.position.set(5,10,7);scene.add(dir);
+  scene.add(new THREE.HemisphereLight(0x7aa2f7,0x414868,0.3));
+  const grid=new THREE.GridHelper(20,20,0x414868,0x24283b);scene.add(grid);
+  let loadedObj=null;
+  const onLoad=(obj)=>{
+    const model=obj.scene||obj;
+    const box=new THREE.Box3().setFromObject(model);const size=box.getSize(new THREE.Vector3());const center=box.getCenter(new THREE.Vector3());
+    const maxDim=Math.max(size.x,size.y,size.z);if(maxDim>0)model.scale.multiplyScalar(2/maxDim);
+    model.position.sub(center.multiplyScalar(2/maxDim));scene.add(model);loadedObj=model;
+    camera.position.set(2,1.5,2);controls.target.set(0,0,0);controls.update();
+  };
+  if(type==='obj')new loaderMod.OBJLoader().load(url,onLoad);
+  else if(type==='stl')new loaderMod.STLLoader().load(url,g=>{const mat=new THREE.MeshStandardMaterial({color:0x7aa2f7,metalness:0.3,roughness:0.6});onLoad(new THREE.Mesh(g,mat))});
+  else new loaderMod.GLTFLoader().load(url,onLoad);
+  let normalsHelper=null;
+  threeState={renderer,scene,camera,controls,grid,loadedObj:()=>loadedObj,normalsHelper:()=>normalsHelper,setNormals:h=>{normalsHelper=h},animId:null,wireframe:false,envIdx:0};
+  const animate=()=>{threeState.animId=requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)};animate();
+  window.addEventListener('resize',()=>{if(!threeState)return;camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)});
+}
+
+function toggleWireframe(){if(!threeState)return;threeState.wireframe=!threeState.wireframe;threeState.scene.traverse(c=>{if(c.isMesh&&c.material)c.material.wireframe=threeState.wireframe})}
+function toggleGrid(){if(!threeState)return;threeState.grid.visible=!threeState.grid.visible}
+async function toggleNormals(){
+  if(!threeState||!threeState.loadedObj())return;
+  if(threeState.normalsHelper()){threeState.scene.remove(threeState.normalsHelper());threeState.setNormals(null);return}
+  const{VertexNormalsHelper}=await import(CDN.threeAddons+'helpers/VertexNormalsHelper.js');
+  threeState.loadedObj().traverse(c=>{if(c.isMesh){const h=new VertexNormalsHelper(c,0.1,0x9ece6a);threeState.scene.add(h);threeState.setNormals(h)}});
+}
+const envColors=[0x1a1b26,0x2a2f4a,0x1a2a1a,0x2a1a1a,0x1a1a2a];
+function cycleEnv(){if(!threeState)return;threeState.envIdx=(threeState.envIdx+1)%envColors.length;threeState.scene.background.setHex(envColors[threeState.envIdx])}
+function resetCamera(){if(!threeState)return;threeState.camera.position.set(2,1.5,2);threeState.controls.target.set(0,0,0);threeState.controls.update()}
+
+async function renderScene(url){
+  const THREE=await loadModule('three');
+  const{OrbitControls}=await import(CDN.threeAddons+'controls/OrbitControls.js');
+  const{GLTFLoader}=await import(CDN.threeAddons+'loaders/GLTFLoader.js');
+  const{TransformControls}=await import(CDN.threeAddons+'controls/TransformControls.js');
+  const div=document.createElement('div');div.id='three-container';container.appendChild(div);sceneControls.style.display='block';
+  const scene=new THREE.Scene();scene.background=new THREE.Color(0x1a1b26);
+  const camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.01,1000);
+  const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(window.devicePixelRatio);renderer.toneMapping=THREE.ACESFilmicToneMapping;div.appendChild(renderer.domElement);
+  const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;
+  const transform=new TransformControls(camera,renderer.domElement);transform.addEventListener('dragging-changed',e=>{orbit.enabled=!e.value});scene.add(transform);
+  scene.add(new THREE.AmbientLight(0xffffff,0.4));const dl=new THREE.DirectionalLight(0xffffff,1);dl.position.set(5,10,7);scene.add(dl);scene.add(new THREE.HemisphereLight(0x7aa2f7,0x414868,0.3));
+  const grid=new THREE.GridHelper(20,20,0x414868,0x24283b);scene.add(grid);
+  const resp=await fetch(url);const sceneDef=await resp.json();
+  if(sceneDef.camera){if(sceneDef.camera.position)camera.position.set(...sceneDef.camera.position);if(sceneDef.camera.target)orbit.target.set(...sceneDef.camera.target)}else{camera.position.set(5,4,5)}
+  if(sceneDef.lights)for(const l of sceneDef.lights){let light;if(l.type==='point')light=new THREE.PointLight(l.color||0xffffff,l.intensity||1);else if(l.type==='spot')light=new THREE.SpotLight(l.color||0xffffff,l.intensity||1);else light=new THREE.DirectionalLight(l.color||0xffffff,l.intensity||1);if(l.position)light.position.set(...l.position);scene.add(light)}
+  const loader=new GLTFLoader();
+  if(sceneDef.objects)for(const obj of sceneDef.objects){loader.load('/file?path='+obj.model,gltf=>{const m=gltf.scene;if(obj.position)m.position.set(...obj.position);if(obj.rotation)m.rotation.set(...obj.rotation);if(obj.scale){const s=Array.isArray(obj.scale)?obj.scale:[obj.scale,obj.scale,obj.scale];m.scale.set(...s)}m.userData.name=obj.name||obj.model;scene.add(m)})}
+  const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();
+  renderer.domElement.addEventListener('dblclick',e=>{mouse.x=(e.clientX/window.innerWidth)*2-1;mouse.y=-(e.clientY/window.innerHeight)*2+1;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(scene.children,true);for(const h of hits){let o=h.object;while(o.parent&&!o.userData.name)o=o.parent;if(o.userData.name){transform.attach(o);infoEl.textContent='selected: '+o.userData.name;return}}transform.detach()});
+  threeState={renderer,scene,camera,controls:orbit,grid,loadedObj:()=>null,normalsHelper:()=>null,setNormals:()=>{},animId:null,wireframe:false,envIdx:0};
+  const animate=()=>{threeState.animId=requestAnimationFrame(animate);orbit.update();renderer.render(scene,camera)};animate();
+  window.addEventListener('resize',()=>{if(!threeState)return;camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)});
+}
+
+async function renderShader(url){await loadScript(CDN.glslCanvas);const canvas=document.createElement('canvas');canvas.id='shader-canvas';canvas.width=window.innerWidth;canvas.height=window.innerHeight;container.appendChild(canvas);const resp=await fetch(url);const src=await resp.text();new GlslCanvas(canvas,{fragmentString:src})}
+
+async function renderMarkdown(url){const{marked}=await loadModule('marked');const resp=await fetch(url);const text=await resp.text();const div=document.createElement('div');div.id='md-view';div.innerHTML=marked.parse(text);container.appendChild(div)}
+
+function renderHTML(url){const iframe=document.createElement('iframe');iframe.style.cssText='width:100%;height:100%;border:none;background:#fff';iframe.src=url;container.appendChild(iframe)}
+function renderPDF(url){const iframe=document.createElement('iframe');iframe.id='pdf-view';iframe.style.cssText='width:100%;height:100%;border:none';iframe.src=url;container.appendChild(iframe)}
+
+function renderFont(url,filePath){
+  const name='preview-font-'+Date.now();const ext=filePath.split('.').pop();
+  const format={ttf:'truetype',otf:'opentype',woff:'woff',woff2:'woff2'}[ext]||'truetype';
+  const style=document.createElement('style');style.textContent='@font-face{font-family:"'+name+'";src:url("'+url+'") format("'+format+'")}';document.head.appendChild(style);
+  const div=document.createElement('div');div.id='font-view';
+  const sample='The quick brown fox jumps over the lazy dog\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789 !@#$%^&*()';
+  div.innerHTML=[72,48,36,24,18,14,12].map(s=>'<div class="specimen" style="font-family:\''+name+'\';font-size:'+s+'px">'+s+'px — '+sample.split('\n')[0]+'</div>').join('')+'<div class="specimen" style="font-family:\''+name+'\';font-size:24px;white-space:pre-wrap">'+sample+'</div>';
+  container.appendChild(div);
+}
+
+async function renderData(url,type){const resp=await fetch(url);const text=await resp.text();const div=document.createElement('div');div.id='text-view';if(type==='json'){try{div.textContent=JSON.stringify(JSON.parse(text),null,2)}catch(e){div.textContent=text}}else{div.textContent=text}container.appendChild(div)}
+
+async function renderCSV(url){
+  const resp=await fetch(url);const text=await resp.text();const lines=text.trim().split('\n');if(!lines.length)return;
+  const wrap=document.createElement('div');wrap.id='table-wrap';const table=document.createElement('table');
+  const thead=document.createElement('thead');const hr=document.createElement('tr');
+  lines[0].split(',').forEach(h=>{const th=document.createElement('th');th.textContent=h.trim().replace(/^"|"$/g,'');hr.appendChild(th)});
+  thead.appendChild(hr);table.appendChild(thead);
+  const tbody=document.createElement('tbody');
+  for(let i=1;i<lines.length&&i<1000;i++){const tr=document.createElement('tr');lines[i].split(',').forEach(c=>{const td=document.createElement('td');td.textContent=c.trim().replace(/^"|"$/g,'');tr.appendChild(td)});tbody.appendChild(tr)}
+  table.appendChild(tbody);wrap.appendChild(table);container.appendChild(wrap);
+}
+
+async function renderSpriteSheet(url,filePath){
+  const resp=await fetch(url);const atlas=await resp.json();const imgUrl='/file?path='+filePath.replace('.atlas.json','.png');
+  const img=new Image();img.src=imgUrl;await new Promise(r=>{img.onload=r});
+  const canvas=document.createElement('canvas');canvas.id='sprite-canvas';
+  const frames=atlas.frames||Object.values(atlas);if(!frames.length){renderImage(imgUrl);return}
+  const f0=frames[0].frame||frames[0];canvas.width=f0.w*4;canvas.height=f0.h*4;
+  container.appendChild(canvas);const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
+  let idx=0;const anim=()=>{const fr=frames[idx%frames.length];const r=fr.frame||fr;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,r.x,r.y,r.w,r.h,0,0,canvas.width,canvas.height);idx++;setTimeout(()=>requestAnimationFrame(anim),150)};anim();
+}
+
+function renderText(url){fetch(url).then(r=>r.text()).then(text=>{const div=document.createElement('div');div.id='text-view';div.textContent=text;container.appendChild(div)})}
+</script>
+</body>
+</html>

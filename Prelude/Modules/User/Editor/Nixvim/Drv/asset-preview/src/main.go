@@ -42,10 +42,13 @@ func (h *Hub) remove(c *websocket.Conn) {
 }
 
 func (h *Hub) broadcast(msg []byte) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	for c := range h.clients {
-		c.WriteMessage(websocket.TextMessage, msg)
+		if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
+			c.Close()
+			delete(h.clients, c)
+		}
 	}
 }
 
@@ -70,13 +73,12 @@ func loadConverters() {
 	json.Unmarshal([]byte(raw), &converters)
 }
 
-// webNative returns true if the extension can be served directly to the browser.
 func webNative(ext string) bool {
 	switch ext {
 	case "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp",
 		"mp3", "ogg", "wav", "flac", "aac",
 		"mp4", "webm",
-		"glb", "gltf",
+		"glb", "gltf", "obj", "stl",
 		"glsl", "frag", "vert",
 		"ttf", "otf", "woff", "woff2",
 		"pdf",
@@ -86,11 +88,9 @@ func webNative(ext string) bool {
 	return false
 }
 
-// convert runs the converter command for ext, returns path to converted file.
 func convert(filePath, ext string) (string, string, error) {
 	cmd, ok := converters[ext]
 	if !ok || cmd == "" {
-		// TMX: built-in XML→JSON
 		if ext == "tmx" {
 			return convertTMX(filePath)
 		}
@@ -106,7 +106,6 @@ func convert(filePath, ext string) (string, string, error) {
 	if err := c.Run(); err != nil {
 		return "", "", fmt.Errorf("converter failed for .%s: %w", ext, err)
 	}
-	// Find the output file (converter appends its own extension)
 	matches, _ := filepath.Glob(outBase + ".*")
 	if len(matches) == 0 {
 		return "", "", fmt.Errorf("converter produced no output for .%s", ext)
@@ -116,7 +115,6 @@ func convert(filePath, ext string) (string, string, error) {
 	return outPath, outExt, nil
 }
 
-// convertTMX converts Tiled TMX (XML) to JSON inline.
 func convertTMX(filePath string) (string, string, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -124,7 +122,6 @@ func convertTMX(filePath string) (string, string, error) {
 	}
 	var xmlData interface{}
 	if err := xml.Unmarshal(data, &xmlData); err != nil {
-		// Fallback: serve raw XML as text
 		outPath := filepath.Join(cacheDir, filepath.Base(filePath)+".json")
 		os.WriteFile(outPath, []byte(`{"error":"failed to parse TMX","raw":true}`), 0o644)
 		return outPath, "json", nil
@@ -142,6 +139,28 @@ type PreviewMsg struct {
 	Type    string `json:"type"`
 	Warning string `json:"warning,omitempty"`
 	URL     string `json:"url,omitempty"`
+}
+
+// resolvePreview takes a file path, determines type, converts if needed, returns broadcast msg.
+func resolvePreview(msg *PreviewMsg) {
+	ext := strings.TrimPrefix(filepath.Ext(msg.File), ".")
+	if ext == "" {
+		ext = msg.Type
+	}
+	msg.Type = ext
+
+	if webNative(ext) {
+		msg.URL = "/file?path=" + msg.File
+	} else {
+		converted, newExt, err := convert(msg.File, ext)
+		if err != nil {
+			msg.Warning = err.Error()
+			msg.URL = "/file?path=" + msg.File
+		} else {
+			msg.Type = newExt
+			msg.URL = "/file?path=" + converted
+		}
+	}
 }
 
 // --- HTTP handlers ---
@@ -163,28 +182,37 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 		if err := json.Unmarshal(raw, &msg); err != nil {
 			continue
 		}
-		ext := strings.TrimPrefix(filepath.Ext(msg.File), ".")
-		if ext == "" {
-			ext = msg.Type
-		}
-		msg.Type = ext
-
-		if webNative(ext) {
-			msg.URL = "/file?path=" + msg.File
-		} else {
-			converted, newExt, err := convert(msg.File, ext)
-			if err != nil {
-				msg.Warning = err.Error()
-				msg.URL = "/file?path=" + msg.File
-			} else {
-				msg.Type = newExt
-				msg.URL = "/file?path=" + converted
-			}
-		}
-
+		resolvePreview(&msg)
 		out, _ := json.Marshal(msg)
 		hub.broadcast(out)
 	}
+}
+
+// handlePreviewPost accepts POST from nvim (curl) and broadcasts to WS clients.
+func handlePreviewPost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", 405)
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	var msg PreviewMsg
+	if err := json.Unmarshal(body, &msg); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	resolvePreview(&msg)
+	out, _ := json.Marshal(msg)
+	hub.mu.RLock()
+	clients := len(hub.clients)
+	hub.mu.RUnlock()
+	fmt.Fprintf(os.Stderr, "broadcasting to %d clients\n", clients)
+	hub.broadcast(out)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(out)
 }
 
 func handleFile(w http.ResponseWriter, r *http.Request) {
@@ -198,7 +226,6 @@ func handleFile(w http.ResponseWriter, r *http.Request) {
 	if ct == "" {
 		ct = "application/octet-stream"
 	}
-	// Override MIME for types browsers need help with
 	switch ext {
 	case "glb":
 		ct = "model/gltf-binary"
@@ -216,6 +243,8 @@ func handleFile(w http.ResponseWriter, r *http.Request) {
 		ct = "text/csv"
 	case "obj":
 		ct = "text/plain"
+	case "stl":
+		ct = "application/octet-stream"
 	case "ttf":
 		ct = "font/ttf"
 	case "otf":
@@ -251,6 +280,7 @@ func main() {
 
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/ws", handleWS)
+	http.HandleFunc("/preview", handlePreviewPost)
 	http.HandleFunc("/file", handleFile)
 
 	addr := "127.0.0.1:" + port

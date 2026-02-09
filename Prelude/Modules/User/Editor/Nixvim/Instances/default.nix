@@ -11,6 +11,8 @@ let
     };
     config = spec.config or "";
   }) cfg.extraPluginConfigs;
+  buildGlobals = lib.foldlAttrs (acc: _: v: acc // v) {} cfg.globals;
+  buildExtraConfigLua = lib.concatStringsSep "\n" (lib.attrValues cfg.extraConfigLua);
 in
 {
   config.flake.modules.homeManager.nixvim = lib.mkIf cfg.enable {
@@ -20,7 +22,7 @@ in
       defaultEditor = true;
       viAlias = true;
       vimAlias = true;
-      globals.mapleader = cfg.leader;
+      globals = { mapleader = cfg.leader; } // buildGlobals;
       colorschemes.${cfg.colorscheme}.enable = true;
       opts = {
         number = cfg.lineNumbers;
@@ -38,6 +40,8 @@ in
       keymaps = lib.flatten (lib.attrValues cfg.keymaps);
       plugins = lib.mkMerge (lib.attrValues cfg.plugins);
       extraPlugins = buildExtraPlugins pkgs;
+      extraConfigLua = buildExtraConfigLua;
+      extraPackages = map (name: config.perSystem.packages.${name} or pkgs.${name}) cfg.extraPackages;
     };
   };
 }

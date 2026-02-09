@@ -1,111 +1,143 @@
-# Nixvim Filetype → Renderer Architecture
-# Vertical layout for ASCII preview
+# Nixvim: Capability-Indexed Plugin Architecture
 
 direction: down
 
 title: {
-  label: "Nixvim Plugins (Filetype → Renderer)"
+  label: "Nixvim Plugins (Capability → Rendering Target)"
   shape: text
   style.font-size: 20
 }
 
 # ═══════════════════════════════════════
-# EXISTING
+# RENDERING TARGET CATEGORIES
 # ═══════════════════════════════════════
 
-existing: {
-  label: "Existing ✓"
+Chrome: {
+  label: "Chrome/ (Editor Decoration)"
   style.fill: "#88c0d0"
   
-  Navigation
-  Completion
-  Git
-  Ui
-  Nix
-  Documentation
+  lualine: "statusline"
+  bufferline: "tab bar"
+  which-key: "key hints"
+  devicons: "file icons"
+  indent: "indent guides"
+  zen: "focus mode"
 }
 
+Inline: {
+  label: "Inline/ (In-Buffer Rendering)"
+  style.fill: "#a3be8c"
+  
+  image: "image.nvim → terminal images"
+  glow: "glow → terminal markdown"
+  d2: "d2-vim → ASCII diagrams"
+}
+
+Render: {
+  label: "Render/ (External Browser Rendering)"
+  style.fill: "#81a1c1"
+  style.stroke: "#5e81ac"
+  style.stroke-width: 3
+  
+  sidecar: {
+    label: "Go Sidecar (Drv/asset-preview)"
+    style.fill: "#5e81ac"
+    
+    http: "HTTP :9876"
+    ws: "WebSocket broadcast"
+    convert: "Auto-convert (ffmpeg/assimp/pandoc/...)"
+  }
+  
+  frontend: {
+    label: "Browser Frontend"
+    style.fill: "#4c566a"
+    
+    images: "2D: <img>"
+    models: "3D: three.js (GLB/OBJ/STL + orbit/wireframe/normals)"
+    scenes: "Scene: three.js + TransformControls"
+    audio: "Audio: wavesurfer.js"
+    video: "Video: <video>"
+    shaders: "Shaders: glslCanvas"
+    docs: "Docs: marked.js / PDF"
+    data: "Data: table / highlight"
+    fonts: "Fonts: @font-face specimen"
+  }
+  
+  live-server: "live-server.nvim → HTML hot reload"
+  md-preview: "markdown-preview → browser markdown"
+  
+  nvim: {
+    label: "Lua Plugin"
+    style.fill: "#4c566a"
+    autocmd: "BufEnter → POST /preview → WS broadcast"
+  }
+}
+
+Render.nvim -> Render.sidecar: "curl POST"
+Render.sidecar.ws -> Render.frontend: "WebSocket"
+
 # ═══════════════════════════════════════
-# NEW CATEGORIES
+# CODE INTELLIGENCE CATEGORIES
 # ═══════════════════════════════════════
+
+Completion: {
+  label: "Completion/"
+  style.fill: "#ebcb8b"
+  cmp: "nvim-cmp"
+}
 
 Languages: {
   label: "Languages/"
-  style.fill: "#a3be8c"
-  
-  nix: ".nix → nil LSP + repl"
-  lean: ".lean → lean.nvim infoview"
-  python: ".py → pyright + repl"
+  style.fill: "#d08770"
+  nix: ".nix → nil LSP"
+  lean: ".lean → lean.nvim"
+  python: ".py → pyright"
   rust: ".rs → rust-analyzer"
-  typescript: ".ts → tsserver"
+  ts: ".ts → tsserver"
 }
 
 Data: {
   label: "Data/"
   style.fill: "#ebcb8b"
-  
-  json: ".json → jq tree"
+  json: ".json → jq"
   yaml: ".yaml → yq"
-  csv: ".csv → table view"
+  csv: ".csv → table"
   toml: ".toml → taplo"
 }
 
-Media: {
-  label: "Media/"
-  style.fill: "#d08770"
-  
-  image: ".png/jpg → image.nvim"
-  svg: ".svg → browser"
-  audio: ".wav/mp3 → ffplay"
-  video: ".mp4 → mpv"
-}
-
-Web: {
-  label: "Web/"
+Navigation: {
+  label: "Navigation/"
   style.fill: "#bf616a"
-  
-  html: ".html → live-server"
-  css: ".css → live-server"
-  jsx: ".jsx → hot reload"
+  telescope: "fuzzy finder"
+  oil: "file browser"
+  harpoon: "bookmarks"
 }
 
-Preview: {
-  label: "Preview/ (Live Renderers)"
-  style.fill: "#81a1c1"
-  
-  diagrams: {
-    d2: ".d2 → d2 --watch"
-    mermaid: ".mmd → mmdc"
-    graphviz: ".dot → dot"
-    plantuml: ".puml → plantuml"
-  }
-  
-  cad: {
-    stl: ".stl/.obj → f3d"
-    scad: ".scad → openscad"
-  }
-  
-  docs: {
-    typst: ".typ → typst watch"
-    pdf: ".pdf → zathura"
-    md: ".md → glow"
-  }
-  
-  game: {
-    godot: ".tscn → godot --editor"
-  }
+Git: {
+  label: "Git/"
+  style.fill: "#b48ead"
+  signs: "gitsigns"
+}
+
+Nix: {
+  label: "Nix/"
+  style.fill: "#a3be8c"
+  lsp: "nil LSP"
 }
 
 # ═══════════════════════════════════════
 # FLOW
 # ═══════════════════════════════════════
 
-existing -> Instances
+Chrome -> Instances
+Inline -> Instances
+Render -> Instances
+Completion -> Instances
 Languages -> Instances
 Data -> Instances
-Media -> Instances
-Web -> Instances
-Preview -> Instances
+Navigation -> Instances
+Git -> Instances
+Nix -> Instances
 
 Instances: {
   label: "Instances/"
@@ -121,16 +153,21 @@ target: {
 }
 
 # ═══════════════════════════════════════
-# PATTERN
+# DECISION TREE
 # ═══════════════════════════════════════
 
-pattern: {
-  label: "Each Plugin dir"
+decision: {
+  label: "Category Decision Tree"
   style.stroke-dash: 3
+  style.fill: "#2e3440"
   
-  Options
-  Bindings: {
-    plugins: "config.nixvim.plugins.X"
-    keymaps: "config.nixvim.keymaps.X"
-  }
+  q1: "Changes editor UI?" {shape: diamond}
+  q2: "Renders in buffer?" {shape: diamond}
+  q3: "Renders externally?" {shape: diamond}
+  
+  q1 -> Chrome: "YES"
+  q1 -> q2: "NO"
+  q2 -> Inline: "YES"
+  q2 -> q3: "NO"
+  q3 -> Render: "YES"
 }

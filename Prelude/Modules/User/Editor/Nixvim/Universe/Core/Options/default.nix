@@ -11,6 +11,9 @@
     keymaps = lib.mkOption { type = lib.types.attrsOf (lib.types.listOf lib.types.attrs); default = {}; };
     plugins = lib.mkOption { type = lib.types.attrsOf lib.types.attrs; default = {}; };
     extraPluginConfigs = lib.mkOption { type = lib.types.attrsOf lib.types.attrs; default = {}; };
+    extraConfigLua = lib.mkOption { type = lib.types.attrsOf lib.types.str; default = {}; };
+    globals = lib.mkOption { type = lib.types.attrsOf lib.types.attrs; default = {}; };
+    extraPackages = lib.mkOption { type = lib.types.listOf lib.types.str; default = []; };
     env = lib.mkOption { type = lib.types.attrsOf lib.types.str; default = {}; };
   };
 }

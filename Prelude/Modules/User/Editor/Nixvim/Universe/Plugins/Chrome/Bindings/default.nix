@@ -1,7 +1,7 @@
-# UI plugins
+# Chrome: editor decoration (statusline, bufferline, keyhints, icons, indentation, focus)
 { config, lib, ... }:
 {
-  config.nixvim.plugins.ui = lib.mkIf config.nixvim.enable {
+  config.nixvim.plugins.chrome = lib.mkIf config.nixvim.enable {
     web-devicons.enable = true;
     lualine.enable = true;
     bufferline.enable = true;
