@@ -1,4 +1,0 @@
-{
-  Spaces = ./Spaces;
-  Bindings = ./Bindings;
-}

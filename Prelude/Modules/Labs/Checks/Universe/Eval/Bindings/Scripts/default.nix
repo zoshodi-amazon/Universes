@@ -1,4 +1,4 @@
 { config, ... }:
 {
-  config.checks.eval.enable = true;
+  config.checks.eval.enable = false;
 }

@@ -1,4 +1,0 @@
-{
-  Inputs = ./Inputs;
-  Outputs = ./Outputs;
-}

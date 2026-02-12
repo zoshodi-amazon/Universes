@@ -1,4 +1,0 @@
-{
-  PersistIO = ./PersistIO;
-  ObsIO = ./ObsIO;
-}

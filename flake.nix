@@ -26,6 +26,7 @@
     microvm.inputs.nixpkgs.follows = "nixpkgs";
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
+    lean4-nix.url = "github:lenianiva/lean4-nix";
   };
 
   nixConfig = {

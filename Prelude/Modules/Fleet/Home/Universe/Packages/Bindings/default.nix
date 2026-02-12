@@ -15,6 +15,8 @@
     # Nix
     "nil"
     "nixfmt-rfc-style"
+    "nh"
+    "nix-output-monitor"
     # Containers
     "podman"
     # Virtualization
@@ -32,7 +34,7 @@
     "zathura"
     "glow"
     # Media
-    "mpv"
+    # "mpv"  # pulls in Swift compiler on darwin — disabled until cached
     "inkscape"
     "ffmpeg"
     # Game/Graphics
@@ -47,5 +49,7 @@
     # AI
     "opencode"
     "ollama"
+    # Nix
+    "nh"
   ];
 }

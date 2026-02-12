@@ -4,114 +4,169 @@ Off-grid, surveillance-resistant autonomous living capability space.
 
 **Threat Model**: Complete surveillance society, satellite tracking, dual-mode (evasion + gray man)
 
-## Capability Space
+## Structure
 
-### Survival Domains × OPSEC Layers
-
-|              | Physical | Signal | Digital | Social | Financial | Temporal | Legal |
-|--------------|----------|--------|---------|--------|-----------|----------|-------|
-| **Energy**   | thermal, visual, acoustic | — | — | — | — | — | — |
-| **Water**    | visual | — | — | — | — | — | — |
-| **Food**     | thermal | — | — | — | — | — | — |
-| **Shelter**  | thermal, visual, acoustic | — | — | — | — | — | — |
-| **Medical**  | — | — | records | — | purchases | — | licensing |
-| **Comms**    | — | RF, burst | metadata | patterns | — | timing | — |
-| **Compute**  | — | EMI | trails | — | — | — | — |
-| **Transport**| visual | electronic | tracking | patterns | tolls | timing | registration |
-| **Defense**  | all | sensors | — | — | — | — | — |
-| **Fabrication**| — | — | — | — | sourcing | — | regulated |
-| **Intelligence**| — | passive | — | — | — | — | — |
-| **Trade**    | — | — | — | — | anonymous | — | reporting |
-
-### Operational Modes
-
-| Mode | Purpose | Constraints |
-|------|---------|-------------|
-| `nomadic` | Mobile, rapid deploy/teardown | weight, volume, teardown time |
-| `urban` | Gray man, blend in | cover identity, infrastructure use |
-| `base` | Semi-permanent full capability | permanence, redundancy, expansion |
-
-## Options
-
-### Core (`sovereignty.*`)
-
-| Option | Type | Default |
-|--------|------|---------|
-| `mode` | enum | `"base"` |
-| `bootstrap.seed` | `knowledge\|energy\|compute` | `"knowledge"` |
-| `fabrication.tier` | `assembly\|component\|material` | `"assembly"` |
-| `opsec.{physical,signal,digital,social,financial,temporal,legal}.enable` | bool | varies |
-
-### Energy (`sovereignty.energy.*`)
-
-| Option | Type | Default |
-|--------|------|---------|
-| `generation.types` | list | `["solar"]` |
-| `generation.capacity` | str | `"100W"` |
-| `storage.capacity` | str | `"1kWh"` |
-| `storage.chemistry` | enum | `"lifepo4"` |
-| `distribution.voltage` | enum | `"12V"` |
-| `signature.{thermal,acoustic,visual}` | enum | `"unmanaged"` |
-
-### Comms (`sovereignty.comms.*`)
-
-| Option | Type | Default |
-|--------|------|---------|
-| `mesh.enable` | bool | `false` |
-| `mesh.protocol` | enum | `"meshtastic"` |
-| `burst.enable` | bool | `false` |
-| `encryption` | enum | `"chacha20"` |
-| `rf.maxPower` | str | `"100mW"` |
-
-### Intelligence (`sovereignty.intelligence.*`)
-
-| Option | Type | Default |
-|--------|------|---------|
-| `osint.enable` | bool | `false` |
-| `osint.domains` | list | `["social","geospatial","image"]` |
-| `sigint.{enable,sdr,spectrum,protocol}` | bool | `false` |
-| `countersurveillance.{enable,rf,camera,tscm}` | bool | `false` |
-| `re.{software,hardware,firmware,protocol}` | bool | `false` |
-
-### Compute (`sovereignty.compute.*`)
-
-| Option | Type | Default |
-|--------|------|---------|
-| `architecture` | enum | `"aarch64"` |
-| `openness` | `full\|partial\|pragmatic` | `"partial"` |
-| `airgap.enable` | bool | `false` |
-| `knowledge.static.enable` | bool | `false` |
-| `knowledge.llm.enable` | bool | `false` |
-| `knowledge.structured.enable` | bool | `false` |
-
-## Hardware Openness
-
-| Level | Description | Examples |
-|-------|-------------|----------|
-| `full` | Open ISA, open schematics, no blobs | RISC-V (VisionFive), Olimex |
-| `partial` | Open schematics, some blobs | Pine64, BeagleBone |
-| `pragmatic` | Closed but auditable/common | RPi (cover), commodity x86 |
-
-## Usage
-
-```bash
-# Enter sovereignty devShell
-nix develop .#sovereignty
-
-# Discover tools for a domain
-discover energy
-discover intelligence --tool ghidra
-
-# Energy calculator
-energy calc --load 50W --hours 72
+```
+Sovereignty/
+├── Artifacts/           # Typed option modules (the type space)
+│   └── Sovereignty/     # The ADT — complete ontology
+│       └── default.lean # Canonical type definitions
+│   └── default.nix      # Nix projection of the ADT
+├── Monads/              # Artifact-producing scripts/derivations
+│   └── MSovereignty/    # Pure queries (status, gaps, bom, weight, cost, signature, bootstrap)
+│   └── IOMSovereignty/  # Effectful commands (validate, pack, discover, training)
+│   └── IOMLeanPackage/  # Builds the sov CLI binary (lean4-nix)
+├── default.nix          # Global instantiation (wires Artifacts + Monads into flake)
+└── README.md
 ```
 
-## Targets
+## Naming Convention
 
-| Target | Purpose |
-|--------|---------|
-| `perSystem.devShells.sovereignty` | Development/planning environment |
-| `perSystem.packages.energy-monitor` | Energy monitoring tool |
+```
+Artifacts/   → [IO?]{ArtifactType}     — typed option modules
+Monads/      → [IO?]M{ArtifactType}    — artifact-producing scripts/derivations
+
+IO prefix    = effectful (writes, deploys, interactive, modifies state)
+no prefix    = pure (queries, observations, read-only)
+M prefix     = Monad (type constructor that produces the artifact)
+```
+
+Every Artifact has a 1-1 Monad. Missing Monad = a hole.
+
+| Artifact | Monad | IO? | Purpose |
+|----------|-------|-----|---------|
+| `Sovereignty` | `MSovereignty` | pure | Query the capability space (status, gaps, bom) |
+| `Sovereignty` | `IOMSovereignty` | effectful | Modify state (validate, pack, discover) |
+| `LeanPackage` | `IOMLeanPackage` | effectful | Build the sov CLI binary |
+
+## Ontology
+
+The entire system is defined by a single recursive ADT in `Artifacts/Sovereignty/default.lean`.
+
+```
+Artifacts/Sovereignty/default.lean (ADT)  ->  Artifacts/default.nix (Nix projection)  ->  ENV vars (JSON)  ->  sov binary (Lean folds)  ->  IO effects
+     types                                         type space                              serialized config      eliminators                  state
+```
+
+### Type Hierarchy
+
+```
+Sovereignty
+  -- Global
+  mode        : Mode (nomadic | urban | base)
+  bootstrap   : Bootstrap (knowledge | energy | compute)
+  opsec       : Opsec (7 layers: physical, signal, digital, social, financial, temporal, legal)
+  constraints : ModeConstraints (nomadic: weight/volume, urban: blend, base: permanence)
+  -- Tier 1 (spans all modes)
+  energy       : Energy (generation, storage, distribution, signature)
+  water        : Water (sources, purification, capacity, signature)
+  food         : Food (acquisition, preservation, cultivation, signature)
+  shelter      : Shelter (type, mobility, climate, signature)
+  -- Tier 2 (required all modes, complexity varies)
+  medical      : Medical (level, pharmacy, diagnostics, telemedicine)
+  comms        : Comms (mesh, burst, encryption, rf, offline, signature)
+  compute      : Compute (architecture, openness, airgap, knowledge)
+  -- Tier 3 (mode-dependent intensity)
+  intelligence : Intelligence (osint, sigint, counterSurveillance, re)
+  defense      : Defense (perimeter, earlyWarning, physical, commsec)
+  -- Tier 4 (most mode-specific)
+  transport    : Transport (modes, fuel, navigation, signature)
+  trade        : Trade (methods, crypto, supplyChain, signature)
+  fabrication  : Fabrication (tier, capabilities, materials)
+```
+
+Every leaf capability contains `items : List Item` where:
+
+```
+Item
+  name, model, qty, unitCost : Cost, weight : Mass, volume : Vol,
+  packTime : Duration, source : SourceType, status : AcqStatus,
+  competency : Competency, signature : Signature
+```
+
+No loose strings. Physical quantities are typed (value + unit). Sources are sum types. Status is a lifecycle enum.
+
+### Globality Ordering
+
+| Tier | Domains | Rationale |
+|------|---------|-----------|
+| 1 (most global) | Energy, Water, Food, Shelter | Required in ALL modes |
+| 2 | Medical, Comms, Compute | Required in all modes, complexity varies |
+| 3 | Intelligence, Defense | Mode-dependent intensity |
+| 4 | Transport, Trade, Fabrication | Most mode-specific |
+
+## Commands as Monads
+
+Every command is an artifact-producing Monad. The naming tells you what it produces and whether it's effectful:
+
+### MSovereignty (pure queries — read the type space)
+
+| Command | Fold | Output |
+|---------|------|--------|
+| `sov status` | Coverage matrix | Per-domain acquired/total counts |
+| `sov gaps` | Filter empty capabilities | List of (DomainId, CapId) |
+| `sov bom` | Collect all items | Flat BOM with totals |
+| `sov cost` | Sum unitCost * qty | Cost breakdown by domain |
+| `sov weight` | Sum weight * qty | Weight breakdown by domain |
+| `sov signature` | Aggregate signatures | OPSEC posture table |
+| `sov bootstrap` | Gaps sorted by tier | Acquisition priority path |
+
+### IOMSovereignty (effectful — modify state or interact)
+
+| Command | Effect | Output |
+|---------|--------|--------|
+| `sov validate` | Check constraints | List of typed SovError |
+| `sov pack <mode>` | Filter by mode constraints | Pack list + constraint violations |
+| `sov discover <domain>` | Research tools | Gap analysis for domain |
+| `sov training` | Filter untrained items | Training plan |
+
+### IOMLeanPackage (effectful — build)
+
+| Command | Effect | Output |
+|---------|--------|--------|
+| `lake build` | Compile Lean to native binary | `sov` executable |
+
+## Errors
+
+All errors are typed via `SovError` ADT:
+
+```
+SovError
+  | missingItems (domain, cap)
+  | overWeight (actual : Mass, limit : Mass)
+  | overVolume (actual : Vol, limit : Vol)
+  | overPackTime (actual : Duration, limit : Duration)
+  | untrainedCapability (domain, cap, level)
+  | noBootstrapPath (seed, missing)
+  | signatureExposure (domain, sig)
+```
+
+## Justfile
+
+The justfile aggregates all Monads as recipes:
+
+```bash
+just sov-status          # MSovereignty: coverage matrix
+just sov-gaps            # MSovereignty: uncovered capabilities
+just sov-bom             # MSovereignty: bill of materials
+just sov-cost            # MSovereignty: cost breakdown
+just sov-weight          # MSovereignty: weight breakdown
+just sov-signature       # MSovereignty: OPSEC posture
+just sov-bootstrap       # MSovereignty: acquisition priority
+just sov-validate        # IOMSovereignty: check constraints
+just sov-pack nomadic    # IOMSovereignty: filter by mode
+just sov-discover energy # IOMSovereignty: research tools
+just sov-training        # IOMSovereignty: training plan
+```
+
+## Invariant Check
+
+For every `Artifacts/X`, there must exist `Monads/[IO]MX`. Mechanically verifiable:
+
+```
+Artifacts/Sovereignty/  -> Monads/MSovereignty/ + Monads/IOMSovereignty/   [OK]
+Artifacts/default.nix   -> Monads/IOMLeanPackage/                          [OK]
+```
 
 ## Resources
 
@@ -120,3 +175,4 @@ energy calc --load 50W --hours 72
 - [OSHWA](https://oshwa.org) - Open Source Hardware Association
 - [Meshtastic](https://meshtastic.org) - Off-grid mesh
 - [Reticulum](https://reticulum.network) - Cryptographic mesh
+- [lean4-nix](https://github.com/lenianiva/lean4-nix) - Lean 4 Nix packaging

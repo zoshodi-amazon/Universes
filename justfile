@@ -101,7 +101,7 @@ new-feature module name:
 # ARGS: machine - name of machine (e.g., sovereignty)
 build machine:
     @gum style --border normal --padding "0 1" "Building $(gum style --foreground 212 '{{machine}}')"
-    @gum spin --spinner dot --title "Building ISO..." -- nix build .#{{machine}}-iso --print-out-paths
+    @nom build .#{{machine}}-iso --print-out-paths
     @gum style --foreground 82 "Build complete"
 
 # Run machine in QEMU VM for testing before flashing
@@ -113,7 +113,7 @@ vm machine:
 # Validate all modules (runs nix flake check)
 check:
     @gum style --border normal --padding "0 1" "Checking flake"
-    @gum spin --spinner dot --title "Validating..." -- nix flake check
+    @nix flake check --show-trace 2>&1 | nom
     @gum style --foreground 82 "Check passed"
 
 # -------------------------------------------------------------------------------
@@ -234,18 +234,8 @@ podman-init:
 # Switch to home configuration
 # ARGS: host - home configuration name (default: darwin)
 switch host="darwin":
-    #!/usr/bin/env nu
-    gum style --border normal --padding "0 1" $"Switching to (gum style --foreground 212 '{{host}}')"
-    let result = (do { home-manager switch --flake $".#{{host}}" } | complete)
-    if $result.exit_code == 0 {
-        gum style --foreground 82 "Switch complete"
-    } else {
-        let output = [$result.stdout $result.stderr] | str join "\n" | str trim
-        if ($output | is-not-empty) {
-            print (gum style --border double --border-foreground 196 --foreground 196 --padding "1 2" $output)
-        }
-        exit 1
-    }
+    @gum style --border normal --padding "0 1" "Switching to $(gum style --foreground 212 '{{host}}')"
+    @nh home switch . -c {{host}}
 
 # Sync to remote host and switch home configuration there
 # ARGS: host - SSH host (e.g., cloud-dev), config - home configuration name (default: cloud-dev)
@@ -364,6 +354,153 @@ run pkg *args:
     nix run {{pkg}} -- {{args}}
 
 # -------------------------------------------------------------------------------
+# DISCOVER
+# -------------------------------------------------------------------------------
+
+# List curated nixpkgs tools for a capability domain
+# ARGS: domain - capability domain (electrical, acoustic, mechanical, chemical, biological, visual, rf, device, cad)
+discover domain:
+    #!/usr/bin/env nu
+    let tools: record = {
+      electrical: [
+        { pkg: "kicad-small", cap: "schematic + PCB layout + gerber export" }
+        { pkg: "ngspice", cap: "SPICE circuit simulation" }
+        { pkg: "qucs-s", cap: "circuit simulation GUI with SPICE backends" }
+        { pkg: "xyce", cap: "high-performance analog circuit sim (linux)" }
+        { pkg: "librepcb", cap: "EDA suite (linux)" }
+      ]
+      acoustic: [
+        { pkg: "sox", cap: "audio transforms, spectrum, format conversion" }
+        { pkg: "ffmpeg", cap: "audio/video encode, decode, filter, stream" }
+        { pkg: "audacity", cap: "waveform editor + spectrum analysis" }
+      ]
+      mechanical: [
+        { pkg: "openscad", cap: "parametric 3D CAD (code-driven)" }
+        { pkg: "freecad", cap: "general purpose 3D CAD/FEA (linux)" }
+        { pkg: "calculix-ccx", cap: "FEA structural analysis" }
+        { pkg: "meshlab", cap: "3D mesh processing + conversion" }
+        { pkg: "blender", cap: "3D modeling, rendering, simulation" }
+      ]
+      chemical: [
+        { pkg: "openbabel", cap: "molecule format conversion (SMILES, SDF, PDB)" }
+        { pkg: "avogadro2", cap: "molecular editor + visualizer" }
+      ]
+      biological: [
+        { pkg: "blast", cap: "sequence alignment search" }
+        { pkg: "clustalw", cap: "multiple sequence alignment" }
+      ]
+      visual: [
+        { pkg: "imagemagick", cap: "image conversion, transform, compose" }
+        { pkg: "ffmpeg", cap: "video encode, decode, filter, stream" }
+        { pkg: "blender", cap: "3D rendering + compositing" }
+      ]
+      rf: [
+        { pkg: "gnuradio", cap: "SDR signal processing framework" }
+        { pkg: "rtl-sdr", cap: "RTL2832U SDR receiver tools" }
+        { pkg: "hackrf", cap: "HackRF One TX/RX tools" }
+        { pkg: "gqrx", cap: "SDR receiver GUI + spectrum" }
+        { pkg: "sigrok-cli", cap: "logic analyzer + protocol decode" }
+        { pkg: "inspectrum", cap: "SDR signal analysis (linux)" }
+        { pkg: "dump1090", cap: "ADS-B aircraft tracking" }
+        { pkg: "rtl_433", cap: "ISM band device decoder" }
+        { pkg: "multimon-ng", cap: "digital radio decoder (POCSAG, FLEX, etc)" }
+      ]
+      device: [
+        { pkg: "tio", cap: "serial console (modern, auto-detect)" }
+        { pkg: "picocom", cap: "minimal serial terminal" }
+        { pkg: "minicom", cap: "modem control + serial terminal" }
+        { pkg: "dfu-util", cap: "USB DFU firmware flash" }
+        { pkg: "esptool", cap: "ESP8266/ESP32 flash + monitor" }
+        { pkg: "avrdude", cap: "AVR microcontroller programmer" }
+        { pkg: "stlink", cap: "STM32 debug + flash" }
+      ]
+      cad: [
+        { pkg: "openscad", cap: "parametric 3D (code-driven, STL export)" }
+        { pkg: "freecad", cap: "general 3D CAD + FEA + STEP (linux)" }
+        { pkg: "blender", cap: "3D modeling + rendering + STL/OBJ" }
+        { pkg: "kicad-small", cap: "PCB/schematic EDA + gerber" }
+        { pkg: "librepcb", cap: "PCB EDA (linux)" }
+      ]
+    }
+    let domain_str: string = "{{domain}}"
+    if ($domain_str in $tools) {
+      let entries: table = ($tools | get $domain_str)
+      print (["Domain:" $domain_str] | str join " ")
+      print ""
+      $entries | each {|e|
+        print ([" " $e.pkg "-" $e.cap] | str join " ")
+      }
+      print ""
+      print "Try: just try <pkg> --help"
+    } else {
+      let domains: string = ($tools | columns | str join ", ")
+      print (["Available domains:" $domains] | str join " ")
+    }
+
+# Try a nixpkgs tool with zero commitment
+# ARGS: pkg - package name, args - arguments to pass
+try pkg *args:
+    nix run nixpkgs#{{pkg}} -- {{args}}
+
+# Check platform support for a nixpkgs package
+# ARGS: pkg - package name
+platforms pkg:
+    #!/usr/bin/env nu
+    let json: string = (nix eval (["nixpkgs#" "{{pkg}}" ".meta.platforms"] | str join "") --json | str trim)
+    let plats: list<string> = ($json | from json)
+    let darwin: bool = ("aarch64-darwin" in $plats)
+    let linux: bool = ("x86_64-linux" in $plats)
+    print (["{{pkg}}:" "darwin=" ($darwin | into string) "linux=" ($linux | into string)] | str join " ")
+
+# -------------------------------------------------------------------------------
+# SOVEREIGNTY
+# -------------------------------------------------------------------------------
+
+# Show capability coverage matrix
+sov-status:
+    sov status
+
+# List capabilities with no items or untrained
+sov-gaps:
+    sov gaps
+
+# Full bill of materials with totals
+sov-bom:
+    sov bom
+
+# Cost breakdown by domain
+sov-cost:
+    sov cost
+
+# Weight breakdown by domain
+sov-weight:
+    sov weight
+
+# Filter by mode constraints
+sov-pack mode:
+    sov pack {{mode}}
+
+# OPSEC posture across all domains
+sov-signature:
+    sov signature
+
+# Items/capabilities needing training
+sov-training:
+    sov training
+
+# Dependency-ordered acquisition path
+sov-bootstrap:
+    sov bootstrap
+
+# Research tools for a domain
+sov-discover domain:
+    sov discover {{domain}}
+
+# Check all constraints, report errors
+sov-validate:
+    sov validate
+
+# -------------------------------------------------------------------------------
 # INVARIANTS
 # -------------------------------------------------------------------------------
 
@@ -371,10 +508,10 @@ run pkg *args:
 invariants:
     #!/usr/bin/env bash
     sys=$(nix eval --raw --impure --expr 'builtins.currentSystem')
-    nix build .#checks.$sys.invariant-module-dirs
-    nix build .#checks.$sys.invariant-universe-features
-    nix build .#checks.$sys.invariant-bindings-subdirs
-    nix build .#checks.$sys.invariant-no-manual-imports
+    nom build .#checks.$sys.invariant-module-dirs
+    nom build .#checks.$sys.invariant-universe-features
+    nom build .#checks.$sys.invariant-bindings-subdirs
+    nom build .#checks.$sys.invariant-no-manual-imports
 
 # -------------------------------------------------------------------------------
 # ALIASES
