@@ -260,6 +260,8 @@ For every Artifacts/X:
 10. Justfile is aggregation of all Monads — recipes match 1-1 with Monads
 11. Lean is the glue language for new modules
 12. Every command is an artifact-producing Monad: `[IO?]M{ArtifactType}`
+13. All packaging (pyproject.toml, uv.lock, derivation) lives in Artifacts/NixPackage/ — the only place interpreter-specific naming conventions are allowed to break
+14. Git commit messages follow: `[Module/Path | Module/Path] Description`
 
 ## USAGE
 

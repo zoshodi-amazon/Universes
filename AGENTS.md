@@ -93,6 +93,8 @@ ADT (Lean) → Artifacts/default.nix (Nix) → ENV vars (JSON) → Monads (Lean 
 13. 7 params max per Artifact — decompose if exceeded
 14. Justfile is man-page style: recipe name, params with descriptions, no fluff
 15. Every Monad recipe SHOULD have a `{recipe}-options` pure introspection recipe printing the typed param space
+16. All packaging (pyproject.toml, uv.lock, derivation) lives in Artifacts/NixPackage/ — the only place interpreter-specific naming conventions are allowed to break
+17. Git commit messages follow: `[Module/Path | Module/Path] Description`
 
 ## Categorical Organization
 
