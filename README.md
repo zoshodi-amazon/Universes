@@ -33,13 +33,27 @@ CLI command      =  Named fold over the Artifact type space
 Justfile recipe  =  Aggregation of all Monads in one place
 ```
 
+### Metric Space Interpretation
+
+Every Artifact is a compact metric space. The option params are the orthogonal dimensions — the metric dials. ENV vars are the runtime projections of those dials. Every CLI command / justfile recipe / shell invocation is a Monad over that metric space: from the command name alone you derive the interpreter, the artifact type, and whether it is pure or effectful.
+
+```
+Artifact params  =  orthogonal metric dials (<=7 per artifact)
+ENV vars         =  1-1 runtime projection of those dials
+CLI command      =  Monad over the metric space
+command name     →  derive: interpreter, artifact type, IO or pure
+```
+
+This means any domain — electrical, acoustic, sovereignty, animation — is the same shape: a compact metric space (what can be observed/measured) plus transforms (monads that move between metric states). The metric space IS the artifact. The transforms ARE the monads. Cross-domain connections are natural transformations between metric spaces.
+
 ### Naming Convention
 
-**FROZEN.** The directory name encodes interpreter, mutability, phase, and type. You can derive everything from the name alone.
+**FROZEN.** The directory name encodes interpreter, mutability, phase, and type. You can derive everything from the name alone. CLI commands / justfile recipes use the SAME convention in kebab-case.
 
 ```
 Artifacts/   → {Interpreter}{ArtifactType}           — typed option modules
 Monads/      → [IO?]M{Interpreter}{ArtifactType}     — artifact-producing scripts/derivations
+Justfile     → [io-]{interpreter}-{artifacttype}      — kebab-case mirror of Monad name
 
 {Interpreter}  = codec/language (Lean, Nix, Python, Rust, etc.)
 {ArtifactType} = what the type space represents (Sovereignty, Item, Energy, etc.)
@@ -48,11 +62,22 @@ no prefix      = pure (queries, observations, read-only)
 M prefix       = Monad (type constructor that produces the artifact)
 ```
 
-From the name alone you derive:
+From the name alone — directory, CLI command, or justfile recipe — you derive:
 - **Interpreter**: what codec/language (`Lean`, `Nix`, `Python`, ...)
-- **Mutability**: `IO` prefix = effectful, no prefix = pure
-- **Phase**: `M` prefix = type constructor (Monad)
+- **Mutability**: `IO`/`io-` prefix = effectful, no prefix = pure
+- **Phase**: `M`/recipe = type constructor (Monad)
 - **Type**: the artifact type being produced or defined
+
+The mapping is mechanical:
+
+```
+Directory                              CLI / Justfile recipe
+─────────────────────────────────────  ─────────────────────────────
+Monads/MLeanSovereignty/               just lean-sovereignty
+Monads/IOMLeanSovereignty/             just io-lean-sovereignty
+Monads/IOMLeanMain/                    just io-lean-main
+Monads/IOMLeanPackage/                 just io-lean-package
+```
 
 Examples:
 ```
@@ -63,6 +88,10 @@ Artifacts/LeanLake/lakefile.lean          — Lean codec, Lake project config
 Monads/MLeanSovereignty/default.lean      — pure, Lean, produces Sovereignty queries
 Monads/IOMLeanMain/Main.lean              — effectful, Lean, produces CLI entry point
 Monads/IOMLeanSovereignty/default.lean    — effectful, Lean, produces Sovereignty mutations
+just lean-sovereignty                     — pure query (status, gaps, bom, cost, weight, signature, bootstrap)
+just io-lean-sovereignty                  — effectful command (validate, pack, discover, training)
+just io-lean-main                         — build + run CLI entry point
+just io-lean-package                      — build the Lean package
 ```
 
 ### 1-1 Invariant
@@ -175,12 +204,20 @@ Flake targets:
 Every command is an artifact-producing Monad:
 
 ```
-just sov-status          # MSovereignty: pure query over capability space
-just sov-validate        # IOMSovereignty: effectful constraint check
-just sov-pack nomadic    # IOMSovereignty: effectful mode filter
+just lean-sovereignty          # MSovereignty: pure query over capability space
+just io-lean-sovereignty       # IOMSovereignty: effectful constraint check
+just io-lean-main              # IOMLeanMain: build + run CLI entry point
+just io-lean-package           # IOMLeanPackage: build the Lean package
 ```
 
 The justfile is the aggregation of all Monads across all modules. Each recipe maps 1-1 to a Monad.
+
+Every Monad recipe SHOULD have a corresponding `{recipe}-options` pure introspection recipe that prints the typed param space (names, types, defaults, descriptions). This is the self-documenting surface for the Artifact's metric space:
+
+```
+just nix-mail-options              # Print NixMail typed option space
+just lean-sovereignty-options      # Print Sovereignty typed option space
+```
 
 Configuration surface isomorphism:
 ```
@@ -230,7 +267,8 @@ For every Artifacts/X:
 nix flake check                           # Check invariants
 home-manager switch --flake .#darwin      # Switch config
 nix develop .#sovereignty                 # Enter sovereignty shell
-just sov-status                           # Query capability space
+just lean-sovereignty                     # Query capability space
+just io-lean-sovereignty                  # Effectful sovereignty commands
 ```
 
 ## HISTORY

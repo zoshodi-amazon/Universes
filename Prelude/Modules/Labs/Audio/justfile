@@ -1,184 +1,72 @@
-# ===============================================================================
-# AUDIO LAB - Signal Processing Workstation
-# ===============================================================================
+# Audio — Metric space observation and transforms via ffmpeg
 #
-# NAME
-#     justfile - Audio signal processing via pure data transforms
-#
-# SYNOPSIS
-#     just <recipe> [arguments...]
-#     just --list
-#
-# DESCRIPTION
-#     Capability-centric audio workstation. All configuration via Options
-#     (pure data). Scripts interpret Options into ffmpeg calls.
-#     NO hidden CLI params - see Options/default.nix for full schema.
-#
-#     ACQUIRE     - Fetch, record, generate audio sources
-#     ANALYZE     - Spectrum, loudness, waveform analysis
-#     TRANSFORM   - Pitch, stretch, filter, effects
-#     SYNTHESIZE  - Tone generation, noise, envelopes
-#     COMPOSE     - Sequence, layer, mix audio
-#     EXPORT      - Render to various formats
-#     PREVIEW     - Visualize and playback
-#
-# PHILOSOPHY
-#     Options = pure data schema (single source of truth)
-#     Scripts = interpreters (read config, execute)
-#     NO imperative params - all config explicit in Options
-#
-# ===============================================================================
+# Naming: [io-]ffmpeg-audio[-subcommand]
+#   ffmpeg-audio-*    = pure (observe, analyze — read-only)
+#   io-ffmpeg-audio-* = effectful (generate, transform — writes artifacts)
 
-scripts := "Universe"
-zoo := "Zoo"
+env := "Env"
 
-default:
-    @just --list
+# Observe via CQT — Constant Q Transform (musical pitch = color, each note distinct)
+# ARGS: file - path to audio file
+ffmpeg-audio file:
+    ffplay -f lavfi \
+      "amovie={{file}},volume=4,asplit[a][out1];[a]showcqt=s=400x400:sono_v=64:bar_v=64:sono_g=2:bar_g=1[out0]" \
+      -x 400 -y 400 -loop 0 \
+      -window_title "CQT — Pitch Field"
 
-# Initialize Audio Lab workspace
-init:
-    #!/usr/bin/env nu
-    mkdir .lab
-    mkdir .lab/assets
-    if not (".lab/sources.json" | path exists) {
-      cp Zoo/sources.json .lab/sources.json
-      print "Initialized .lab/ with default audio sources"
-    } else {
-      print ".lab/ already initialized"
-    }
+# Observe via scrolling spectrogram with rainbow frequency coloring
+# ARGS: file - path to audio file
+ffmpeg-audio-spectrum file:
+    ffplay -f lavfi \
+      "amovie={{file}},volume=4,lowpass=f=1500,asplit[a][out1];[a]showspectrum=s=400x400:color=rainbow:slide=scroll:scale=cbrt:saturation=6:fscale=log:start=60:stop=1500:win_func=blackman:overlap=0.95[out0]" \
+      -x 400 -y 400 -loop 0 \
+      -window_title "Spectrum — Chords"
 
-# List available remote sources
-sources:
-    @nu ../TUI/Universe/Sources/Bindings/Scripts/default.nu '{"action": "list", "sources_path": ".lab/sources.json"}'
+# Observe Lissajous (harmonic phase structure)
+# ARGS: file - path to audio file
+ffmpeg-audio-lissajous file:
+    ffplay -f lavfi \
+      "amovie={{file}},volume=4,aformat=channel_layouts=stereo,asplit[a][out1];[a]avectorscope=s=400x400:m=lissajous_xy:draw=aaline:zoom=5:rc=40:gc=160:bc=255:rf=3:gf=2:bf=4[out0]" \
+      -x 400 -y 400 -loop 0 \
+      -window_title "Lissajous"
 
-# Browse a remote source
-browse source="":
-    @nu ../TUI/Universe/Sources/Bindings/Scripts/default.nu '{"action": "browse", "name": "{{source}}", "sources_path": ".lab/sources.json"}'
+# Observe 3D scope (rotating metric space geometry)
+# ARGS: file - path to audio file
+ffmpeg-audio-3d file:
+    ffplay -f lavfi \
+      "amovie={{file}},volume=4,aformat=channel_layouts=stereo,asplit[a][out1];[a]a3dscope=s=400x400:fov=60:roll=0.02:pitch=0.01:yaw=0.03[out0]" \
+      -x 400 -y 400 -loop 0 \
+      -window_title "3D Scope"
 
-# -------------------------------------------------------------------------------
-# ACQUIRE
-# -------------------------------------------------------------------------------
+# Acquire audio from URL (youtube, direct link) as wav
+# ARGS: url - source URL, name - output filename (without extension)
+io-ffmpeg-audio-acquire url name="song":
+    nix run nixpkgs#yt-dlp -- -x --audio-format wav --audio-quality 0 -o "{{env}}/{{name}}.%(ext)s" "{{url}}"
+    @echo "Acquired: {{env}}/{{name}}.wav"
 
-# Generate a tone
-# ARGS: freq - frequency in Hz, duration - seconds, output - file path
-generate freq="440" duration="1" output="tone.wav":
-    @gum style --border normal --padding "0 1" "Generating $(gum style --foreground 212 '{{freq}}Hz') tone for $(gum style --foreground 212 '{{duration}}s')..."
-    @nu {{scripts}}/Acquire/Bindings/Scripts/default.nu '{"source": "generate", "generate": {"waveform": "sine", "frequency": {{freq}}, "duration": "{{duration}}"}, "output": "{{output}}"}'
-    @gum style --foreground 82 "Created: {{output}}"
-
-# Fetch audio from URL
-# ARGS: url - source URL, output - file path
-fetch url output="downloaded.wav":
-    @gum spin --spinner dot --title "Fetching audio..." -- nu {{scripts}}/Acquire/Bindings/Scripts/default.nu '{"source": "url", "url": "{{url}}", "output": "{{output}}"}'
-    @gum style --foreground 82 "Created: {{output}}"
-
-# -------------------------------------------------------------------------------
-# ANALYZE
-# -------------------------------------------------------------------------------
-
-# Analyze audio (spectrum + waveform + loudness)
-# ARGS: input - audio file, outdir - output directory
-analyze input outdir="./analysis":
-    @gum style --border normal --padding "0 1" "Analyzing $(gum style --foreground 212 '{{input}}')..."
-    @gum spin --spinner dot --title "Generating spectrum..." -- nu {{scripts}}/Analyze/Bindings/Scripts/default.nu '{"input": "{{input}}", "spectrum": true, "waveform": true, "loudness": true, "outputDir": "{{outdir}}"}'
-    @gum style --foreground 82 "Analysis complete: {{outdir}}/"
-
-# -------------------------------------------------------------------------------
-# TRANSFORM
-# -------------------------------------------------------------------------------
-
-# Pitch shift audio
-# ARGS: input - audio file, semitones - shift amount, output - file path
-pitch input semitones output:
-    @gum style --border normal --padding "0 1" "Pitch shifting $(gum style --foreground 212 '{{input}}') by $(gum style --foreground 212 '{{semitones}}') semitones..."
-    @nu {{scripts}}/Transform/Bindings/Scripts/default.nu '{"input": "{{input}}", "output": "{{output}}", "transforms": [{"type": "pitch", "params": {"semitones": {{semitones}}}}]}'
-    @gum style --foreground 82 "Created: {{output}}"
-
-# Time stretch audio
-# ARGS: input - audio file, factor - stretch factor, output - file path
-stretch input factor output:
-    @gum style --border normal --padding "0 1" "Stretching $(gum style --foreground 212 '{{input}}') by $(gum style --foreground 212 '{{factor}}x')..."
-    @nu {{scripts}}/Transform/Bindings/Scripts/default.nu '{"input": "{{input}}", "output": "{{output}}", "transforms": [{"type": "stretch", "params": {"factor": {{factor}}}}]}'
-    @gum style --foreground 82 "Created: {{output}}"
-
-# Apply highpass filter
-# ARGS: input - audio file, freq - cutoff Hz, output - file path
-highpass input freq output:
-    @gum style --border normal --padding "0 1" "Applying highpass $(gum style --foreground 212 '{{freq}}Hz') to $(gum style --foreground 212 '{{input}}')..."
-    @nu {{scripts}}/Transform/Bindings/Scripts/default.nu '{"input": "{{input}}", "output": "{{output}}", "transforms": [{"type": "filter", "params": {"kind": "highpass", "freq": {{freq}}}}]}'
-    @gum style --foreground 82 "Created: {{output}}"
-
-# -------------------------------------------------------------------------------
-# SYNTHESIZE
-# -------------------------------------------------------------------------------
-
-# Generate sine tone
-# ARGS: freq - frequency Hz, duration - seconds, output - file path
-tone freq="440" duration="1" output="tone.wav":
-    @gum style --border normal --padding "0 1" "Synthesizing $(gum style --foreground 212 '{{freq}}Hz') sine for $(gum style --foreground 212 '{{duration}}s')..."
-    @nu {{scripts}}/Synthesize/Bindings/Scripts/default.nu '{"waveform": "sine", "frequency": {{freq}}, "duration": "{{duration}}", "output": "{{output}}"}'
-    @gum style --foreground 82 "Created: {{output}}"
-
-# Generate noise
-# ARGS: duration - seconds, output - file path
-noise duration="1" output="noise.wav":
-    @gum style --border normal --padding "0 1" "Generating noise for $(gum style --foreground 212 '{{duration}}s')..."
-    @nu {{scripts}}/Synthesize/Bindings/Scripts/default.nu '{"waveform": "noise", "frequency": 0, "duration": "{{duration}}", "output": "{{output}}"}'
-    @gum style --foreground 82 "Created: {{output}}"
-
-# -------------------------------------------------------------------------------
-# COMPOSE
-# -------------------------------------------------------------------------------
-
-# Sequence audio files
-# ARGS: output - output file, inputs - space-separated input files
-sequence output +inputs:
-    #!/usr/bin/env nu
-    gum style --border normal --padding "0 1" "Sequencing files..."
-    let files: list<string> = "{{inputs}}" | split row " "
-    let json: string = {mode: "sequence", inputs: $files, output: "{{output}}"} | to json
-    nu {{scripts}}/Compose/Bindings/Scripts/default.nu $json
-    gum style --foreground 82 "Created: {{output}}"
-
-# Layer audio files
-# ARGS: output - output file, inputs - space-separated input files  
-layer output +inputs:
-    #!/usr/bin/env nu
-    gum style --border normal --padding "0 1" "Layering files..."
-    let files: list<string> = "{{inputs}}" | split row " "
-    let json: string = {mode: "layer", inputs: $files, output: "{{output}}"} | to json
-    nu {{scripts}}/Compose/Bindings/Scripts/default.nu $json
-    gum style --foreground 82 "Created: {{output}}"
-
-# -------------------------------------------------------------------------------
-# EXPORT
-# -------------------------------------------------------------------------------
-
-# Render to format
-# ARGS: input - audio file, output - output file, format - mp3/wav/flac, bitrate - e.g. 320k
-render input output format="mp3" bitrate="320k":
-    @gum style --border normal --padding "0 1" "Rendering to $(gum style --foreground 212 '{{format}}') at $(gum style --foreground 212 '{{bitrate}}')..."
-    @nu {{scripts}}/Export/Bindings/Scripts/default.nu '{"input": "{{input}}", "output": "{{output}}", "format": "{{format}}", "bitrate": "{{bitrate}}"}'
-    @gum style --foreground 82 "Created: {{output}}"
-
-# -------------------------------------------------------------------------------
-# PREVIEW
-# -------------------------------------------------------------------------------
-
-# Play audio through speakers
-# ARGS: input - audio file to play
-play input:
-    @gum style --foreground 212 "Playing {{input}}..."
-    @nu {{scripts}}/Preview/Bindings/Scripts/default.nu '{"input": "{{input}}", "mode": "play"}'
-
-# Show live waveform visualization
-# ARGS: input - audio file
-waveform input:
-    @gum style --foreground 212 "Waveform: {{input}}"
-    @nu {{scripts}}/Preview/Bindings/Scripts/default.nu '{"input": "{{input}}", "mode": "waveform"}'
-
-# Show live spectrum visualization
-# ARGS: input - audio file
-spectrum input:
-    @gum style --foreground 212 "Spectrum: {{input}}"
-    @nu {{scripts}}/Preview/Bindings/Scripts/default.nu '{"input": "{{input}}", "mode": "spectrum"}'
+# Generate melancholic chord progression (Am-F-C-G, piano range, stereo, reverb)
+io-ffmpeg-audio-melancholy:
+    @ffmpeg -y \
+      -f lavfi -i "sine=frequency=440:duration=8:beep_factor=0" \
+      -f lavfi -i "sine=frequency=523.25:duration=8:beep_factor=0" \
+      -f lavfi -i "sine=frequency=659.25:duration=8:beep_factor=0" \
+      -f lavfi -i "sine=frequency=698.46:duration=8:beep_factor=0" \
+      -f lavfi -i "sine=frequency=783.99:duration=8:beep_factor=0" \
+      -f lavfi -i "sine=frequency=880:duration=8:beep_factor=0" \
+      -f lavfi -i "sine=frequency=1046.5:duration=8:beep_factor=0" \
+      -filter_complex " \
+        [0:a]volume='if(lt(t,2),0.3,if(lt(t,6),0.15,0))':eval=frame[a4]; \
+        [1:a]volume='if(lt(t,2),0,if(lt(t,4),0.3,if(lt(t,6),0.3,0)))':eval=frame[c5]; \
+        [2:a]volume='if(lt(t,2),0.3,if(lt(t,4),0,if(lt(t,6),0.3,if(lt(t,8),0.3,0))))':eval=frame[e5]; \
+        [3:a]volume='if(lt(t,2),0,if(lt(t,4),0.3,0))':eval=frame[f5]; \
+        [4:a]volume='if(lt(t,4),0,if(lt(t,6),0,if(lt(t,8),0.3,0)))':eval=frame[g5]; \
+        [5:a]volume='if(lt(t,2),0.3,if(lt(t,4),0.3,0))':eval=frame[a5]; \
+        [6:a]volume='if(lt(t,4),0,if(lt(t,6),0.2,if(lt(t,8),0,0)))':eval=frame[c5b]; \
+        [a4][c5][e5][f5][g5][a5][c5b]amix=inputs=7:normalize=0, \
+        aecho=0.4:0.3:40|80:0.2|0.1, \
+        volume=3, \
+        aformat=channel_layouts=stereo \
+      " \
+      -c:a pcm_s16le -ar 44100 \
+      {{env}}/melancholy.wav 2>/dev/null
+    @echo "Generated: {{env}}/melancholy.wav"

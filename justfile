@@ -453,52 +453,36 @@ platforms pkg:
     print (["{{pkg}}:" "darwin=" ($darwin | into string) "linux=" ($linux | into string)] | str join " ")
 
 # -------------------------------------------------------------------------------
-# SOVEREIGNTY
+# SOVEREIGNTY — MLeanSovereignty (pure queries)
 # -------------------------------------------------------------------------------
 
-# Show capability coverage matrix
-sov-status:
-    sov status
+# status, gaps, bom, cost, weight, signature, bootstrap
+lean-sovereignty cmd="status":
+    sov {{cmd}}
 
-# List capabilities with no items or untrained
-sov-gaps:
-    sov gaps
+# -------------------------------------------------------------------------------
+# SOVEREIGNTY — IOMLeanSovereignty (effectful commands)
+# -------------------------------------------------------------------------------
 
-# Full bill of materials with totals
-sov-bom:
-    sov bom
+# validate, pack <mode>, discover <domain>, training
+io-lean-sovereignty cmd="validate" *args="":
+    sov {{cmd}} {{args}}
 
-# Cost breakdown by domain
-sov-cost:
-    sov cost
+# -------------------------------------------------------------------------------
+# SOVEREIGNTY — IOMLeanMain (build + run CLI entry point)
+# -------------------------------------------------------------------------------
 
-# Weight breakdown by domain
-sov-weight:
-    sov weight
+# Build and run the sov CLI
+io-lean-main *args="":
+    sov {{args}}
 
-# Filter by mode constraints
-sov-pack mode:
-    sov pack {{mode}}
+# -------------------------------------------------------------------------------
+# SOVEREIGNTY — IOMLeanPackage (build the Lean package)
+# -------------------------------------------------------------------------------
 
-# OPSEC posture across all domains
-sov-signature:
-    sov signature
-
-# Items/capabilities needing training
-sov-training:
-    sov training
-
-# Dependency-ordered acquisition path
-sov-bootstrap:
-    sov bootstrap
-
-# Research tools for a domain
-sov-discover domain:
-    sov discover {{domain}}
-
-# Check all constraints, report errors
-sov-validate:
-    sov validate
+# Build the sov binary via lean4-nix
+io-lean-package:
+    nix build .#sov
 
 # -------------------------------------------------------------------------------
 # INVARIANTS
