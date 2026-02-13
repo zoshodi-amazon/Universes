@@ -1,46 +1,37 @@
-# NixPackage — uv-managed Python derivation for sovereignty CLIs
-# Assembles all Monad scripts into a single package with deps pinned via uv
-{ ... }:
+# NixPackage — uv2nix declarative Python build for sovereignty CLIs
+{ inputs, ... }:
 {
-  perSystem = { pkgs, ... }:
+  perSystem = { pkgs, system, ... }:
   let
+    workspace = inputs.uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
+
+    overlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };
+
     python = pkgs.python313;
-    sov = pkgs.stdenv.mkDerivation {
-      pname = "sov";
-      version = "0.1.0";
-      src = ../../Monads;
-      nativeBuildInputs = [ pkgs.makeWrapper pkgs.uv python ];
-      buildPhase = ''
-        export HOME=$TMPDIR
-        export UV_CACHE_DIR=$TMPDIR/uv-cache
-        uv venv $out/venv --python ${python}/bin/python
-        uv pip install --python $out/venv/bin/python \
-          pydantic pydantic-settings typer rich \
-          cadquery numpy trimesh \
-          pvlib pandas scipy \
-          matplotlib plotly
-      '';
-      installPhase = ''
-        mkdir -p $out/bin $out/lib/monads
 
-        # Copy all monad scripts
-        for d in M* IOM*; do
-          if [ -f "$d/default.py" ]; then
-            cp "$d/default.py" "$out/lib/monads/''${d}.py"
-          fi
-        done
+    pythonBase = pkgs.callPackage inputs.pyproject-nix.build.packages { inherit python; };
 
-        # Create CLI entry points for each monad
-        for d in M* IOM*; do
-          if [ -f "$d/default.py" ]; then
-            name=$(echo "$d" | sed 's/^IOM/io-/;s/^M//;' | sed 's/\([A-Z]\)/-\L\1/g' | sed 's/^-//')
-            makeWrapper $out/venv/bin/python $out/bin/$name \
-              --add-flags "$out/lib/monads/''${d}.py"
-          fi
-        done
+    pythonSet = pythonBase.overrideScope (
+      pkgs.lib.composeManyExtensions [
+        inputs.pyproject-build-systems.overlays.wheel
+        overlay
+      ]
+    );
+
+    sovEnv = pythonSet.mkVirtualEnv "sov-env" workspace.deps.default;
+  in {
+    packages.sov = sovEnv;
+
+    devShells.sovereignty = pkgs.mkShell {
+      packages = [ sovEnv pkgs.uv ];
+      env = {
+        UV_NO_SYNC = "1";
+        UV_PYTHON = pythonSet.python.interpreter;
+        UV_PYTHON_DOWNLOADS = "never";
+      };
+      shellHook = ''
+        unset PYTHONPATH
       '';
     };
-  in {
-    packages.sov = sov;
   };
 }
