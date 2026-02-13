@@ -9,11 +9,11 @@ let
     realName = name;
     userName = acct.email;
     flavor = if acct.host == "outlook.office365.com" then "outlook.office365.com" else "plain";
-    imap = {
+    imap = lib.mkIf (acct.host != "outlook.office365.com") {
       host = acct.host;
       port = 993;
     };
-    smtp = {
+    smtp = lib.mkIf (acct.host != "outlook.office365.com") {
       host = acct.sendHost;
       port = if acct.sendHost == "smtp-mail.outlook.com" then 587 else 465;
       tls.useStartTls = acct.sendHost == "smtp-mail.outlook.com";
