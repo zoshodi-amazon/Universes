@@ -1,30 +1,41 @@
 # Browsers
 
-Web browser configuration.
+Hardened Firefox with maximum security settings.
 
-## Capability
+## Structure
 
-| Aspect | Description |
-|--------|-------------|
-| Category | User / Browsers |
-| Purpose | Browser settings and extensions |
-| Targets | homeManager |
+```
+Browsers/
+├── Artifacts/
+│   ├── NixBrowser/default.nix   # Options (enable, search.default)
+│   └── default.nix
+├── Monads/
+│   ├── IOMNixBrowser/default.nix
+│   └── default.nix
+├── default.nix                  # → flake.modules.homeManager.browser
+└── README.md
+```
 
-## Global Duality
+## Hardening (always-max)
 
-| Env | Instances |
-|-----|-----------|
-| Aggregates Universe/Firefox/Options | Exports `flake.modules.homeManager.firefox` |
+- Telemetry, crash reports, studies: disabled
+- Pocket, sponsored content: disabled
+- Fingerprinting resistance: enabled
+- Tracking protection: all categories
+- WebRTC: disabled (leak prevention)
+- HTTPS-only mode: enabled
+- Form autofill, password saving: disabled
+- DNS over HTTPS: enabled
+- Prefetch, speculative connections: disabled
 
-## Local Duality (Universe)
+## Extensions (via policies, force-installed)
 
-| Feature | Options | Bindings |
-|---------|---------|----------|
-| Firefox | enable, defaultBrowser | Plugins (extensions) |
+- uBlock Origin — ad/tracker blocking
+- Vimium — keyboard navigation
+- Dark Reader — dark theme
 
-## Options
+## Invariant Check
 
-| Option | Type | Default |
-|--------|------|---------|
-| `browsers.firefox.enable` | bool | true |
-| `browsers.firefox.defaultBrowser` | bool | true |
+```
+Artifacts/NixBrowser/  → Monads/IOMNixBrowser/   [OK]
+```

@@ -1,33 +1,29 @@
 # Shell
 
-Interactive shell configuration (Fish, Nushell, Direnv).
+Multi-shell configuration: Zsh, Fish, Nushell, Direnv.
 
-## Capability
+## Structure
 
-| Aspect | Description |
-|--------|-------------|
-| Category | User / Terminal |
-| Purpose | Shell environments and environment management |
-| Targets | homeManager |
+```
+Shell/
+├── Artifacts/
+│   ├── NixZsh/default.nix        NixFish/default.nix
+│   ├── NixNushell/default.nix    NixDirenv/default.nix
+│   ├── NixShellEnv/default.nix
+│   └── default.nix
+├── Monads/
+│   ├── IOMNixShell/default.nix  # Enables all + aliases + paths
+│   └── default.nix
+├── default.nix                  # → flake.modules.homeManager.{shell,zsh,fish,nushell,direnv}
+└── README.md
+```
 
-## Global Duality
+## Invariant Check
 
-| Env | Instances |
-|-----|-----------|
-| Aggregates shell feature options | Exports `flake.modules.homeManager.{fish,nushell,direnv}` |
-
-## Local Duality (Universe)
-
-| Feature | Options | Bindings |
-|---------|---------|----------|
-| Fish | enable, plugins | Plugins (starship, fzf) |
-| Nushell | enable, configPath | Plugins |
-| Direnv | enable, enableFishIntegration | — |
-
-## Options
-
-| Option | Type | Default |
-|--------|------|---------|
-| `shell.fish.enable` | bool | true |
-| `shell.nushell.enable` | bool | false |
-| `shell.direnv.enable` | bool | true |
+```
+Artifacts/NixZsh/      → Monads/IOMNixShell/   [OK]
+Artifacts/NixFish/     → (consumed by IOMNixShell)   [OK]
+Artifacts/NixNushell/  → (consumed by IOMNixShell)   [OK]
+Artifacts/NixDirenv/   → (consumed by IOMNixShell)   [OK]
+Artifacts/NixShellEnv/ → (consumed by IOMNixShell)   [OK]
+```

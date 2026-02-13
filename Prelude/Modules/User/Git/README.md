@@ -1,33 +1,23 @@
 # Git
 
-Persistent version control configuration.
+Git identity, workflow, and global ignore configuration.
 
-## Capability
+## Structure
 
-| Aspect | Description |
-|--------|-------------|
-| Category | User / Git |
-| Purpose | Git identity and workflow configuration |
-| Targets | homeManager |
+```
+Git/
+├── Artifacts/
+│   ├── NixGit/default.nix       # Git options (identity, signing, aliases, ignores)
+│   └── default.nix
+├── Monads/
+│   ├── IOMNixGit/default.nix    # Enables + default ignores
+│   └── default.nix
+├── default.nix                  # → flake.modules.homeManager.git
+└── README.md
+```
 
-## Global Duality
+## Invariant Check
 
-| Env | Instances |
-|-----|-----------|
-| Aggregates Universe/Config/Options | Exports `flake.modules.homeManager.git` |
-
-## Local Duality (Universe)
-
-| Feature | Options | Bindings |
-|---------|---------|----------|
-| Config | user.name, user.email, editor, defaultBranch | — |
-
-## Options
-
-| Option | Type | Default |
-|--------|------|---------|
-| `git.enable` | bool | true |
-| `git.userName` | string | — |
-| `git.userEmail` | string | — |
-| `git.editor` | string | "nvim" |
-| `git.defaultBranch` | string | "main" |
+```
+Artifacts/NixGit/  → Monads/IOMNixGit/   [OK]
+```
