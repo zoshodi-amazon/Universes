@@ -1,32 +1,19 @@
 # Kitty
 
-GPU-accelerated terminal emulator.
+Terminal emulator configuration.
 
-## Capability
+## Structure
 
-| Aspect | Description |
-|--------|-------------|
-| Category | User / Terminal |
-| Purpose | Terminal emulator configuration |
-| Targets | homeManager |
+```
+Kitty/
+├── Artifacts/NixKitty/default.nix   # font, theme, settings
+├── Monads/IOMNixKitty/default.nix
+├── default.nix                      # → flake.modules.homeManager.kitty
+└── README.md
+```
 
-## Global Duality
+## Invariant Check
 
-| Env | Instances |
-|-----|-----------|
-| Aggregates Universe/Config/Options | Exports `flake.modules.homeManager.kitty` |
-
-## Local Duality (Universe)
-
-| Feature | Options | Bindings |
-|---------|---------|----------|
-| Config | enable, font, fontSize, theme | — |
-
-## Options
-
-| Option | Type | Default |
-|--------|------|---------|
-| `kitty.enable` | bool | true |
-| `kitty.font` | string | "JetBrainsMono Nerd Font" |
-| `kitty.fontSize` | int | 14 |
-| `kitty.theme` | string | "Catppuccin-Mocha" |
+```
+Artifacts/NixKitty/  → Monads/IOMNixKitty/   [OK]
+```

@@ -1,4 +1,4 @@
-# Tmux Options
+# NixTmux Artifact
 { lib, ... }:
 {
   options.tmux = {

@@ -1,3 +1,4 @@
+# IOMNixTmux Monad — enables itself + passthrough
 { lib, ... }:
 {
   config.tmux = {

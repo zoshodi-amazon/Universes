@@ -1,4 +1,4 @@
-# Kitty Options
+# NixKitty Artifact
 { lib, ... }:
 {
   options.kitty = {
