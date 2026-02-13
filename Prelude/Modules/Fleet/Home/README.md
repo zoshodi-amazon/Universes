@@ -1,35 +1,29 @@
 # Home
 
-Host-level home-manager configurations.
+Home-manager configuration instantiation.
 
-## Capability
+## Structure
 
-| Aspect | Description |
-|--------|-------------|
-| Category | Fleet / Home |
-| Purpose | Compose homeConfigurations from flake.modules.homeManager.* |
-| Targets | flake.homeConfigurations |
+```
+Home/
+├── Artifacts/
+│   ├── NixDarwin/default.nix    # Darwin home options
+│   ├── NixCloudDev/default.nix  # Cloud-dev home options
+│   ├── NixCloudNix/default.nix  # Cloud-nix home options
+│   ├── NixPackages/default.nix  # Core packages list
+│   └── default.nix
+├── Monads/
+│   ├── IOMNixHome/default.nix   # Enables defaults + packages
+│   └── default.nix
+├── default.nix                  # → flake.homeConfigurations
+└── README.md
+```
 
-## Global Duality
+## Invariant Check
 
-| Env | Instances |
-|-----|-----------|
-| Aggregates host options (darwin, cloudDev, cloudNix) | Creates `flake.homeConfigurations.*` |
-
-## Local Duality (Universe)
-
-| Feature | Options | Bindings |
-|---------|---------|----------|
-| Darwin | username, homeDirectory, stateVersion | enable = true |
-| CloudDev | username, homeDirectory, stateVersion | — |
-| CloudNix | username, homeDirectory, stateVersion | — |
-
-## Options
-
-| Option | Type | Default |
-|--------|------|---------|
-| `home.darwin.enable` | bool | true |
-| `home.darwin.username` | string | "zoshodi" |
-| `home.darwin.homeDirectory` | string | "/Users/zoshodi" |
-| `home.cloudDev.enable` | bool | false |
-| `home.cloudNix.enable` | bool | false |
+```
+Artifacts/NixDarwin/    → Monads/IOMNixHome/   [OK]
+Artifacts/NixCloudDev/  → (consumed by IOMNixHome)   [OK]
+Artifacts/NixCloudNix/  → (consumed by IOMNixHome)   [OK]
+Artifacts/NixPackages/  → (consumed by IOMNixHome)   [OK]
+```

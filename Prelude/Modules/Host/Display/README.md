@@ -1,21 +1,23 @@
 # Display
 
-Display and window manager configuration.
+System display and window manager configuration.
 
-## Capability
+## Structure
 
-| Aspect | Description |
-|--------|-------------|
-| Category | Host / Display |
-| Purpose | Desktop/window manager, greeter |
-| Targets | nixos |
+```
+Display/
+├── Artifacts/
+│   ├── NixDisplay/default.nix   # Display options (backend, greeter)
+│   └── default.nix
+├── Monads/
+│   ├── IOMNixDisplay/default.nix
+│   └── default.nix
+├── default.nix                  # → flake.modules.nixos.display
+└── README.md
+```
 
-## Options
+## Invariant Check
 
-| Option | Type | Default |
-|--------|------|---------|
-| `display.enable` | bool | false |
-| `display.backend` | enum | "none" |
-| `display.greeter` | enum | "none" |
-
-Headless by default. Enable for graphical.
+```
+Artifacts/NixDisplay/  → Monads/IOMNixDisplay/   [OK]
+```

@@ -3,6 +3,7 @@
 { config, lib, ... }:
 let
   cfg = config.mail;
+  email = "zoshodi@amazon.com";
   mkAccountConfig = name: acct: {
     address = acct.email;
     realName = name;
@@ -27,7 +28,18 @@ let
   };
 in
 {
-  config.mail.enable = lib.mkDefault true;
+  config.mail = {
+    enable = lib.mkDefault true;
+    defaultAccount = lib.mkDefault "outlook";
+    accounts.outlook = {
+      inherit email;
+      backend = "imap";
+      sendBackend = "smtp";
+      host = "outlook.office365.com";
+      sendHost = "smtp-mail.outlook.com";
+      auth = "sops";
+    };
+  };
 
   config.flake.modules.homeManager.mail = { pkgs, ... }: {
     config = lib.mkIf cfg.enable {

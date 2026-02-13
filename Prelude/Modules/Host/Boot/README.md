@@ -1,21 +1,31 @@
 # Boot
 
-System boot configuration capability.
+System boot and disk partitioning configuration.
 
-## Capability
+## Structure
 
-| Aspect | Description |
-|--------|-------------|
-| Category | Host / Boot |
-| Purpose | Bootloader, kernel, initrd configuration |
-| Targets | nixos |
+```
+Boot/
+├── Artifacts/
+│   ├── NixBoot/default.nix      # Boot config (loader, efi, kernel, initrd)
+│   ├── NixDisk/default.nix      # Disk partitioning (devices, partitions)
+│   └── default.nix
+├── Monads/
+│   ├── IOMNixBoot/default.nix   # Enables itself + disk auto-enable
+│   └── default.nix
+├── default.nix                  # → flake.modules.nixos.{boot-config,disk-config}
+└── README.md
+```
 
-## Options
+## Artifact/Monad 1-1 Mapping
 
-| Option | Type | Default |
-|--------|------|---------|
-| `boot-config.enable` | bool | true |
-| `boot-config.loader` | enum | "systemd-boot" |
-| `boot-config.efi` | bool | true |
-| `boot-config.kernelPackages` | enum | "default" |
-| `boot-config.initrd.availableModules` | [str] | virtio defaults |
+| Artifact | Monad | Target |
+|----------|-------|--------|
+| `NixBoot` + `NixDisk` | `IOMNixBoot` | `flake.modules.nixos.boot-config` + `disk-config` |
+
+## Invariant Check
+
+```
+Artifacts/NixBoot/  → Monads/IOMNixBoot/   [OK]
+Artifacts/NixDisk/  → (consumed by IOMNixBoot)   [OK]
+```

@@ -31,7 +31,8 @@ Pattern Version: v2.0.0 | Structure: FROZEN
 - `Artifacts/{Interpreter}{ArtifactType}/default.{ext}` — typed option module
 - `Monads/[IO?]M{Interpreter}{ArtifactType}/` — artifact-producing script/derivation
 - `just [io-]{interpreter}-{artifacttype}` — CLI recipe (kebab-case mirror)
-- IO prefix = effectful, no prefix = pure
+- IO prefix = effectful (interactive, network, mutable state, entropy)
+- no prefix = pure (deterministic — same params always produce same output)
 - From name alone derive: interpreter, mutability, phase, type
 
 ```

@@ -1,22 +1,23 @@
 # Network
 
-System-level networking configuration.
+System networking configuration.
 
-## Capability
+## Structure
 
-| Aspect | Description |
-|--------|-------------|
-| Category | Host / Network |
-| Purpose | Firewall, DHCP, SSH daemon, wireless |
-| Targets | nixos |
+```
+Network/
+├── Artifacts/
+│   ├── NixNetwork/default.nix   # Network options (dhcp, firewall, ssh, wireless)
+│   └── default.nix
+├── Monads/
+│   ├── IOMNixNetwork/default.nix
+│   └── default.nix
+├── default.nix                  # → flake.modules.nixos.network-config
+└── README.md
+```
 
-## Options
+## Invariant Check
 
-| Option | Type | Default |
-|--------|------|---------|
-| `network-config.enable` | bool | true |
-| `network-config.dhcp` | bool | true |
-| `network-config.firewall.enable` | bool | true |
-| `network-config.firewall.allowedTCPPorts` | [port] | [22] |
-| `network-config.ssh.enable` | bool | true |
-| `network-config.wireless.enable` | bool | false |
+```
+Artifacts/NixNetwork/  → Monads/IOMNixNetwork/   [OK]
+```

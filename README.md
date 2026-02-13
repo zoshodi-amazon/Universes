@@ -57,8 +57,8 @@ Justfile     → [io-]{interpreter}-{artifacttype}      — kebab-case mirror of
 
 {Interpreter}  = codec/language (Lean, Nix, Python, Rust, etc.)
 {ArtifactType} = what the type space represents (Sovereignty, Item, Energy, etc.)
-IO prefix      = effectful (writes, deploys, interactive, modifies state)
-no prefix      = pure (queries, observations, read-only)
+IO prefix      = effectful (interactive, network, mutable state, entropy)
+no prefix      = pure (deterministic — same params always produce same output)
 M prefix       = Monad (type constructor that produces the artifact)
 ```
 
