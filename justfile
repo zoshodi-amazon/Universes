@@ -453,36 +453,24 @@ platforms pkg:
     print (["{{pkg}}:" "darwin=" ($darwin | into string) "linux=" ($linux | into string)] | str join " ")
 
 # -------------------------------------------------------------------------------
-# SOVEREIGNTY — MLeanSovereignty (pure queries)
+# SOVEREIGNTY — Pipelines only (execution contexts → RunRecord)
 # -------------------------------------------------------------------------------
 
-# status, gaps, bom, cost, weight, signature, bootstrap
-lean-sovereignty cmd="status":
-    sov {{cmd}}
+# Full sovereignty audit: <EnvBase, RunBase, PhaseOverlay[Survival,Infrastructure,Recon]>
+io-python-sovereignty *args="":
+    python Monads/Pipelines/IOMPythonSovereignty/default.py {{args}}
 
-# -------------------------------------------------------------------------------
-# SOVEREIGNTY — IOMLeanSovereignty (effectful commands)
-# -------------------------------------------------------------------------------
+# Fabrication pipeline: scan → reconstruct → mesh → slice → gcode
+io-python-fabpipeline *args="":
+    python Monads/Pipelines/IOMPythonFabPipeline/default.py {{args}}
 
-# validate, pack <mode>, discover <domain>, training
-io-lean-sovereignty cmd="validate" *args="":
-    sov {{cmd}} {{args}}
+# Reconnaissance pipeline: survey → scan → capture → report
+io-python-reconpipeline *args="":
+    python Monads/Pipelines/IOMPythonReconPipeline/default.py {{args}}
 
-# -------------------------------------------------------------------------------
-# SOVEREIGNTY — IOMLeanMain (build + run CLI entry point)
-# -------------------------------------------------------------------------------
-
-# Build and run the sov CLI
-io-lean-main *args="":
-    sov {{args}}
-
-# -------------------------------------------------------------------------------
-# SOVEREIGNTY — IOMLeanPackage (build the Lean package)
-# -------------------------------------------------------------------------------
-
-# Build the sov binary via lean4-nix
-io-lean-package:
-    nix build .#sov
+# Robotics sim pipeline: URDF → PyBullet → RL → policy
+io-python-robotsim *args="":
+    python Monads/Pipelines/IOMPythonRobotSim/default.py {{args}}
 
 # -------------------------------------------------------------------------------
 # INVARIANTS

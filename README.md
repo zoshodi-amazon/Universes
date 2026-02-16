@@ -113,18 +113,35 @@ Artifacts/NixPackage/       → (instantiated by default.nix)                   
 │   │   └── default.{ext}                   # Canonical type definition
 │   └── default.nix                         # Nix projection of all artifacts
 ├── Monads/                                 # Artifact-producing scripts/derivations
-│   ├── M{Interpreter}{ArtifactType}/       # Pure monad (queries, observations)
-│   ├── IOM{Interpreter}{ArtifactType}/     # Effectful monad (builds, deploys, interactive)
+│   ├── Adjuncts/                           # Single artifact producers (atomic)
+│   │   ├── [IO?]M{Interpreter}{Type}/      # One monad → one artifact type
+│   ├── Phases/                             # Cognitive fixpoints (grouped adjuncts)
+│   │   ├── M{Interpreter}{PhaseName}/      # Multiple related adjuncts
+│   ├── Pipelines/                          # Execution contexts (what the user runs)
+│   │   ├── [IO?]M{Interpreter}{Name}/      # <EnvBase, RunBase, PhaseOverlay> → RunRecord
 │   └── default.nix                         # Import-tree entry
 ├── default.nix                             # Global instantiation (wires into flake)
 └── README.md
 ```
 
+### Monad Categories
+
+| Category | Yields | Justfile? | Example |
+|----------|--------|-----------|---------|
+| **Adjunct** | Single artifact type (one point) | No | `MCadQueryMesh` → Mesh |
+| **Phase** | Multiple artifacts (cognitive fixpoint) | No | `MPythonSurvival` → energy+water+food+shelter |
+| **Pipeline** | RunRecord from `<EnvBase, RunBase, PhaseOverlay>` | Yes | `IOMPythonSovereignty` → full audit |
+
+- Adjuncts are atomic — one monad, one artifact
+- Phases group related adjuncts into coherent units
+- Pipelines provide execution context and are the ONLY monads exposed in the justfile
+- Every Pipeline produces a standardized `RunRecord` artifact
+
 ### The Morphism Chain
 
 ```
-ADT (Lean)  →  Artifacts/default.nix (Nix)  →  ENV vars (JSON)  →  Monads (Lean folds)  →  IO effects
-   types           type space                    serialized config     eliminators              state
+Artifacts (types)  →  Adjuncts (atomic folds)  →  Phases (grouped folds)  →  Pipelines (execution)  →  RunRecord
+   metric spaces        single transforms           cognitive fixpoints        <Env,Run,Phase>            output
 ```
 
 ## OPTIONS

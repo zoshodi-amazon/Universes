@@ -69,12 +69,29 @@ ADT (Lean) → Artifacts/default.nix (Nix) → ENV vars (JSON) → Monads (Lean 
 │   │   └── default.{ext}                   # Canonical type definition
 │   └── default.nix                         # Nix projection of all artifacts
 ├── Monads/                                 # Artifact-producing scripts/derivations
-│   ├── M{Interpreter}{ArtifactType}/       # Pure monad
-│   ├── IOM{Interpreter}{ArtifactType}/     # Effectful monad
+│   ├── Adjuncts/                           # Single artifact producers (atomic)
+│   │   ├── [IO?]M{Interpreter}{Type}/      # One monad → one artifact type
+│   ├── Phases/                             # Cognitive fixpoints (grouped adjuncts)
+│   │   ├── M{Interpreter}{PhaseName}/      # Multiple related adjuncts
+│   ├── Pipelines/                          # Execution contexts (what the user runs)
+│   │   ├── [IO?]M{Interpreter}{Name}/      # <EnvBase, RunBase, PhaseOverlay> → RunRecord
 │   └── default.nix                         # Import-tree entry
 ├── default.nix                             # Global instantiation
 └── README.md
 ```
+
+### Monad Categories
+
+| Category | Yields | Justfile? | Example |
+|----------|--------|-----------|---------|
+| **Adjunct** | Single artifact type (one point) | No | `MCadQueryMesh` → Mesh |
+| **Phase** | Multiple artifacts (cognitive fixpoint) | No | `MPythonSurvival` → energy+water+food+shelter |
+| **Pipeline** | RunRecord from `<EnvBase, RunBase, PhaseOverlay>` | Yes | `IOMPythonSovereignty` → full audit |
+
+- Adjuncts are atomic — one monad, one artifact
+- Phases group related adjuncts into coherent units
+- Pipelines provide execution context and are the ONLY monads exposed in the justfile
+- Every Pipeline produces a standardized `RunRecord` artifact
 
 ## Invariants
 

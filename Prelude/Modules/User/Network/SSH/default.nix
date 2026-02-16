@@ -15,12 +15,15 @@ in
   config.flake.modules.homeManager.ssh = lib.mkIf cfg.enable {
     programs.ssh = {
       enable = true;
-      matchBlocks."*" = {
-        compression = cfg.compression;
-        serverAliveInterval = cfg.serverAliveInterval;
-        serverAliveCountMax = cfg.serverAliveCountMax;
-        forwardAgent = cfg.forwardAgent;
-      };
-    } // { matchBlocks = lib.mapAttrs hostToMatch cfg.hosts; };
+      enableDefaultConfig = false;
+      matchBlocks = {
+        "*" = {
+          compression = cfg.compression;
+          serverAliveInterval = cfg.serverAliveInterval;
+          serverAliveCountMax = cfg.serverAliveCountMax;
+          forwardAgent = cfg.forwardAgent;
+        };
+      } // lib.mapAttrs hostToMatch cfg.hosts;
+    };
   };
 }
