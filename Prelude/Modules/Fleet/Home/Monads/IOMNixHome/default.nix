@@ -12,5 +12,6 @@
     "typst" "zathura" "glow"
     "inkscape" "ffmpeg"
     "raylib" "entr" "lazygit" "gh" "tree" "opencode" "ollama" "nh"
+    "ast-grep"
   ];
 }

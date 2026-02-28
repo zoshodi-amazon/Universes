@@ -1,0 +1,29 @@
+# RL Trading Sandbox -- justfile
+# 1:1 with Monads. Each phase has own BaseSettings + default.json. CLI args override.
+
+discover *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IODiscoveryPhase.default {{ARGS}}'
+
+ingest *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOIngestPhase.default {{ARGS}}'
+
+feature *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOFeaturePhase.default {{ARGS}}'
+
+train *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOTrainPhase.default {{ARGS}}'
+
+eval *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOEvalPhase.default {{ARGS}}'
+
+serve *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOServePhase.default {{ARGS}}'
+
+pipeline *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOPipelinePhase.default {{ARGS}}'
+
+optimize *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOOptimizePhase.default {{ARGS}}'
+
+render *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -c "from gym_trading_env.renderer import Renderer; Renderer(render_logs_dir=\"Env/Outputs/render_logs\").run()"'

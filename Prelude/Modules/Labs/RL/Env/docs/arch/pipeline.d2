@@ -1,0 +1,109 @@
+direction: right
+
+# Config (IO Type Constructor)
+Config: {
+  shape: page
+  label: "Config\n(Env/Config/default.json)"
+  asset: "AssetBase\nasset_type | io_ticker | interval_min\ntrade_start_min | trade_end_min | holidays"
+  run: "RunBase\nrun_id | seed | name\noutput_dir | status | verbose"
+  env: "EnvBase\ninitial_value | fees_pct | borrow_rate_pct\npositions | broker_mode | io_broker_key | stop_loss_pct"
+  phases: "PhaseConfig\ndiscovery | ingest | feature | train\neval | infer | walkforward | optimize"
+}
+
+# Phase Chain
+Discovery: {
+  label: "DiscoveryPhase"
+  specs: "DiscoverySpecs\nio_universe | min_adx | min_bars\ninterval_min | period | cache_dir"
+  record: "DiscoveryRecord\nrun_id | universe_size | qualifying_tickers\nmin_adx_used | io_scan_date | n_qualifying | io_data_path"
+}
+
+Ingest: {
+  label: "IngestPhase"
+  specs: "IngestSpecs\nperiod | warmup_bars | cache_dir"
+  record: "IngestRecord\nrun_id | io_ticker | interval_min | n_bars\nio_start_date | io_end_date | io_data_path"
+}
+
+Feature: {
+  label: "FeaturePhase"
+  specs: "FeatureSpecs\nwavelet | level | threshold_mode\nadx_period | supertrend_period\nsupertrend_multiplier | regime_threshold"
+  record: "FeatureRecord\nrun_id | n_static_features | n_dynamic_features\nfeature_names | n_valid_bars | io_data_path"
+}
+
+Train: {
+  label: "TrainPhase"
+  specs: "TrainSpecs\nalgo | n_envs | learning_rate | total_timesteps\nepisode_duration_min | normalize_obs | normalize_reward"
+  record: "TrainRecord\nrun_id | io_model_path | algo | total_timesteps\nlearning_rate | final_reward | io_normalize_path"
+  detail: "SubprocVecEnv (sim, n_envs>1)\nDummyVecEnv (paper/live)\nVecNormalize (obs+reward)\nMlpPolicy (hardcoded)"
+}
+
+Eval: {
+  label: "EvalPhase"
+  specs: "EvalSpecs\nforward_steps_min | profit_threshold_pct"
+  record: "EvalRecord\nrun_id | io_ticker | window_index\nportfolio_return_pct | final_value\nthreshold_met | position"
+  detail: "per-step stop_loss_pct check\nper-step profit_threshold_pct check\nearly exit on either bound"
+}
+
+Infer: {
+  label: "InferPhase"
+  specs: "InferSpecs\nmax_model_age_min | forward_steps_min\nprofit_threshold_pct"
+  record: "InferRecord\nrun_id | io_ticker | position_taken\nportfolio_return_pct | model_age_min\nbroker_mode | threshold_met"
+  detail: "same env as Train/Eval\nbroker_mode: sim|paper|live\nper-step stop_loss + take_profit"
+}
+
+# Phase chain edges
+Config -> Discovery: "io_universe from asset.io_ticker"
+Discovery -> Ingest: "qualifying tickers"
+Ingest -> Feature: "io_data_path (OHLCV pkl)"
+Feature -> Train: "io_data_path (featured pkl)"
+Train -> Eval: "io_model_path + io_normalize_path"
+Train -> Infer: "io_model_path + io_normalize_path"
+
+# Pipeline compositions
+WalkForward: {
+  shape: hexagon
+  label: "IOMWalkForwardRecord\n(Train -> Eval) x N windows"
+  record: "WalkForwardRecord\nrun_id | n_windows | win_rate_pct\navg_return_pct | cumulative_return_pct\nresults: list[EvalRecord]\nerrors: list[ErrorBase]"
+}
+
+Retrain: {
+  shape: hexagon
+  label: "IOMRetrainRecord\nTrain -> Infer (retrain if stale)"
+  record: "RetrainRecord\nrun_id | n_cycles | n_stale_retrains\nwin_rate_pct | avg_return_pct\nresults: list[InferRecord]\nerrors: list[ErrorBase]"
+}
+
+Optimize: {
+  shape: hexagon
+  label: "IOMOptimizeRecord\nOptuna trials over WalkForward"
+  record: "OptimizeRecord\nrun_id | n_completed | best_value\nbest_lr | best_timesteps\nbest_win_rate_pct | io_study_path"
+}
+
+Feature -> WalkForward: "featured data"
+WalkForward -> Optimize: "objective = win_rate_pct | avg_return_pct"
+Feature -> Retrain: "featured data"
+
+# Shared Bases
+Bases: {
+  shape: cloud
+  label: "Shared Bases"
+  asset: "AssetBase (6)"
+  run: "RunBase (6)"
+  env: "EnvBase (7)"
+  ohlcv: "OHLCVBase"
+  feature: "FeatureBase"
+  error: "ErrorBase (4)"
+  log: "LogBase (5)"
+}
+
+Bases -> Train: "EnvBase + AssetBase"
+Bases -> Eval: "EnvBase + AssetBase"
+Bases -> Infer: "EnvBase + AssetBase"
+
+# Run output
+RunRecord: {
+  shape: document
+  label: "RunRecord (per pipeline)\nrun_id | io_ticker | duration_s\nphase | status | n_artifacts | errors"
+}
+
+WalkForward -> RunRecord
+Retrain -> RunRecord
+Optimize -> RunRecord

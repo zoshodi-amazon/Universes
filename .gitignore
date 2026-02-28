@@ -95,3 +95,6 @@ Work/
 
 # Containers
 .pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/

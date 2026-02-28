@@ -1,0 +1,62 @@
+# Sovereignty Architecture
+
+direction: right
+
+title: |md
+  # Sovereignty Morphism Chain
+  Artifacts -> default.json -> Monads -> Effects
+|
+
+adt: "Artifacts/Sovereignty/default.lean" {
+  style.fill: "#e8eaf6"
+  style.stroke: "#283593"
+  style.stroke-width: 3
+
+  sov: "Sovereignty (2p)" {
+    global: "SovGlobal (4p): mode, bootstrap, opsec, constraints"
+    domains: "Domains (4p): survival, infrastructure, operations, expansion"
+  }
+
+  tiers: "Tier Sub-Artifacts" {
+    t1: "Survival (4p): energy, water, food, shelter"
+    t2: "Infrastructure (3p): medical, comms, compute"
+    t3: "Operations (2p): intelligence, defense"
+    t4: "Expansion (3p): transport, trade, fabrication"
+  }
+
+  item: "Item (3p)" {
+    id: "ItemIdentity (3p): name, model, qty"
+    phys: "ItemPhysical (4p): cost, weight, volume, packTime"
+    life: "ItemStatus (4p): source, status, competency, signature"
+  }
+}
+
+artifacts_nix: Artifacts/default.nix {
+  style.fill: "#e8f5e9"
+  style.stroke: "#2e7d32"
+}
+
+config: default.json {
+  style.fill: "#fff3e0"
+  style.stroke: "#e65100"
+}
+
+monads: Monads/ {
+  style.fill: "#fce4ec"
+  style.stroke: "#b71c1c"
+
+  build: "IOMLeanPackage: compile to native binary"
+  pure: "MSovereignty: status, gaps, bom, cost, weight, signature, bootstrap"
+  effectful: "IOMSovereignty: validate, pack, discover, training"
+}
+
+justfile: Justfile {
+  style.fill: "#e0f2f1"
+  style.stroke: "#00695c"
+  shape: document
+}
+
+adt -> artifacts_nix: "Nix projection"
+artifacts_nix -> config: "builtins.toJSON"
+config -> monads: "SOV_CONFIG_PATH"
+monads -> justfile: "1-1 recipe mapping"

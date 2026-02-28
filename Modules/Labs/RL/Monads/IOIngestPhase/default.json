@@ -1,0 +1,22 @@
+{
+  "asset": {
+    "asset_type": "stock",
+    "io_ticker": "AAPL",
+    "interval_min": 5,
+    "trade_start_min": 570,
+    "trade_end_min": 960,
+    "holidays": "us_market"
+  },
+  "run": {
+    "seed": 42,
+    "name": "ingest",
+    "output_dir": "Env/Outputs",
+    "status": "pending",
+    "verbose": 0
+  },
+  "ingest": {
+    "period": "60d",
+    "warmup_bars": 28,
+    "cache_dir": "Env/Inputs/cache"
+  }
+}
