@@ -1,0 +1,18 @@
+# Env
+Env/Inputs/.env
+Env/Inputs/cache/
+Env/Outputs/*.pkl
+Env/Outputs/*.zip
+Env/Outputs/*.json
+Env/Outputs/*.stl
+Env/Outputs/*.step
+Env/Outputs/*.gcode
+Env/Outputs/*.bin
+Env/Outputs/logs/
+Env/Outputs/render_logs/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ruff_cache/

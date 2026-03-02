@@ -1,0 +1,30 @@
+{
+  "home": {
+    "darwin": { "enable": true, "username": "zoshodi", "homeDirectory": "/Users/zoshodi", "stateVersion": "24.05" },
+    "cloudDev": { "enable": true, "username": "zoshodi", "homeDirectory": "/home/zoshodi", "stateVersion": "24.05" },
+    "cloudNix": { "enable": false, "username": "zoshodi", "homeDirectory": "/home/zoshodi", "stateVersion": "24.05" }
+  },
+  "corePackages": [
+    "just", "gum", "ripgrep", "fd", "jq", "yq", "bat", "eza", "fzf",
+    "nil", "nixfmt-rfc-style", "nh", "nix-output-monitor",
+    "podman", "qemu", "d2", "graphviz", "plantuml",
+    "f3d", "openscad", "typst", "zathura", "glow",
+    "inkscape", "ffmpeg", "raylib", "entr", "lazygit", "gh", "tree",
+    "opencode", "ollama", "ast-grep"
+  ],
+  "machines": {
+    "sovereignty": {
+      "hostname": "sovereignty", "arch": "x86_64", "format": "iso",
+      "disk": { "layout": "standard", "device": "/dev/sda", "persistLabel": "NIXOS_PERSIST" },
+      "persistence": { "strategy": "impermanent", "device": "/dev/disk/by-label/NIXOS_PERSIST", "paths": ["/var/log", "/var/lib/nixos", "/etc/NetworkManager/system-connections"] },
+      "users": [{ "name": "zoshodi", "groups": ["wheel", "networkmanager"], "initialPassword": "changeme" }]
+    },
+    "test-vm": {
+      "hostname": "test-vm", "arch": "x86_64", "format": "microvm",
+      "disk": { "layout": "none", "device": "/dev/sda", "persistLabel": "NIXOS_PERSIST" },
+      "persistence": { "strategy": "ephemeral", "device": null, "paths": ["/var/log", "/var/lib/nixos", "/etc/NetworkManager/system-connections"] },
+      "users": [{ "name": "test", "groups": ["wheel"], "initialPassword": "test" }]
+    }
+  },
+  "microvm": { "mem": 2048, "vcpu": 2, "hypervisor": "qemu" }
+}

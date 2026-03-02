@@ -1,0 +1,63 @@
+{
+  "git": {
+    "enable": true, "userName": "", "userEmail": "", "signing": { "key": "", "signByDefault": false },
+    "defaultBranch": "main", "aliases": {}, "extraConfig": {}, "delta": true, "lfs": false,
+    "ignores": [
+      ".DS_Store", "Thumbs.db", "Desktop.ini",
+      ".idea/", "*.iml", ".vscode/", "*.swp", "*.swo", "*~", ".project", ".classpath", ".settings/",
+      "result", "result-*", ".direnv/",
+      "*.class", "*.jar", "*.war", "*.ear", "target/", "build/", ".gradle/", "out/",
+      "node_modules/", "dist/", ".next/", ".nuxt/", ".output/", ".cache/", "*.log", ".parcel-cache/",
+      ".env", ".env.*", "!.env.example", "*.pem", "*.key", "*.p12", "*.pfx", "*.jks",
+      "*.gpg", "*.asc", "*.age", "secrets/", ".secrets/", "credentials.json",
+      "*.enc", "*.encrypted", "*.sealed", "secret.*", "!secret.*.example"
+    ]
+  },
+  "browser": { "enable": false, "searchDefault": "DuckDuckGo" },
+  "mail": {
+    "enable": true, "defaultAccount": "outlook",
+    "accounts": {
+      "outlook": {
+        "email": "user@example.com",
+        "backend": "imap", "sendBackend": "smtp",
+        "host": "outlook.office365.com", "sendHost": "smtp-mail.outlook.com", "auth": "sops"
+      }
+    }
+  },
+  "shell": {
+    "env": { "TOOLBOX_BIN": "$HOME/.toolbox/bin", "LOCAL_BIN": "$HOME/.local/bin", "NIX_PROFILE": "$HOME/.nix-profile/bin", "EDITOR": "nvim", "VISUAL": "nvim", "KEYTIMEOUT": 1 },
+    "aliases": {
+      "k": "kiro-cli", "vi": "nvim",
+      "ll": "ls -la", "la": "ls -la", "l": "ls -l",
+      "b": "cd .. && ls", "..": "cd ..", "...": "cd ../..",
+      "hm": "home-manager", "hms": "home-manager switch",
+      "nr": "nix registry", "nf": "nix flake", "nfc": "nix flake check", "nd": "nix develop",
+      "gs": "git status", "ga": "git add", "gc": "git commit",
+      "gca": "git commit --amend --no-edit", "gl": "git log --oneline", "gd": "git diff",
+      "txn": "tmux new-session -s", "txl": "tmux ls", "txk": "tmux kill-session -t"
+    },
+    "zsh": { "enable": true, "paths": ["$HOME/.toolbox/bin", "$HOME/.local/bin", "$HOME/.nix-profile/bin"], "initExtra": "if [ -f ~/.nix-profile/etc/profile.d/nix.sh ]; then\n  source ~/.nix-profile/etc/profile.d/nix.sh\nfi" },
+    "fish": { "enable": true, "paths": ["$HOME/.toolbox/bin", "$HOME/.local/bin", "$HOME/.nix-profile/bin"], "initExtra": "", "interactiveShellInit": "if test -f ~/.nix-profile/etc/profile.d/nix.sh\n  bass source ~/.nix-profile/etc/profile.d/nix.sh\nend" },
+    "nushell": { "enable": true, "paths": ["$HOME/.toolbox/bin", "$HOME/.local/bin", "$HOME/.nix-profile/bin"], "configExtra": "", "envExtra": "$env.EDITOR = \"nvim\"\n$env.VISUAL = \"nvim\"" },
+    "direnv": { "enable": true, "nixDirenv": true }
+  },
+  "tmux": { "enable": true, "prefix": "C-a", "baseIndex": 1, "escapeTime": 10, "historyLimit": 10000, "mouse": true, "terminal": "tmux-256color", "extraConfig": "set -g allow-passthrough on" },
+  "kitty": { "enable": true, "fontName": "JetBrainsMono Nerd Font", "fontSize": 12, "theme": "tokyo_night_night", "settings": {} },
+  "nixvim": { "enable": true, "colorscheme": "tokyonight", "leader": " ", "lineNumbers": true, "relativeNumbers": false, "tabWidth": 2 },
+  "ai": { "enable": true, "provider": "amazon-bedrock", "region": "us-east-1", "profile": "default", "endpoint": "", "rules": [], "extraSettings": {} },
+  "cloud": {
+    "enable": true, "defaultRegion": "us-east-1", "defaultOutput": "json",
+    "profiles": {
+      "default": { "region": "us-east-1", "output": "json" },
+      "profile conduit": { "region": "us-east-1", "output": "json" }
+    }
+  },
+  "corePackages": [
+    "just", "gum", "ripgrep", "fd", "jq", "yq", "bat", "eza", "fzf",
+    "nil", "nixfmt-rfc-style", "nh", "nix-output-monitor",
+    "podman", "qemu", "d2", "graphviz", "plantuml",
+    "f3d", "openscad", "typst", "zathura", "glow",
+    "inkscape", "ffmpeg", "raylib", "entr", "lazygit", "gh", "tree",
+    "opencode", "ollama", "ast-grep"
+  ]
+}

@@ -2,9 +2,8 @@
   description = "Universes - Dendritic Nix Configuration System";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    import-tree.url = "github:vic/import-tree";
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nixvim.url = "github:nix-community/nixvim";
@@ -49,5 +48,5 @@
     ];
   };
 
-  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./Prelude/Modules);
+  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (import ./Modules/Monads/IOMainPhase);
 }

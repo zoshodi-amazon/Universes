@@ -1,0 +1,15 @@
+{
+  "boot": {
+    "enable": true, "loader": "systemd-boot", "efi": true, "kernelPackages": "default",
+    "initrdModules": ["ahci", "xhci_pci", "virtio_pci", "virtio_blk", "sr_mod"]
+  },
+  "disk": {
+    "enable": false, "layout": "single-disk", "filesystem": "ext4",
+    "encryption": "none", "remoteUnlock": false, "swapSize": "none", "devices": {}
+  },
+  "hardware": {
+    "enable": false, "profile": "generic", "gpu": "none", "firmware": true,
+    "audio": "none", "bluetooth": false, "printing": false
+  },
+  "display": { "enable": false, "backend": "none", "greeter": "none" }
+}

@@ -1,0 +1,49 @@
+{
+  "asset": {
+    "asset_type": "stock",
+    "io_ticker": "AAPL",
+    "interval_min": 5,
+    "trade_start_min": 570,
+    "trade_end_min": 960,
+    "holidays": "us_market"
+  },
+  "run": {
+    "seed": 42,
+    "name": "serve",
+    "output_dir": "Env/Outputs",
+    "status": "pending",
+    "verbose": 0
+  },
+  "env": {
+    "initial_value": 10000.0,
+    "fees_pct": 0.1,
+    "borrow_rate_pct": 0.0,
+    "positions": [-1.0, 0.0, 1.0],
+    "broker_mode": "sim",
+    "io_broker_key": "sim",
+    "stop_loss_pct": -2.0
+  },
+  "serve": {
+    "io_model_path": "Env/Outputs/model.zip",
+    "io_normalize_path": "Env/Outputs/normalize.pkl",
+    "io_algo": "PPO",
+    "poll_interval_s": 60,
+    "max_bars": 288,
+    "profit_threshold_pct": 0.5,
+    "max_model_age_min": 1440
+  },
+  "feature": {
+    "wavelet": "db4",
+    "level": 4,
+    "threshold_mode": "soft",
+    "adx_period": 14,
+    "supertrend_period": 10,
+    "supertrend_multiplier": 3.0,
+    "regime_threshold": 25.0
+  },
+  "ingest": {
+    "period": "60d",
+    "warmup_bars": 28,
+    "cache_dir": "Env/Inputs/cache"
+  }
+}

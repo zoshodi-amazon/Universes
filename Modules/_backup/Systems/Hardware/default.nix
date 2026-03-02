@@ -1,0 +1,2 @@
+# Hardware — global instantiation
+{ ... }: {}

@@ -1,0 +1,25 @@
+{
+  "asset": {
+    "asset_type": "stock",
+    "io_ticker": "AAPL",
+    "interval_min": 5,
+    "trade_start_min": 570,
+    "trade_end_min": 960,
+    "holidays": "us_market"
+  },
+  "run": {
+    "seed": 42,
+    "name": "discovery",
+    "output_dir": "Env/Outputs",
+    "status": "pending",
+    "verbose": 0
+  },
+  "discovery": {
+    "io_universe": [],
+    "screener": "most_actives",
+    "min_adx": 25.0,
+    "min_bars": 360,
+    "period": "60d",
+    "cache_dir": "Env/Inputs/cache"
+  }
+}

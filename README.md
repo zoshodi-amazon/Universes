@@ -1,301 +1,132 @@
-# UNIVERSES(7) - Dendritic Nix Configuration System
+# UNIVERSES(7) - Phase-Based Nix Configuration System
 
 ## NAME
 
-Universes - Capability-centric Nix configuration system using flake-parts + import-tree
+Universes - Typed phase pipeline for device configuration. Lean 4 types → JSON → Nix monads.
 
 ## SYNOPSIS
 
 ```
-<Module>/
-├── Artifacts/       # Typed option modules (the type space)
-├── Monads/          # Artifact-producing scripts/derivations
-├── default.nix      # Global instantiation
+Universes/
+├── Modules/
+│   ├── Types/                    # Lean 4 — the type space (ADTs + deriving ToJson)
+│   ├── Monads/                   # Nix — the effect space (builtins.fromJSON → module API calls)
+│   └── Env/                      # Runtime substrate (Inputs/Outputs)
+├── flake.nix                     # Imports Modules/Monads/IOMainPhase
+├── justfile                      # Phase recipes (all map to IOMainPhase)
+├── AGENTS.md
 └── README.md
 ```
 
-**Pattern Version: v2.0.0**
+**Pattern Version: v4.1.0**
 
 ## DESCRIPTION
 
-Every module is a closed type space. Artifacts define what exists (types, bounded params). Monads produce artifacts (scripts, derivations, CLIs). The `default.nix` instantiates the module into the flake.
+Every module is a monad: typed input → effectful binding → typed output. The type system is Lean 4 (compile-time checked). The IO boundary is JSON (default.json). The binding layer is Nix (flake-parts modules). The nix store is the ambient IO — the universal typed filesystem.
 
-**One Universe = one git repo.** The ambient space. Modules live within it.
-
-### Type-Theoretic Identity
+### Architecture
 
 ```
-Artifact         =  Typed option module (bounded params, no nulls)
-Monad            =  Artifact-producing type constructor
-[IO?]M{Type}     =  Named monad (IO = effectful, no prefix = pure)
-ENV var          =  Runtime projection of an Artifact param
-CLI command      =  Named fold over the Artifact type space
-Justfile recipe  =  Aggregation of all Monads in one place
+Types/ (Lean 4)           →  default.json  →  Monads/ (Nix)
+ADTs + deriving ToJson       IO boundary      builtins.fromJSON → module API calls
+compile-time typed           committed file   flake-parts modules
 ```
 
-### Metric Space Interpretation
-
-Every Artifact is a compact metric space. The option params are the orthogonal dimensions — the metric dials. ENV vars are the runtime projections of those dials. Every CLI command / justfile recipe / shell invocation is a Monad over that metric space: from the command name alone you derive the interpreter, the artifact type, and whether it is pure or effectful.
+### Phase Chain
 
 ```
-Artifact params  =  orthogonal metric dials (<=7 per artifact)
-ENV vars         =  1-1 runtime projection of those dials
-CLI command      =  Monad over the metric space
-command name     →  derive: interpreter, artifact type, IO or pure
+Identity → Platform → Network → Services → User → Workspace → Deploy
 ```
 
-This means any domain — electrical, acoustic, sovereignty, animation — is the same shape: a compact metric space (what can be observed/measured) plus transforms (monads that move between metric states). The metric space IS the artifact. The transforms ARE the monads. Cross-domain connections are natural transformations between metric spaces.
+7 phases + 1 entry point. IOMainPhase is the single entry point.
 
-### Naming Convention
+| # | Phase | What it answers | Nix target |
+|---|-------|----------------|------------|
+| 1 | Identity | Nix daemon, secrets, keys | flake.modules.{hm,nixos,darwin} |
+| 2 | Platform | Boot, disk, hardware, display | flake.modules.nixos |
+| 3 | Network | Firewall, SSH, wireless | flake.modules.{nixos,hm} |
+| 4 | Services | Containers, servers | flake.modules.nixos |
+| 5 | User | Shell, editor, git, mail, browser, AI, cloud | flake.modules.homeManager |
+| 6 | Workspace | DevShells, labs (RL, Fab, Sovereignty) | perSystem |
+| 7 | Deploy | homeConfigurations, nixosConfigurations, ISOs, VMs | flake.* |
 
-**FROZEN.** The directory name encodes interpreter, mutability, phase, and type. You can derive everything from the name alone. CLI commands / justfile recipes use the SAME convention in kebab-case.
+### Matter-Phase Type System
 
-```
-Artifacts/   → {Interpreter}{ArtifactType}           — typed option modules
-Monads/      → [IO?]M{Interpreter}{ArtifactType}     — artifact-producing scripts/derivations
-Justfile     → [io-]{interpreter}-{artifacttype}      — kebab-case mirror of Monad name
+The 7 states of matter map to type theory, category theory, and domain-specific phases:
 
-{Interpreter}  = codec/language (Lean, Nix, Python, Rust, etc.)
-{ArtifactType} = what the type space represents (Sovereignty, Item, Energy, etc.)
-IO prefix      = effectful (interactive, network, mutable state, entropy)
-no prefix      = pure (deterministic — same params always produce same output)
-M prefix       = Monad (type constructor that produces the artifact)
-```
+| # | Matter | Type Theory | Category Theory | HoTT | Symmetry | Domain (Top) | Domain (User) |
+|---|--------|-------------|-----------------|------|----------|-------------|---------------|
+| 1 | BEC | Unit (⊤) | Terminal object | Contractible | Trivial {e} | Identity | Identity |
+| 2 | Crystalline | Inductive (ADT) | Free category | Discrete type | Space group | Platform | Credentials |
+| 3 | Liquid Crystal | Dependent type | Fibered category | Fibration | Partial SO(3) | Network | Shell |
+| 4 | Liquid | Function (A → B) | Morphisms | Path space | SO(3) | Services | Terminal |
+| 5 | Gas | Product/Sum | Coproduct+Product | Wedge/Suspension | E(3) | User | Editor |
+| 6 | Plasma | Monad (M A) | Kleisli category | Higher inductive | Gauge | Workspace | Comms |
+| 7 | QGP | IO | Initial + Free | Univalent universe | Deconfined | Deploy | Packages |
 
-From the name alone — directory, CLI command, or justfile recipe — you derive:
-- **Interpreter**: what codec/language (`Lean`, `Nix`, `Python`, ...)
-- **Mutability**: `IO`/`io-` prefix = effectful, no prefix = pure
-- **Phase**: `M`/recipe = type constructor (Monad)
-- **Type**: the artifact type being produced or defined
+The fractal property: the same 7 phases recurse at every level. IOUserPhase (Gas at top level) contains 7 sub-phases following the same matter chain.
 
-The mapping is mechanical:
+### Execution Stack
 
-```
-Directory                              CLI / Justfile recipe
-─────────────────────────────────────  ─────────────────────────────
-Monads/MLeanSovereignty/               just lean-sovereignty
-Monads/IOMLeanSovereignty/             just io-lean-sovereignty
-Monads/IOMLeanMain/                    just io-lean-main
-Monads/IOMLeanPackage/                 just io-lean-package
-```
-
-Examples:
-```
-Artifacts/LeanSovereignty/default.lean    — Lean codec, Sovereignty type
-Artifacts/LeanItem/default.lean           — Lean codec, Item type
-Artifacts/NixPackage/default.nix          — Nix codec, Package type
-Artifacts/LeanLake/lakefile.lean          — Lean codec, Lake project config
-Monads/MLeanSovereignty/default.lean      — pure, Lean, produces Sovereignty queries
-Monads/IOMLeanMain/Main.lean              — effectful, Lean, produces CLI entry point
-Monads/IOMLeanSovereignty/default.lean    — effectful, Lean, produces Sovereignty mutations
-just lean-sovereignty                     — pure query (status, gaps, bom, cost, weight, signature, bootstrap)
-just io-lean-sovereignty                  — effectful command (validate, pack, discover, training)
-just io-lean-main                         — build + run CLI entry point
-just io-lean-package                      — build the Lean package
-```
-
-### 1-1 Invariant
-
-For every `Artifacts/{Interpreter}{Type}`, there must exist `Monads/[IO?]M{Interpreter}{Type}`. Missing Monad = a hole. Mechanically verifiable:
-
-```
-Artifacts/LeanSovereignty/  → Monads/MLeanSovereignty/ + Monads/IOMLeanSovereignty/   [OK]
-Artifacts/LeanItem/         → (consumed by MLeanSovereignty, not standalone)            [OK]
-Artifacts/NixPackage/       → (instantiated by default.nix)                             [OK]
-```
-
-### Module Structure
-
-```
-<Module>/
-├── Artifacts/                              # Typed option modules (metric spaces, <= 7 params each)
-│   ├── {Interpreter}{ArtifactType}/        # Each artifact is a bounded metric space
-│   │   └── default.{ext}                   # Canonical type definition
-│   └── default.nix                         # Nix projection of all artifacts
-├── Monads/                                 # Artifact-producing scripts/derivations
-│   ├── Adjuncts/                           # Single artifact producers (atomic)
-│   │   ├── [IO?]M{Interpreter}{Type}/      # One monad → one artifact type
-│   ├── Phases/                             # Cognitive fixpoints (grouped adjuncts)
-│   │   ├── M{Interpreter}{PhaseName}/      # Multiple related adjuncts
-│   ├── Pipelines/                          # Execution contexts (what the user runs)
-│   │   ├── [IO?]M{Interpreter}{Name}/      # <EnvBase, RunBase, PhaseOverlay> → RunRecord
-│   └── default.nix                         # Import-tree entry
-├── default.nix                             # Global instantiation (wires into flake)
-└── README.md
-```
-
-### Monad Categories
-
-| Category | Yields | Justfile? | Example |
-|----------|--------|-----------|---------|
-| **Adjunct** | Single artifact type (one point) | No | `MCadQueryMesh` → Mesh |
-| **Phase** | Multiple artifacts (cognitive fixpoint) | No | `MPythonSurvival` → energy+water+food+shelter |
-| **Pipeline** | RunRecord from `<EnvBase, RunBase, PhaseOverlay>` | Yes | `IOMPythonSovereignty` → full audit |
-
-- Adjuncts are atomic — one monad, one artifact
-- Phases group related adjuncts into coherent units
-- Pipelines provide execution context and are the ONLY monads exposed in the justfile
-- Every Pipeline produces a standardized `RunRecord` artifact
-
-### The Morphism Chain
-
-```
-Artifacts (types)  →  Adjuncts (atomic folds)  →  Phases (grouped folds)  →  Pipelines (execution)  →  RunRecord
-   metric spaces        single transforms           cognitive fixpoints        <Env,Run,Phase>            output
-```
+| Interpreter | Types | IO Boundary | Monads | Output |
+|-------------|-------|-------------|--------|--------|
+| Lean 4 | ADTs + `deriving ToJson` | `default.json` | — | JSON config |
+| Nix | — | `builtins.fromJSON` | `config` block | `flake.*`, `perSystem.*` |
+| Python | pydantic `BaseModel` | `default.json` | `IO{X}Phase` + `BaseSettings` | pydantic output models |
 
 ## OPTIONS
 
-Artifacts must remain vendor-agnostic ("what I want"). Monads are vendor-specific ("how to get it").
-
-**Anti-pattern** (coupled):
-```nix
-options.store.mlflow.trackingUri = ...;  # Vendor in Artifacts
 ```
-
-**Correct pattern** (decoupled):
-```nix
-options.store.trackingUri = ...;         # Generic capability
-options.store.backend = enum [ "mlflow" "wandb" "local" ];
-```
-
-**NO nulls.** Every param bounded with defaults. Errors typed as sum types.
-
-**NO loose strings as types.** Physical quantities use typed structures (value + unit). Identifiers use enums. Sources use sum types.
-
-**Artifacts are tightly bounded metric spaces.** Every parameter has a well-defined default (the fixed point / center of the space). There is no concept of null, empty string, or uninitialized — these are ill-defined fixpoints in a broken monoidal structure. If a value can be absent, model it as an explicit sum type (`enum [ "none" "value1" "value2" ]`), never as null or `""`. String interpolation is the canonical anti-pattern: it takes typed values and collapses them into an opaque, untyped string — destroying all structure. Every base case must be properly typed with clear bounded semantics.
-
-**7 dimensions max per Artifact.** An Artifact's option space MUST NOT exceed 7 parameters. This is the cognitive bound — a human can hold roughly 7 dimensions simultaneously. If a type space exceeds 7 params, decompose it into sub-artifacts. Each sub-artifact is its own compact metric space with its own 1-1 Monad. The geometric shape of the metric space is real — 7 params = a 7-dimensional polytope with bounded defaults as the center. Justfile recipes match Monads exactly, so the user sees the same decomposition.
-
-```
-WRONG:  null, "", Option.none as default    — untyped absence, no fixed point
-RIGHT:  explicit sum type with bounded default — typed absence, clear fixed point
-
-WRONG:  $"Found {count} items in {dir}"     — typed values collapsed to opaque string
-RIGHT:  structured output, typed pipelines   — structure preserved through the chain
-
-WRONG:  Artifact with 15 params             — exceeds cognitive bound, undigestible
-RIGHT:  3 sub-artifacts of 5 params each    — compact, each fully comprehensible
+just main            # IOMainPhase: validate + switch
+just switch darwin   # IOMainPhase: Nix switch only
+just types-build     # IOMainPhase: Build Lean type system
+just types-validate  # IOMainPhase: Validate default.json against Lean schemas
 ```
 
 ## FILES
 
-### Execution Stack
-
 ```
-Nix (types + packaging) → Lean (glue + folds) → CLIs (effects)
-```
-
-| Layer | Role | Artifact |
-|-------|------|----------|
-| Nix Artifacts | Type declarations, single source of truth | `Artifacts/default.nix` |
-| Lean ADT | Canonical type definition, complete closure | `Artifacts/{Type}/default.lean` |
-| Lean Monads | Typed folds over Artifacts | `Monads/[IO?]M{Type}/` |
-| CLIs | Effectful programs | `sov status`, `rl train`, etc. |
-
-### Toolchain
-
-| Tool | Layer | Role |
-|------|-------|------|
-| Nix Artifacts | Types | Declare capability space, single source of truth |
-| Lean 4 | ADT + Glue | Canonical types, exhaustive folds, compile to native CLI |
-| lean4-nix | Packaging | Build Lean projects in Nix (lake2nix) |
-| justfile | Interface | Aggregation of all Monads — the user-facing API |
-| gum | Formatting | Styled terminal output |
-
-## ENVIRONMENT
-
-Flake targets:
-
-| Target | Scope | Purpose |
-|--------|-------|---------|
-| `flake.modules.homeManager.*` | User | Home-manager modules |
-| `flake.modules.nixos.*` | System | NixOS modules |
-| `flake.modules.darwin.*` | System | nix-darwin modules |
-| `perSystem.devShells.*` | Dev | Development environments |
-| `perSystem.packages.*` | Build | Derivations |
-| `perSystem.checks.*` | CI | Validation |
-
-## EXAMPLES
-
-Every command is an artifact-producing Monad:
-
-```
-just lean-sovereignty          # MSovereignty: pure query over capability space
-just io-lean-sovereignty       # IOMSovereignty: effectful constraint check
-just io-lean-main              # IOMLeanMain: build + run CLI entry point
-just io-lean-package           # IOMLeanPackage: build the Lean package
-```
-
-The justfile is the aggregation of all Monads across all modules. Each recipe maps 1-1 to a Monad.
-
-Every Monad recipe SHOULD have a corresponding `{recipe}-options` pure introspection recipe that prints the typed param space (names, types, defaults, descriptions). This is the self-documenting surface for the Artifact's metric space:
-
-```
-just nix-mail-options              # Print NixMail typed option space
-just lean-sovereignty-options      # Print Sovereignty typed option space
-```
-
-Configuration surface isomorphism:
-```
-CLI flags  ≅  ENV vars  ≅  Config files  ≅  Artifacts/default.nix
-```
-
-## DIAGNOSTICS
-
-### Category Decision Tree (Module Scope)
-
-```
-Look at default.nix:
-
-Exports flake.*Configurations?            → Fleet/
-Exports flake.modules.{nixos,darwin}.*?   → Host/
-Exports flake.modules.homeManager.* ONLY? → User/
-Exports perSystem.* ONLY?                 → Labs/
-```
-
-### 1-1 Invariant Check
-
-```
-For every Artifacts/X:
-  Does Monads/[IO?]MX exist?
-    YES → OK
-    NO  → HOLE (missing monad for artifact)
+Modules/
+├── Types/                             # Lean 4 Lake project
+│   ├── lakefile.lean
+│   ├── lean-toolchain
+│   ├── Default.lean                   # IO: export entry point
+│   ├── UnitTypes/Default.lean         # Pure: shared ADTs
+│   ├── PhaseInputTypes/Default.lean   # Pure: 7 input structures
+│   └── PhaseOutputTypes/Default.lean  # Pure: 7 output structures
+├── Monads/
+│   ├── IOMainPhase/default.nix    # Entry point: imports 6 phases + inline deploy
+│   ├── IOIdentityPhase/
+│   │   ├── default.nix                # builtins.fromJSON → nix/secrets config
+│   │   └── default.json               # Lean-exported typed config
+│   ├── IOPlatformPhase/               # boot, disk, hardware, display
+│   ├── IONetworkPhase/                # networking, SSH
+│   ├── IOServicesPhase/               # containers, servers
+│   ├── IOUserPhase/                   # git, shell, editor, mail, browser, AI, cloud
+│   ├── IOWorkspacePhase/              # devShells + Labs (RL, Fab, Sovereignty)
+└── Env/
+    ├── Inputs/
+    └── Outputs/docs/tracker/
 ```
 
 ## CAVEATS
 
-1. Every `.nix` file is a flake-parts module
-2. Every Module has: README.md, default.nix, Artifacts/, Monads/
-3. File naming: `default.*` only. Directory-level naming for non-Nix types. Project-specific naming ONLY in Monads/ where build tools require it.
-4. NO manual imports (import-tree auto-imports)
-5. NO vendor names in Artifacts (handle in Monads)
-6. NO nulls — all params bounded with defaults
-7. NO loose strings as types — use typed quantities, enums, sum types
-8. Modules enable themselves: if created, capability is desired
-9. Every Artifact has a 1-1 Monad. Missing Monad = a hole.
-10. Justfile is aggregation of all Monads — recipes match 1-1 with Monads
-11. Lean is the glue language for new modules
-12. Every command is an artifact-producing Monad: `[IO?]M{ArtifactType}`
-13. All packaging (pyproject.toml, uv.lock, derivation) lives in Artifacts/NixPackage/ — the only place interpreter-specific naming conventions are allowed to break
-14. Git commit messages follow: `[Module/Path | Module/Path] Description`
-
-## USAGE
-
-```bash
-nix flake check                           # Check invariants
-home-manager switch --flake .#darwin      # Switch config
-nix develop .#sovereignty                 # Enter sovereignty shell
-just lean-sovereignty                     # Query capability space
-just io-lean-sovereignty                  # Effectful sovereignty commands
-```
+1. Types/ is Lean 4. Monads/ is Nix. default.json is the IO boundary.
+2. File naming: `default.*` only for Nix/JSON. Lean uses `Default.lean` (Lake convention).
+3. NO import-tree. IOMainPhase explicitly imports 6 phases + inline deploy.
+4. NO options blocks in Monads. All typing in Lean. Monads read JSON.
+5. 1-1-1 invariant: every Phase has Input × Output × Monad.
+6. ≤7 phases per module (excluding IOMainPhase).
+7. default.json is committed (like a lock file). Regenerated via `just types-validate`.
+8. Every `just` command maps to IOMainPhase.
+9. Labs (RL, Fab, Sovereignty) are self-contained sub-modules in IOWorkspacePhase.
+10. _backup/ preserves all original code for reference.
 
 ## HISTORY
 
 | Version | Date | Changes |
 |---------|------|---------|
-| v2.0.0 | 2026-02-12 | Artifacts/Monads structure, Lean as glue, 1-1 invariant, typed naming |
-| v1.0.5 | 2026-02-06 | Scope-based categories (Labs/User/Host/Fleet) |
-| v1.0.4 | 2026-02-05 | Platform-agnostic containers |
-| v1.0.3 | 2026-01-27 | README.md required, Nushell standard |
-| v1.0.0 | 2026-01-27 | Frozen structure, two-level adjunction |
+| v4.1.0 | 2026-03-02 | IOPipelinePhase → IOMainPhase, IOUserPhase 7 sub-phases, matter-phase framework, fractal rename in Labs |
+| v4.0.0 | 2026-03-01 | Lean Types + JSON boundary + Nix Monads, 7-phase pipeline, drop import-tree, drop Nickel |
+| v3.1.0 | 2026-02-27 | Env/ as canonical module dir, ≤7 phase invariant, tracker convention |
+| v3.0.0 | 2026-02-26 | Unified monadic framing, matter-phase type system, 1-1-1 invariant |

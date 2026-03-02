@@ -1,0 +1,7 @@
+{
+  "containers": {
+    "enable": false,
+    "backend": "podman",
+    "stacks": {}
+  }
+}

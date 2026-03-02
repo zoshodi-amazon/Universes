@@ -1,0 +1,26 @@
+# Fab Cyberdeck Lab -- justfile
+# 1:1 with Monads. Each phase has own BaseSettings + default.json. CLI args override.
+
+discover *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IODiscoveryPhase.default {{ARGS}}'
+
+ingest *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOIngestPhase.default {{ARGS}}'
+
+geometry *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOGeometryPhase.default {{ARGS}}'
+
+dynamics *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IODynamicsPhase.default {{ARGS}}'
+
+synthesis *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOSynthesisPhase.default {{ARGS}}'
+
+render *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IORenderPhase.default {{ARGS}}'
+
+serve *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOServePhase.default {{ARGS}}'
+
+pipeline *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Monads.IOPipelinePhase.default {{ARGS}}'

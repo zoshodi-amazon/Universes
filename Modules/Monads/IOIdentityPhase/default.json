@@ -1,0 +1,15 @@
+{
+  "nixSettings": {
+    "enable": true,
+    "gcAutomatic": true,
+    "gcInterval": "weekly",
+    "gcOlderThan": "7d",
+    "optimise": true,
+    "maxJobs": "auto",
+    "cores": 0
+  },
+  "sops": {
+    "enable": true,
+    "ageKeyFile": "~/.config/sops/age/keys.txt"
+  }
+}
