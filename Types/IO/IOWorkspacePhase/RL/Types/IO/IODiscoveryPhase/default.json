@@ -1,0 +1,38 @@
+{
+  "asset": {
+    "asset_type": "stock",
+    "io_ticker": "AAPL",
+    "interval_min": 5,
+    "trade_start_min": 570,
+    "trade_end_min": 960,
+    "holidays": "us_market"
+  },
+  "run": {
+    "seed": 42,
+    "name": "discovery",
+    "verbose": 0,
+    "store": {
+      "db_url": "sqlite:///store/.rl.db",
+      "blob_dir": "store/blobs",
+      "run_id": "00000000",
+      "phase": "discovery",
+      "docs_dir": "store/docs"
+    }
+  },
+  "discovery": {
+    "io_universe": [],
+    "screener": "most_actives",
+    "min_adx": 20.0,
+    "min_bars": 360,
+    "adx_lookback_period": "60d",
+    "liquidity": {
+      "min_volume_percentile": 30.0,
+      "min_price_percentile": 5.0,
+      "max_spread_pct": 10.0,
+      "min_turnover_pct": 0.1,
+      "require_shortable": false,
+      "enabled": true,
+      "min_universe_size": 5
+    }
+  }
+}

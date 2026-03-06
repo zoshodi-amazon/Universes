@@ -1,5 +1,5 @@
 {
-  description = "Universes - Dendritic Nix Configuration System";
+  description = "Universes - Typed Phase Pipeline (Lean 4 types → JSON → Nix monads)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -48,5 +48,6 @@
     ];
   };
 
-  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (import ./Modules/Monads/IOMainPhase);
+  outputs =
+    inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (import ./Types/IO/IOMainPhase);
 }

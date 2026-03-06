@@ -1,2 +1,0 @@
-# IOMNixServers Monad — enables itself
-{ ... }: {}

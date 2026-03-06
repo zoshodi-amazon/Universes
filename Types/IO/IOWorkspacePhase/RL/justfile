@@ -1,0 +1,49 @@
+# RL Trading Sandbox -- justfile
+# 1:1 with Types/IO (7 phases). Each phase has own BaseSettings + default.json. CLI args override.
+
+# Phase 1 (BEC): Discovery — find trending assets via screener + ADX filter
+discover *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IODiscoveryPhase.default {{ARGS}}
+
+# Phase 2 (Crystalline): Ingest — download + cache OHLCV data
+ingest *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOIngestPhase.default {{ARGS}}
+
+# Phase 3 (Liquid Crystal): Feature — wavelet denoise + technical indicators
+feature *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOFeaturePhase.default {{ARGS}}
+
+# Phase 4 (Liquid): Train — RL model training with SB3
+train *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOTrainPhase.default {{ARGS}}
+
+# Phase 5 (Gas): Eval — out-of-sample backtesting
+eval *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOEvalPhase.default {{ARGS}}
+
+# Phase 6 (Plasma): Serve — live bar-by-bar serving with broker execution
+serve *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOServePhase.default {{ARGS}}
+
+# Phase 7 (QGP): Main — full pipeline with optional Optuna optimization
+# Usage: just main                           (standard walk-forward)
+# Usage: just main --main.optimize true      (Optuna hyperparameter search)
+main *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOMainPhase.default {{ARGS}}
+
+# Render dashboard — visualize results via gym-trading-env Flask app
+# Usage: just render <run_id>    (e.g. just render a1b2c3d4)
+render run_id:
+    .venv/bin/python -W ignore::ResourceWarning -c "from gym_trading_env.renderer import Renderer; Renderer(render_logs_dir=\"store/blobs/{{run_id}}/render_logs\").run()"
+
+# Observer (CoAlgebra): tail OpenCode SSE event stream
+# Usage: just tail
+# Usage: just tail --tail.port 4096 --tail.filter_kinds '["tool","file"]'
+tail *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.IO.IOTailPhase.default {{ARGS}}
+
+# Observer (CoAlgebra): Rerun multi-modal visualization of run outputs
+# Usage: just visualize
+# Usage: just visualize --visualize.include_features true
+visualize *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.IO.IOVisualizePhase.default {{ARGS}}

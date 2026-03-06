@@ -1,0 +1,26 @@
+# Fab Cyberdeck Lab -- justfile
+# 1:1 with Types/IO/. Each phase has own BaseSettings + default.json. CLI args override.
+
+discover *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IODiscoveryPhase.default {{ARGS}}'
+
+ingest *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOIngestPhase.default {{ARGS}}'
+
+geometry *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOGeometryPhase.default {{ARGS}}'
+
+dynamics *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IODynamicsPhase.default {{ARGS}}'
+
+synthesis *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOSynthesisPhase.default {{ARGS}}'
+
+render *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IORenderPhase.default {{ARGS}}'
+
+serve *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOServePhase.default {{ARGS}}'
+
+main *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOMainPhase.default {{ARGS}}'
