@@ -5,11 +5,11 @@
 -- Migrated from: Modules/Types/Default.lean
 
 import Lean.Data.Json
-import Hom.Identity.Default
-import Hom.Platform.Default
-import Hom.Network.Default
-import Hom.Services.Default
-import Hom.Workspace.Default
+import Types.Hom.Identity.Default
+import Types.Hom.Platform.Default
+import Types.Hom.Network.Default
+import Types.Hom.Services.Default
+import Types.Hom.Workspace.Default
 
 open Lean (Json FromJson fromJson?)
 

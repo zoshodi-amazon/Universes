@@ -3,7 +3,7 @@
 -- Migrated from: Modules/Types/PhaseInputTypes/PlatformInput/Default.lean
 
 import Lean.Data.Json
-import Dependent.Default
+import Types.Dependent.Default
 
 structure PlatformHom where
   boot : BootConfig := {}

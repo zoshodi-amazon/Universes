@@ -3,7 +3,7 @@
 -- Migrated from: Modules/Types/PhaseInputTypes/WorkspaceInput/Default.lean
 
 import Lean.Data.Json
-import Dependent.Default
+import Types.Dependent.Default
 
 structure WorkspaceHom where
   sovereignty : SovereigntyConfig := {}

@@ -4,7 +4,7 @@
 -- Migrated from sub-structures in the old PhaseInputTypes.
 
 import Lean.Data.Json
-import Inductive.Default
+import Types.Inductive.Default
 
 /-- Nix daemon configuration — parameterized by GcInterval. -/
 structure NixSettings where

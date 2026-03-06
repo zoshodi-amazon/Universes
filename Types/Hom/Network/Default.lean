@@ -3,7 +3,7 @@
 -- Migrated from: Modules/Types/PhaseInputTypes/NetworkInput/Default.lean
 
 import Lean.Data.Json
-import Dependent.Default
+import Types.Dependent.Default
 
 structure NetworkHom where
   network : NetworkConfig := {}

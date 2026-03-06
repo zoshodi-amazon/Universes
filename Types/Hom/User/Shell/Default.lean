@@ -3,7 +3,7 @@
 -- Migrated from: Modules/Monads/IOUserPhase/Types/PhaseInputTypes/ShellInput/Default.lean
 
 import Lean.Data.Json
-import Inductive.Default
+import Types.Inductive.Default
 
 structure UserShellHom where
   editor : ShellEditor := .nvim

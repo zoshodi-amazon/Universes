@@ -3,7 +3,7 @@
 -- Migrated from: Modules/Monads/IOUserPhase/Types/PhaseInputTypes/TerminalInput/Default.lean
 
 import Lean.Data.Json
-import Inductive.Default
+import Types.Inductive.Default
 
 structure UserTerminalHom where
   tmuxEnable : Bool := true

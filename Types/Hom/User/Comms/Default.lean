@@ -3,7 +3,7 @@
 -- Migrated from: Modules/Monads/IOUserPhase/Types/PhaseInputTypes/CommsInput/Default.lean
 
 import Lean.Data.Json
-import Inductive.Default
+import Types.Inductive.Default
 
 structure UserCommsHom where
   browserEnable : Bool := false
