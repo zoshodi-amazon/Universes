@@ -1,0 +1,5 @@
+{
+  "load_case": "static",
+  "force_n": 100.0,
+  "include_gravity": true
+}

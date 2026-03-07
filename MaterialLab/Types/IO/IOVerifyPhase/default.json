@@ -1,0 +1,5 @@
+{
+  "check_dimensions": true,
+  "check_printability": true,
+  "check_tolerances": true
+}

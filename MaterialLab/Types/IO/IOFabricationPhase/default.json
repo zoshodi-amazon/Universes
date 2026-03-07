@@ -1,0 +1,5 @@
+{
+  "io_slicer": "cura",
+  "support_enabled": true,
+  "output_format": "gcode"
+}

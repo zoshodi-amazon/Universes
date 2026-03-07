@@ -1,0 +1,5 @@
+{
+  "io_sources": ["local"],
+  "max_results": 20,
+  "target_method": "fdm"
+}

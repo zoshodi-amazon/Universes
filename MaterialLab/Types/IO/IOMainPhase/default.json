@@ -1,0 +1,5 @@
+{
+  "io_design": "design.step",
+  "skip_simulation": false,
+  "dry_run": false
+}
