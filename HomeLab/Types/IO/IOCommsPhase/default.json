@@ -1,0 +1,14 @@
+{
+  "description": "HomeLab IO phase configuration — communications (mail, browser)",
+  "browser": { "enable": false, "searchDefault": "DuckDuckGo" },
+  "mail": {
+    "enable": true, "defaultAccount": "outlook",
+    "accounts": {
+      "outlook": {
+        "email": "user@example.com",
+        "backend": "imap", "sendBackend": "smtp",
+        "host": "outlook.office365.com", "sendHost": "smtp-mail.outlook.com", "auth": "sops"
+      }
+    }
+  }
+}

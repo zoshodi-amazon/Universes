@@ -1,0 +1,17 @@
+{
+  "description": "HomeLab IO phase configuration — shell environment",
+  "shell": {
+    "env": { "EDITOR": "nvim", "VISUAL": "nvim", "KEYTIMEOUT": 1 },
+    "aliases": {
+      "vi": "nvim", "ll": "ls -la", "la": "ls -la", "l": "ls -l",
+      "b": "cd .. && ls", "..": "cd ..", "...": "cd ../..",
+      "hm": "home-manager", "hms": "home-manager switch",
+      "gs": "git status", "ga": "git add", "gc": "git commit",
+      "gl": "git log --oneline", "gd": "git diff"
+    },
+    "zsh": { "enable": true, "paths": [], "initExtra": "" },
+    "fish": { "enable": true, "paths": [], "initExtra": "", "interactiveShellInit": "" },
+    "nushell": { "enable": true, "paths": [], "configExtra": "", "envExtra": "" },
+    "direnv": { "enable": true, "nixDirenv": true }
+  }
+}

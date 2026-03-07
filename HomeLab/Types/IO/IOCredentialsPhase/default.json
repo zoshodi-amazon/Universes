@@ -1,0 +1,8 @@
+{
+  "description": "HomeLab IO phase configuration — SSH keys, tokens, credentials",
+  "ssh": {
+    "enable": true, "compression": true,
+    "serverAliveInterval": 60, "serverAliveCountMax": 3,
+    "forwardAgent": false
+  }
+}

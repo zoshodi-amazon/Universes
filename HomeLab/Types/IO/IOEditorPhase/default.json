@@ -1,0 +1,5 @@
+{
+  "description": "HomeLab IO phase configuration — editor (neovim/nixvim)",
+  "nixvim": { "enable": true, "colorscheme": "tokyonight", "leader": " ", "lineNumbers": true, "relativeNumbers": false, "tabWidth": 2 },
+  "ai": { "enable": true, "provider": "amazon-bedrock", "region": "us-east-1", "profile": "default", "endpoint": "" }
+}

@@ -1,0 +1,5 @@
+{
+  "description": "HomeLab IO phase configuration — terminal emulator + multiplexer",
+  "tmux": { "enable": true, "prefix": "C-a", "baseIndex": 1, "escapeTime": 10, "historyLimit": 10000, "mouse": true, "terminal": "tmux-256color", "extraConfig": "" },
+  "kitty": { "enable": true, "fontName": "JetBrainsMono Nerd Font", "fontSize": 12, "theme": "tokyo_night_night", "settings": {} }
+}

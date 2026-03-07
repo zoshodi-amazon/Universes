@@ -1,0 +1,14 @@
+{
+  "description": "HomeLab IO phase configuration — user account identity",
+  "git": {
+    "enable": true, "userName": "", "userEmail": "", "signing": { "key": "", "signByDefault": false },
+    "defaultBranch": "main", "aliases": {}, "extraConfig": {}, "delta": true, "lfs": false,
+    "ignores": [
+      ".DS_Store", "Thumbs.db", "Desktop.ini",
+      ".idea/", "*.iml", ".vscode/", "*.swp", "*.swo", "*~",
+      "result", "result-*", ".direnv/",
+      "node_modules/", "dist/", ".next/", ".cache/", "*.log",
+      ".env", ".env.*", "!.env.example", "*.pem", "*.key"
+    ]
+  }
+}

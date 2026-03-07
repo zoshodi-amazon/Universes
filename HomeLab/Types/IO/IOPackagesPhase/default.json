@@ -1,0 +1,17 @@
+{
+  "description": "HomeLab IO phase configuration — packages + cloud CLI",
+  "cloud": {
+    "enable": true, "defaultRegion": "us-east-1", "defaultOutput": "json",
+    "profiles": {
+      "default": { "region": "us-east-1", "output": "json" }
+    }
+  },
+  "corePackages": [
+    "just", "gum", "ripgrep", "fd", "jq", "yq", "bat", "eza", "fzf",
+    "nil", "nixfmt-rfc-style", "nh", "nix-output-monitor",
+    "lean4", "uv",
+    "d2", "graphviz", "plantuml",
+    "glow", "entr", "lazygit", "gh", "tree",
+    "opencode", "ollama"
+  ]
+}
