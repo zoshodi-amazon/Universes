@@ -1,28 +1,12 @@
 -- CoTypes/CoInductive/Default.lean
 -- Coalgebraic dual of Types/Inductive/ — Cofree / Codata types.
--- Where Inductive types define constructors (finite sum types),
--- CoInductive types define elimination forms: parsers, validators,
--- exhaustiveness witnesses for each ADT.
--- Duality: Free ↔ Cofree
+-- Re-export all CoInductive types + elimination validators.
+-- One type per file (Invariant: 1-type-per-file).
 
 import Lean.Data.Json
 import Types.Inductive.Default
-
-/-- Elimination witness for an inductive ADT.
-    Records whether a string successfully parsed to a valid constructor. -/
-structure CoInductiveWitness where
-  typeName : String
-  rawValue : String
-  valid : Bool := false
-  normalizedValue : String := ""
-  deriving Repr, Lean.ToJson, Lean.FromJson
-
-/-- Exhaustiveness record — all valid constructors for an ADT. -/
-structure CoInductiveExhaustiveness where
-  typeName : String
-  constructors : List String := []
-  totalCount : Nat := 0
-  deriving Repr, Lean.ToJson, Lean.FromJson
+import CoTypes.CoInductive.CoInductiveWitness.Default
+import CoTypes.CoInductive.CoInductiveExhaustiveness.Default
 
 -- Elimination validators for each Inductive type.
 -- These are the cofree observation interface: given a string, does it inhabit the type?

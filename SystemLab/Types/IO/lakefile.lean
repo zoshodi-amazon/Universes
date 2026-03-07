@@ -306,31 +306,196 @@ lean_lib «MonadTypes» where
 -- CoTypes/ — Coalgebraic dual (1-1 correspondence with Types/)
 -- ============================================================================
 
--- CoCategory 1: CoIdentity — coterminal introspection witnesses
+-- CoCategory 1: CoIdentity — coterminal introspection witnesses (1-type-per-file)
+lean_lib «CoIdentityCoPackage» where
+  roots := #[`CoTypes.CoIdentity.CoPackage.Default]
+
+lean_lib «CoIdentityCoProgramConfig» where
+  roots := #[`CoTypes.CoIdentity.CoProgramConfig.Default]
+
+lean_lib «CoIdentityCoPhase» where
+  roots := #[`CoTypes.CoIdentity.CoPhase.Default]
+
 lean_lib «CoIdentity» where
   roots := #[`CoTypes.CoIdentity.Default]
 
--- CoCategory 2: CoInductive — cofree elimination forms, validators
+-- CoCategory 2: CoInductive — cofree elimination forms, validators (1-type-per-file)
+lean_lib «CoInductiveWitness» where
+  roots := #[`CoTypes.CoInductive.CoInductiveWitness.Default]
+
+lean_lib «CoInductiveExhaustiveness» where
+  roots := #[`CoTypes.CoInductive.CoInductiveExhaustiveness.Default]
+
 lean_lib «CoInductive» where
   roots := #[`CoTypes.CoInductive.Default]
 
--- CoCategory 3: CoDependent — cofibration schema conformance
+-- CoCategory 3: CoDependent — cofibration schema conformance (1-type-per-file)
+lean_lib «CoDepSchemaResult» where
+  roots := #[`CoTypes.CoDependent.CoSchemaResult.Default]
+
+lean_lib «CoDepNixSettings» where
+  roots := #[`CoTypes.CoDependent.CoNixSettings.Default]
+
+lean_lib «CoDepSopsConfig» where
+  roots := #[`CoTypes.CoDependent.CoSopsConfig.Default]
+
+lean_lib «CoDepBootConfig» where
+  roots := #[`CoTypes.CoDependent.CoBootConfig.Default]
+
+lean_lib «CoDepDisplayConfig» where
+  roots := #[`CoTypes.CoDependent.CoDisplayConfig.Default]
+
+lean_lib «CoDepNetworkConfig» where
+  roots := #[`CoTypes.CoDependent.CoNetworkConfig.Default]
+
+lean_lib «CoDepSshConfig» where
+  roots := #[`CoTypes.CoDependent.CoSshConfig.Default]
+
+lean_lib «CoDepContainerConfig» where
+  roots := #[`CoTypes.CoDependent.CoContainerConfig.Default]
+
+lean_lib «CoDepSovereigntyConfig» where
+  roots := #[`CoTypes.CoDependent.CoSovereigntyConfig.Default]
+
+lean_lib «CoDepGitConfig» where
+  roots := #[`CoTypes.CoDependent.CoGitConfig.Default]
+
+lean_lib «CoDepBrowserConfig» where
+  roots := #[`CoTypes.CoDependent.CoBrowserConfig.Default]
+
+lean_lib «CoDepAIConfig» where
+  roots := #[`CoTypes.CoDependent.CoAIConfig.Default]
+
+lean_lib «CoDepCloudConfig» where
+  roots := #[`CoTypes.CoDependent.CoCloudConfig.Default]
+
+lean_lib «CoDepHomeTarget» where
+  roots := #[`CoTypes.CoDependent.CoHomeTarget.Default]
+
+lean_lib «CoDepMachineConfig» where
+  roots := #[`CoTypes.CoDependent.CoMachineConfig.Default]
+
+lean_lib «CoDepDiskConfig» where
+  roots := #[`CoTypes.CoDependent.CoDiskConfig.Default]
+
+lean_lib «CoDepPersistenceConfig» where
+  roots := #[`CoTypes.CoDependent.CoPersistenceConfig.Default]
+
+lean_lib «CoDepMachineUser» where
+  roots := #[`CoTypes.CoDependent.CoMachineUser.Default]
+
+lean_lib «CoDepHardwareConfig» where
+  roots := #[`CoTypes.CoDependent.CoHardwareConfig.Default]
+
 lean_lib «CoDependent» where
   roots := #[`CoTypes.CoDependent.Default]
 
--- CoCategory 4: CoHom — observation specifications (field-parallel to Hom/)
+-- CoCategory 4: CoHom — observation specifications (1-type-per-file)
+lean_lib «CoHomIdentityHom» where
+  roots := #[`CoTypes.CoHom.CoIdentityHom.Default]
+
+lean_lib «CoHomPlatformHom» where
+  roots := #[`CoTypes.CoHom.CoPlatformHom.Default]
+
+lean_lib «CoHomNetworkHom» where
+  roots := #[`CoTypes.CoHom.CoNetworkHom.Default]
+
+lean_lib «CoHomServicesHom» where
+  roots := #[`CoTypes.CoHom.CoServicesHom.Default]
+
+lean_lib «CoHomUserHom» where
+  roots := #[`CoTypes.CoHom.CoUserHom.Default]
+
+lean_lib «CoHomWorkspaceHom» where
+  roots := #[`CoTypes.CoHom.CoWorkspaceHom.Default]
+
+lean_lib «CoHomDeployHom» where
+  roots := #[`CoTypes.CoHom.CoDeployHom.Default]
+
 lean_lib «CoHom» where
   roots := #[`CoTypes.CoHom.Default]
 
--- CoCategory 5: CoProduct — observation results (Output + Meta)
+-- CoCategory 5: CoProduct — observation results (1-type-per-file)
+lean_lib «CoProdIdentityOutput» where
+  roots := #[`CoTypes.CoProduct.CoIdentityOutput.Default]
+
+lean_lib «CoProdPlatformOutput» where
+  roots := #[`CoTypes.CoProduct.CoPlatformOutput.Default]
+
+lean_lib «CoProdNetworkOutput» where
+  roots := #[`CoTypes.CoProduct.CoNetworkOutput.Default]
+
+lean_lib «CoProdServicesOutput» where
+  roots := #[`CoTypes.CoProduct.CoServicesOutput.Default]
+
+lean_lib «CoProdUserOutput» where
+  roots := #[`CoTypes.CoProduct.CoUserOutput.Default]
+
+lean_lib «CoProdWorkspaceOutput» where
+  roots := #[`CoTypes.CoProduct.CoWorkspaceOutput.Default]
+
+lean_lib «CoProdDeployOutput» where
+  roots := #[`CoTypes.CoProduct.CoDeployOutput.Default]
+
+lean_lib «CoProdObservationMeta» where
+  roots := #[`CoTypes.CoProduct.CoObservationMeta.Default]
+
+lean_lib «CoProdIdentityProduct» where
+  roots := #[`CoTypes.CoProduct.CoIdentityProduct.Default]
+
+lean_lib «CoProdPlatformProduct» where
+  roots := #[`CoTypes.CoProduct.CoPlatformProduct.Default]
+
+lean_lib «CoProdNetworkProduct» where
+  roots := #[`CoTypes.CoProduct.CoNetworkProduct.Default]
+
+lean_lib «CoProdServicesProduct» where
+  roots := #[`CoTypes.CoProduct.CoServicesProduct.Default]
+
+lean_lib «CoProdUserProduct» where
+  roots := #[`CoTypes.CoProduct.CoUserProduct.Default]
+
+lean_lib «CoProdWorkspaceProduct» where
+  roots := #[`CoTypes.CoProduct.CoWorkspaceProduct.Default]
+
+lean_lib «CoProdDeployProduct» where
+  roots := #[`CoTypes.CoProduct.CoDeployProduct.Default]
+
 lean_lib «CoProduct» where
   roots := #[`CoTypes.CoProduct.Default]
 
--- CoCategory 6: Comonad — observation traces (extract + extend)
+-- CoCategory 6: Comonad — observation traces (1-type-per-file)
+lean_lib «ComonadObservationEvent» where
+  roots := #[`CoTypes.Comonad.ObservationEvent.Default]
+
+lean_lib «ComonadObservationTrace» where
+  roots := #[`CoTypes.Comonad.ObservationTrace.Default]
+
+lean_lib «ComonadObservationError» where
+  roots := #[`CoTypes.Comonad.ObservationError.Default]
+
+lean_lib «ComonadCoBuildResult» where
+  roots := #[`CoTypes.Comonad.CoBuildResult.Default]
+
+lean_lib «ComonadCoSwitchResult» where
+  roots := #[`CoTypes.Comonad.CoSwitchResult.Default]
+
+lean_lib «ComonadCoValidationResult» where
+  roots := #[`CoTypes.Comonad.CoValidationResult.Default]
+
 lean_lib «ComonadTypes» where
   roots := #[`CoTypes.Comonad.Default]
 
--- CoCategory 7: CoIO — observer result types
+-- CoCategory 7: CoIO — observer result types (1-type-per-file)
+lean_lib «CoIOObservationStatus» where
+  roots := #[`CoTypes.CoIO.ObservationStatus.Default]
+
+lean_lib «CoIOObservationResult» where
+  roots := #[`CoTypes.CoIO.ObservationResult.Default]
+
+lean_lib «CoIOObservationSummary» where
+  roots := #[`CoTypes.CoIO.ObservationSummary.Default]
+
 lean_lib «CoIO» where
   roots := #[`CoTypes.CoIO.Default]
 
