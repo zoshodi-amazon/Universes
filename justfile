@@ -49,7 +49,7 @@ ana-keys path:
 # f! shriek pullback — CoHom: validate default.json against Lean schemas
 ana-types-validate:
     @gum style --border normal --padding "0 1" "Validating $(gum style --foreground 212 'phase types')"
-    @cd Types/IO && lake env lean --run IO/Default.lean .
+    @nix-shell -p lean4 --run "cd Types/IO && lake build validate && .lake/build/bin/validate ."
     @gum style --foreground 82 "All phases valid"
 
 # --- Phase observations (f* pullback — CoProduct/{Phase}) ---
@@ -156,7 +156,7 @@ ana-repl:
 # f! shriek push — IO (Lake): build Lean type system
 cata-types-build:
     @gum style --border normal --padding "0 1" "Building $(gum style --foreground 212 'Types')"
-    @cd Types/IO && lake build
+    @nix-shell -p lean4 --run "cd Types/IO && lake build"
     @gum style --foreground 82 "Types built"
 
 # f! shriek push — Product/Deploy: build machine image
