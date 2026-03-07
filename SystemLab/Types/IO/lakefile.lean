@@ -81,7 +81,65 @@ lean_lib «InductiveAudioBackend» where
 lean_lib «Inductive» where
   roots := #[`Types.Inductive.Default]
 
--- Category 3: Dependent (Liquid Crystal) — parameterized configs
+-- Category 3: Dependent (Liquid Crystal) — parameterized configs (1-type-per-file)
+lean_lib «DependentNixSettings» where
+  roots := #[`Types.Dependent.NixSettings.Default]
+
+lean_lib «DependentSopsConfig» where
+  roots := #[`Types.Dependent.SopsConfig.Default]
+
+lean_lib «DependentBootConfig» where
+  roots := #[`Types.Dependent.BootConfig.Default]
+
+lean_lib «DependentDisplayConfig» where
+  roots := #[`Types.Dependent.DisplayConfig.Default]
+
+lean_lib «DependentNetworkConfig» where
+  roots := #[`Types.Dependent.NetworkConfig.Default]
+
+lean_lib «DependentSshConfig» where
+  roots := #[`Types.Dependent.SshConfig.Default]
+
+lean_lib «DependentContainerConfig» where
+  roots := #[`Types.Dependent.ContainerConfig.Default]
+
+lean_lib «DependentSovereigntyConfig» where
+  roots := #[`Types.Dependent.SovereigntyConfig.Default]
+
+lean_lib «DependentGitConfig» where
+  roots := #[`Types.Dependent.GitConfig.Default]
+
+lean_lib «DependentBrowserConfig» where
+  roots := #[`Types.Dependent.BrowserConfig.Default]
+
+lean_lib «DependentAIConfig» where
+  roots := #[`Types.Dependent.AIConfig.Default]
+
+lean_lib «DependentCloudConfig» where
+  roots := #[`Types.Dependent.CloudConfig.Default]
+
+lean_lib «DependentHomeTarget» where
+  roots := #[`Types.Dependent.HomeTarget.Default]
+
+lean_lib «DependentHomeTargets» where
+  roots := #[`Types.Dependent.HomeTargets.Default]
+
+lean_lib «DependentMachineConfig» where
+  roots := #[`Types.Dependent.MachineConfig.Default]
+
+lean_lib «DependentDiskConfig» where
+  roots := #[`Types.Dependent.DiskConfig.Default]
+
+lean_lib «DependentPersistenceConfig» where
+  roots := #[`Types.Dependent.PersistenceConfig.Default]
+
+lean_lib «DependentMachineUser» where
+  roots := #[`Types.Dependent.MachineUser.Default]
+
+lean_lib «DependentHardwareConfig» where
+  roots := #[`Types.Dependent.HardwareConfig.Default]
+
+-- Re-export all Dependent types
 lean_lib «Dependent» where
   roots := #[`Types.Dependent.Default]
 
