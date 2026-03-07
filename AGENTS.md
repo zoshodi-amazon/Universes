@@ -2,7 +2,7 @@
 
 Agent-optimized context for the Universes repository.
 
-Pattern Version: v5.2.0 | Structure: FROZEN
+Pattern Version: v5.3.0 | Structure: FROZEN
 
 ## Doc Updates
 
@@ -324,6 +324,8 @@ The project is domain-complete when every row is producible and observable:
 27. Docs first. Always.
 28. nixpkgs pinned to stable release (nixos-25.11). NO unstable.
 29. CoTypes/ is the bidirectional path closure witness: schema test (path a) + runtime validation (path b). Both paths yield CoProduct. Agreement = correctness.
+30. Local override pattern: `default.json` (Identity, committed) + `local.json` (Dependent, .gitignore'd) merged by IO executor via `lib.recursiveUpdate`. Machine-specific data (credentials, hostnames, passwords) NEVER in committed JSON.
+31. Every IO executor reads `cfg = lib.recursiveUpdate base local` where `local` falls back to `{}` when `local.json` absent.
 
 ## Anti-Patterns
 

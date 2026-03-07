@@ -115,6 +115,7 @@ structure HomeTargets where
   darwin : HomeTarget := { homeDirectory := "/Users/zoshodi" }
   cloudDev : HomeTarget := {}
   cloudNix : HomeTarget := { enable := false }
+  nixos : HomeTarget := {}
   deriving Repr, Lean.ToJson, Lean.FromJson
 
 /-- Machine configuration — parameterized by MachineArch + MachineFormat. -/
@@ -123,4 +124,38 @@ structure MachineConfig where
   hostname : String
   arch : MachineArch := .x86_64
   format : MachineFormat := .vm
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+/-- Disk configuration — parameterized by DiskLayout. -/
+structure DiskConfig where
+  layout : DiskLayout := .none
+  device : String := "/dev/sda"
+  filesystem : String := "ext4"
+  encryption : String := "none"
+  remoteUnlock : Bool := false
+  swapSize : String := "none"
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+/-- Persistence configuration — parameterized by PersistenceStrategy. -/
+structure PersistenceConfig where
+  strategy : PersistenceStrategy := .persistent
+  device : String := ""
+  paths : List String := []
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+/-- Machine user account. -/
+structure MachineUser where
+  name : String
+  groups : List String := ["wheel"]
+  initialPassword : String := ""
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+/-- Hardware configuration — parameterized by HardwareProfile + GpuDriver + AudioBackend. -/
+structure HardwareConfig where
+  enable : Bool := false
+  profile : HardwareProfile := .generic
+  gpu : GpuDriver := .none
+  firmware : Bool := true
+  audio : AudioBackend := .none
+  bluetooth : Bool := false
   deriving Repr, Lean.ToJson, Lean.FromJson

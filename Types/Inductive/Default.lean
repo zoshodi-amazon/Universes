@@ -344,3 +344,125 @@ instance : Lean.FromJson CloudOutputFormat where
     | "text" => pure .text
     | "table" => pure .table
     | _ => throw s!"unknown CloudOutputFormat: {s}"
+
+/-- Disk layout strategy variants. -/
+inductive DiskLayout where
+  | standard
+  | custom
+  | none
+  deriving Repr, BEq, Inhabited
+
+instance : Lean.ToJson DiskLayout where
+  toJson
+    | .standard => "standard"
+    | .custom => "custom"
+    | .none => "none"
+
+instance : Lean.FromJson DiskLayout where
+  fromJson? j := do
+    let s ← j.getStr?
+    match s with
+    | "standard" => pure .standard
+    | "custom" => pure .custom
+    | "none" => pure .none
+    | _ => throw s!"unknown DiskLayout: {s}"
+
+/-- Persistence strategy variants. -/
+inductive PersistenceStrategy where
+  | persistent
+  | impermanent
+  | ephemeral
+  deriving Repr, BEq, Inhabited
+
+instance : Lean.ToJson PersistenceStrategy where
+  toJson
+    | .persistent => "persistent"
+    | .impermanent => "impermanent"
+    | .ephemeral => "ephemeral"
+
+instance : Lean.FromJson PersistenceStrategy where
+  fromJson? j := do
+    let s ← j.getStr?
+    match s with
+    | "persistent" => pure .persistent
+    | "impermanent" => pure .impermanent
+    | "ephemeral" => pure .ephemeral
+    | _ => throw s!"unknown PersistenceStrategy: {s}"
+
+/-- Hardware profile variants — drives automatic hardware configuration. -/
+inductive HardwareProfile where
+  | generic
+  | laptop
+  | desktop
+  | server
+  | vm
+  deriving Repr, BEq, Inhabited
+
+instance : Lean.ToJson HardwareProfile where
+  toJson
+    | .generic => "generic"
+    | .laptop => "laptop"
+    | .desktop => "desktop"
+    | .server => "server"
+    | .vm => "vm"
+
+instance : Lean.FromJson HardwareProfile where
+  fromJson? j := do
+    let s ← j.getStr?
+    match s with
+    | "generic" => pure .generic
+    | "laptop" => pure .laptop
+    | "desktop" => pure .desktop
+    | "server" => pure .server
+    | "vm" => pure .vm
+    | _ => throw s!"unknown HardwareProfile: {s}"
+
+/-- GPU driver variants. -/
+inductive GpuDriver where
+  | none
+  | intel
+  | amd
+  | nvidia
+  | apple
+  deriving Repr, BEq, Inhabited
+
+instance : Lean.ToJson GpuDriver where
+  toJson
+    | .none => "none"
+    | .intel => "intel"
+    | .amd => "amd"
+    | .nvidia => "nvidia"
+    | .apple => "apple"
+
+instance : Lean.FromJson GpuDriver where
+  fromJson? j := do
+    let s ← j.getStr?
+    match s with
+    | "none" => pure .none
+    | "intel" => pure .intel
+    | "amd" => pure .amd
+    | "nvidia" => pure .nvidia
+    | "apple" => pure .apple
+    | _ => throw s!"unknown GpuDriver: {s}"
+
+/-- Audio backend variants. -/
+inductive AudioBackend where
+  | none
+  | pipewire
+  | pulseaudio
+  deriving Repr, BEq, Inhabited
+
+instance : Lean.ToJson AudioBackend where
+  toJson
+    | .none => "none"
+    | .pipewire => "pipewire"
+    | .pulseaudio => "pulseaudio"
+
+instance : Lean.FromJson AudioBackend where
+  fromJson? j := do
+    let s ← j.getStr?
+    match s with
+    | "none" => pure .none
+    | "pipewire" => pure .pipewire
+    | "pulseaudio" => pure .pulseaudio
+    | _ => throw s!"unknown AudioBackend: {s}"

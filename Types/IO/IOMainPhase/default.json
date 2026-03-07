@@ -2,7 +2,8 @@
   "home": {
     "darwin": { "enable": true, "username": "zoshodi", "homeDirectory": "/Users/zoshodi", "stateVersion": "24.05" },
     "cloudDev": { "enable": true, "username": "zoshodi", "homeDirectory": "/home/zoshodi", "stateVersion": "24.05" },
-    "cloudNix": { "enable": false, "username": "zoshodi", "homeDirectory": "/home/zoshodi", "stateVersion": "24.05" }
+    "cloudNix": { "enable": false, "username": "zoshodi", "homeDirectory": "/home/zoshodi", "stateVersion": "24.05" },
+    "nixos": { "enable": true, "username": "zoshodi", "homeDirectory": "/home/zoshodi", "stateVersion": "24.05" }
   },
   "corePackages": [
     "just", "gum", "ripgrep", "fd", "jq", "yq", "bat", "eza", "fzf",
@@ -15,15 +16,24 @@
   "machines": {
     "sovereignty": {
       "hostname": "sovereignty", "arch": "x86_64", "format": "iso",
-      "disk": { "layout": "standard", "device": "/dev/sda", "persistLabel": "NIXOS_PERSIST" },
+      "disk": { "layout": "standard", "device": "/dev/sda", "filesystem": "ext4", "encryption": "none", "remoteUnlock": false, "swapSize": "none", "persistLabel": "NIXOS_PERSIST" },
+      "hardware": { "enable": false, "profile": "generic", "gpu": "none", "firmware": true, "audio": "none", "bluetooth": false },
       "persistence": { "strategy": "impermanent", "device": "/dev/disk/by-label/NIXOS_PERSIST", "paths": ["/var/log", "/var/lib/nixos", "/etc/NetworkManager/system-connections"] },
-      "users": [{ "name": "zoshodi", "groups": ["wheel", "networkmanager"], "initialPassword": "changeme" }]
+      "users": [{ "name": "zoshodi", "groups": ["wheel", "networkmanager"], "initialPassword": "" }]
+    },
+    "nixos-workstation": {
+      "hostname": "nixos-workstation", "arch": "x86_64", "format": "vm",
+      "disk": { "layout": "standard", "device": "/dev/sda", "filesystem": "ext4", "encryption": "none", "remoteUnlock": false, "swapSize": "none", "persistLabel": "" },
+      "hardware": { "enable": true, "profile": "desktop", "gpu": "none", "firmware": true, "audio": "pipewire", "bluetooth": true },
+      "persistence": { "strategy": "persistent", "device": "", "paths": [] },
+      "users": [{ "name": "zoshodi", "groups": ["wheel", "networkmanager"], "initialPassword": "" }]
     },
     "test-vm": {
       "hostname": "test-vm", "arch": "x86_64", "format": "microvm",
-      "disk": { "layout": "none", "device": "/dev/sda", "persistLabel": "NIXOS_PERSIST" },
-      "persistence": { "strategy": "ephemeral", "device": null, "paths": ["/var/log", "/var/lib/nixos", "/etc/NetworkManager/system-connections"] },
-      "users": [{ "name": "test", "groups": ["wheel"], "initialPassword": "test" }]
+      "disk": { "layout": "none", "device": "/dev/sda", "filesystem": "ext4", "encryption": "none", "remoteUnlock": false, "swapSize": "none", "persistLabel": "" },
+      "hardware": { "enable": false, "profile": "vm", "gpu": "none", "firmware": false, "audio": "none", "bluetooth": false },
+      "persistence": { "strategy": "ephemeral", "device": "", "paths": ["/var/log", "/var/lib/nixos", "/etc/NetworkManager/system-connections"] },
+      "users": [{ "name": "test", "groups": ["wheel"], "initialPassword": "" }]
     }
   },
   "microvm": { "mem": 2048, "vcpu": 2, "hypervisor": "qemu" }

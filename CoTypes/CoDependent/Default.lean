@@ -122,3 +122,35 @@ structure CoMachineConfig where
   archValid : Bool := false
   formatValid : Bool := false
   deriving Repr, Lean.ToJson, Lean.FromJson
+
+/-- Observation of DiskConfig — lifting back to DiskLayout fiber. -/
+structure CoDiskConfig where
+  layoutValid : Bool := false
+  deviceExists : Bool := false
+  filesystemValid : Bool := false
+  encryptionActive : Bool := false
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+/-- Observation of PersistenceConfig — lifting back to PersistenceStrategy fiber. -/
+structure CoPersistenceConfig where
+  strategyValid : Bool := false
+  deviceMounted : Bool := false
+  pathsExist : List Bool := []
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+/-- Observation of MachineUser — is the user account present? -/
+structure CoMachineUser where
+  name : String
+  accountExists : Bool := false
+  groupsPresent : List Bool := []
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+/-- Observation of HardwareConfig — lifting back to HardwareProfile + GpuDriver + AudioBackend fibers. -/
+structure CoHardwareConfig where
+  enableObserved : Bool := false
+  profileValid : Bool := false
+  gpuDriverLoaded : Bool := false
+  firmwarePresent : Bool := false
+  audioRunning : Bool := false
+  bluetoothActive : Bool := false
+  deriving Repr, Lean.ToJson, Lean.FromJson

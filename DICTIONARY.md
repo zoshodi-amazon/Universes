@@ -2,7 +2,7 @@
 
 Formal glossary for the Universes repository. Every term used in AGENTS.md, README.md, and the codebase is defined here with its formal meaning, domain application, and directory mapping.
 
-Pattern Version: v5.2.0 | Type: CoIO (observation)
+Pattern Version: v5.3.0 | Type: CoIO (observation)
 
 ---
 
@@ -231,3 +231,19 @@ Pattern Version: v5.2.0 | Type: CoIO (observation)
 **Formal:** A type-theoretic category applied to the device configuration domain. Each phase IS a category (not merely "belongs to" one).
 
 **Domain:** The 7-phase chain: Identity (Unit) → Platform (ADT) → Network (Indexed) → Services (Hom) → User (Product) → Workspace (Monad) → Deploy (IO). Each phase name is domain-semantic; the type-theoretic identity is the invariant.
+
+## Local Override (Fiber Bundle)
+
+**Formal:** A section of a fiber bundle. The base space is `default.json` (Identity, committed). The fiber over a deployment site is `local.json` (Dependent, not committed). The IO executor computes the section by merging: `cfg = lib.recursiveUpdate base local`.
+
+**Domain:** Machine-specific data (corporate hostnames, credentials, hardware details) lives in `local.json` files that are `.gitignore`'d. The committed `default.json` contains universal defaults. The IO executor takes the fiber bundle section (merge) and produces system state. This separates what a machine IS (universal type) from which specific machine (local observation).
+
+**Pattern:** `default.json (Identity) ← lib.recursiveUpdate ← local.json (Dependent) → cfg (Product)`
+
+## HardwareProfile
+
+**Formal:** An inductive type (ADT) classifying hardware into finite profiles. Each constructor drives automatic configuration of kernel modules, drivers, and services.
+
+**Domain:** `Types/Inductive/Default.lean` — `generic | laptop | desktop | server | vm`. The IO executor maps profiles to NixOS module configurations: laptop enables thermald, power management, fwupd; desktop enables GPU drivers, audio, bluetooth; vm uses minimal virtio modules.
+
+**Directory:** `Types/Inductive/`

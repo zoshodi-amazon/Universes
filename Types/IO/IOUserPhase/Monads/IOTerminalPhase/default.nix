@@ -1,14 +1,26 @@
 # IOTerminalPhase (Liquid) — tmux, kitty
 { config, lib, ... }:
 let
-  cfg = builtins.fromJSON (builtins.readFile ../../default.json);
-  t = cfg.tmux; k = cfg.kitty;
+  base = builtins.fromJSON (builtins.readFile ../../default.json);
+  local =
+    if builtins.pathExists ../../local.json then
+      builtins.fromJSON (builtins.readFile ../../local.json)
+    else
+      { };
+  cfg = lib.recursiveUpdate base local;
+  t = cfg.tmux;
+  k = cfg.kitty;
 in
 {
   config.flake.modules.homeManager.tmux = lib.mkIf t.enable {
     programs.tmux = {
-      enable = true; prefix = t.prefix; baseIndex = t.baseIndex; escapeTime = t.escapeTime;
-      historyLimit = t.historyLimit; mouse = t.mouse; terminal = t.terminal;
+      enable = true;
+      prefix = t.prefix;
+      baseIndex = t.baseIndex;
+      escapeTime = t.escapeTime;
+      historyLimit = t.historyLimit;
+      mouse = t.mouse;
+      terminal = t.terminal;
       extraConfig = ''
         set -ga terminal-overrides ",xterm-256color:Tc"
         set -ga terminal-overrides ",*256col*:Tc"
@@ -49,8 +61,17 @@ in
     };
   };
   config.flake.modules.homeManager.kitty = lib.mkIf k.enable {
-    programs.kitty = { enable = true; font.name = k.fontName; font.size = k.fontSize;
-      themeFile = k.theme; settings = { scrollback_lines = 10000; enable_audio_bell = false; update_check_interval = 0; } // k.settings;
+    programs.kitty = {
+      enable = true;
+      font.name = k.fontName;
+      font.size = k.fontSize;
+      themeFile = k.theme;
+      settings = {
+        scrollback_lines = 10000;
+        enable_audio_bell = false;
+        update_check_interval = 0;
+      }
+      // k.settings;
     };
   };
 }

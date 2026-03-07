@@ -7,7 +7,13 @@
   ...
 }:
 let
-  cfg = builtins.fromJSON (builtins.readFile ./default.json);
+  base = builtins.fromJSON (builtins.readFile ./default.json);
+  local =
+    if builtins.pathExists ./local.json then
+      builtins.fromJSON (builtins.readFile ./local.json)
+    else
+      { };
+  cfg = lib.recursiveUpdate base local;
   hmModules = lib.attrValues config.flake.modules.homeManager;
   nixosModules = lib.attrValues config.flake.modules.nixos;
   pkgsLinux = inputs.nixpkgs.legacyPackages.x86_64-linux;
@@ -64,6 +70,17 @@ let
   };
   mkNixosConfig =
     name: m:
+    let
+      hw =
+        m.hardware or {
+          enable = false;
+          profile = "generic";
+          gpu = "none";
+          firmware = true;
+          audio = "none";
+          bluetooth = false;
+        };
+    in
     inputs.nixpkgs.lib.nixosSystem {
       system = archToSystem.${m.arch};
       specialArgs = { inherit inputs; };
@@ -82,11 +99,38 @@ let
               value = {
                 isNormalUser = true;
                 extraGroups = u.groups;
+              }
+              // lib.optionalAttrs (u.initialPassword != "") {
                 initialPassword = u.initialPassword;
               };
             }) m.users
           );
         }
+        # Hardware profile — per-machine hardware configuration
+        (lib.mkIf (hw.enable or false) {
+          hardware.enableRedistributableFirmware = hw.firmware or true;
+          services.xserver.videoDrivers =
+            {
+              none = [ ];
+              intel = [ "modesetting" ];
+              amd = [ "amdgpu" ];
+              nvidia = [ "nvidia" ];
+              apple = [ ];
+            }
+            .${hw.gpu or "none"};
+          hardware.graphics.enable = (hw.gpu or "none") != "none";
+          services.pipewire = lib.mkIf ((hw.audio or "none") == "pipewire") {
+            enable = true;
+            alsa.enable = true;
+            pulse.enable = true;
+          };
+          hardware.pulseaudio.enable = (hw.audio or "none") == "pulseaudio";
+          hardware.bluetooth.enable = hw.bluetooth or false;
+          services.fwupd.enable =
+            (hw.profile or "generic") == "laptop" || (hw.profile or "generic") == "desktop";
+          services.thermald.enable = (hw.profile or "generic") == "laptop";
+          powerManagement.enable = (hw.profile or "generic") == "laptop";
+        })
       ]
       ++ lib.optionals (m.format == "iso") [
         "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
@@ -140,7 +184,7 @@ let
               "mode=755"
             ];
           };
-          fileSystems."/persistent" = lib.mkIf (m.persistence.device != null) {
+          fileSystems."/persistent" = lib.mkIf (m.persistence.device != "") {
             device = m.persistence.device;
             fsType = "ext4";
             neededForBoot = true;
@@ -207,6 +251,9 @@ in
     })
     // (lib.optionalAttrs cfg.home.cloudNix.enable {
       cloud-nix = mkHomeConfig "linux" cfg.home.cloudNix;
+    })
+    // (lib.optionalAttrs (cfg.home.nixos.enable or false) {
+      nixos = mkHomeConfig "linux" cfg.home.nixos;
     });
 
   config.flake.nixosConfigurations = lib.mapAttrs mkNixosConfig cfg.machines;

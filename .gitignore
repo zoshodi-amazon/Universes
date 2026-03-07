@@ -17,6 +17,10 @@ secrets.nix
 .env.*
 !.env.example
 
+# Local overrides (Dependent types indexed over deployment site — not committed)
+**/local.json
+!**/local.json.example
+
 # OS
 .DS_Store
 Thumbs.db

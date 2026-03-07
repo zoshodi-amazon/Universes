@@ -1,0 +1,6 @@
+{
+  "hosts": {
+    "my-server": { "hostname": "192.168.1.100", "user": "admin" },
+    "dev-box": { "hostname": "dev.example.com", "user": "user", "forwardAgent": true }
+  }
+}

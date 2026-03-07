@@ -2,7 +2,7 @@
 
 Canonical naming and structural template for the Universes repository. Every name is a type. Every path is a type annotation. No ad-hoc naming. No exceptions.
 
-Pattern Version: v5.2.0 | Type: CoIO (observation of naming invariants)
+Pattern Version: v5.3.0 | Type: CoIO (observation of naming invariants)
 
 ---
 

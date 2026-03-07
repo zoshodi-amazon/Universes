@@ -9,7 +9,9 @@ import Types.Hom.Identity.Default
 import Types.Hom.Platform.Default
 import Types.Hom.Network.Default
 import Types.Hom.Services.Default
+import Types.Hom.User.Default
 import Types.Hom.Workspace.Default
+import Types.Hom.Deploy.Default
 
 open Lean (Json FromJson fromJson?)
 

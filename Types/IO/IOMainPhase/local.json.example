@@ -1,0 +1,7 @@
+{
+  "machines": {
+    "my-machine": {
+      "users": [{ "name": "user", "groups": ["wheel"], "initialPassword": "CHANGE_ME" }]
+    }
+  }
+}

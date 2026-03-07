@@ -9,13 +9,5 @@
     "serverAliveInterval": 15, "serverAliveCountMax": 44,
     "forwardAgent": false
   },
-  "hosts": {
-    "dev-dsk-*.amazon.com": { "hostname": "%h", "user": "zoshodi", "extraOptions": { "ProxyCommand": "/usr/local/bin/wssh proxy %h" } },
-    "dev-dsk-zoshodi-2a-2931a6cf.us-west-2.amazon.com": { "hostname": "dev-dsk-zoshodi-2a-2931a6cf.us-west-2.amazon.com", "user": "zoshodi" },
-    "cloud-dev": { "hostname": "dev-dsk-zoshodi-2a-2931a6cf.us-west-2.amazon.com", "user": "zoshodi" },
-    "cloud-nix": { "hostname": "dev-dsk-zoshodi-2a-9d6f77e3.us-west-2.amazon.com", "user": "zoshodi" },
-    "*.corp.amazon.com": { "hostname": "%h", "user": "zoshodi", "extraOptions": { "ProxyCommand": "/usr/local/bin/wssh proxy %h" } },
-    "git.amazon.com": { "hostname": "git.amazon.com", "user": "zoshodi", "extraOptions": { "ProxyCommand": "/usr/local/bin/wssh proxy %h --port=%p" } },
-    "github.audible.com": { "hostname": "github.audible.com", "user": "git", "extraOptions": { "ProxyCommand": "/usr/local/bin/wssh proxy %h --port=%p" } }
-  }
+  "hosts": {}
 }

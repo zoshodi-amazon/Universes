@@ -1,7 +1,13 @@
 # IOCredentialsPhase (Crystalline) — git author, signing, ignores
 { config, lib, ... }:
 let
-  cfg = builtins.fromJSON (builtins.readFile ../../default.json);
+  base = builtins.fromJSON (builtins.readFile ../../default.json);
+  local =
+    if builtins.pathExists ../../local.json then
+      builtins.fromJSON (builtins.readFile ../../local.json)
+    else
+      { };
+  cfg = lib.recursiveUpdate base local;
   git = cfg.git;
 in
 {
@@ -10,10 +16,21 @@ in
       enable = true;
       userName = lib.mkIf (git.userName != "") git.userName;
       userEmail = lib.mkIf (git.userEmail != "") git.userEmail;
-      signing = lib.mkIf (git.signing.key != "") { key = git.signing.key; signByDefault = git.signing.signByDefault; };
-      settings = { init.defaultBranch = git.defaultBranch; alias = git.aliases; } // git.extraConfig;
-      lfs.enable = git.lfs; ignores = git.ignores;
+      signing = lib.mkIf (git.signing.key != "") {
+        key = git.signing.key;
+        signByDefault = git.signing.signByDefault;
+      };
+      settings = {
+        init.defaultBranch = git.defaultBranch;
+        alias = git.aliases;
+      }
+      // git.extraConfig;
+      lfs.enable = git.lfs;
+      ignores = git.ignores;
     };
-    programs.delta = { enable = git.delta; enableGitIntegration = true; };
+    programs.delta = {
+      enable = git.delta;
+      enableGitIntegration = true;
+    };
   };
 }

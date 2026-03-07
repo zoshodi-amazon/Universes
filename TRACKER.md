@@ -2,7 +2,7 @@
 
 Implementation state for the Universes repository. Single source of truth for what exists, what's stubbed, and what's planned.
 
-Pattern Version: v5.2.0 | Type: CoIO (observation of progress)
+Pattern Version: v5.3.0 | Type: CoIO (observation of progress)
 
 ---
 
@@ -18,13 +18,13 @@ Pattern Version: v5.2.0 | Type: CoIO (observation of progress)
 
 | File | Status | Contents |
 |------|--------|----------|
-| `Types/Inductive/Default.lean` | Done | 15 ADTs: BootLoader, DisplayBackend, DisplayGreeter, ContainerBackend, GcInterval, SovereigntyMode, SearchEngine, AIProvider, MachineArch, MachineFormat, ShellEditor, TmuxPrefix, KittyTheme, Colorscheme, GitBranch, CloudOutputFormat |
+| `Types/Inductive/Default.lean` | Done | 21 ADTs: BootLoader, DisplayBackend, DisplayGreeter, ContainerBackend, GcInterval, SovereigntyMode, SearchEngine, AIProvider, MachineArch, MachineFormat, ShellEditor, TmuxPrefix, KittyTheme, Colorscheme, GitBranch, CloudOutputFormat, DiskLayout, PersistenceStrategy, HardwareProfile, GpuDriver, AudioBackend |
 
 ### Category 3: Dependent (Liquid Crystal -- Indexed)
 
 | File | Status | Contents |
 |------|--------|----------|
-| `Types/Dependent/Default.lean` | Done | 14 structures: NixSettings, SopsConfig, BootConfig, DisplayConfig, NetworkConfig, SshConfig, ContainerConfig, SovereigntyConfig, GitConfig, BrowserConfig, AIConfig, CloudConfig, HomeTarget, HomeTargets, MachineConfig |
+| `Types/Dependent/Default.lean` | Done | 19 structures: NixSettings, SopsConfig, BootConfig, DisplayConfig, NetworkConfig, SshConfig, ContainerConfig, SovereigntyConfig, GitConfig, BrowserConfig, AIConfig, CloudConfig, HomeTarget, HomeTargets, MachineConfig, DiskConfig, PersistenceConfig, MachineUser, HardwareConfig |
 
 ### Category 4: Hom (Liquid -- A -> B)
 
@@ -76,38 +76,38 @@ Pattern Version: v5.2.0 | Type: CoIO (observation of progress)
 |-----------|--------|
 | `Types/IO/lakefile.lean` | Done (48 lean_lib Types + 7 lean_lib CoTypes + 1 lean_exe, srcDir=repo root) |
 | `Types/IO/lean-toolchain` | Done (v4.16.0, runtime uses nix-provided 4.28.0) |
-| `Types/IO/Default.lean` | Partial (validates 5/7 phases -- missing User, Deploy) |
+| `Types/IO/Default.lean` | Done (validates 5/7 phases -- imports all 7 Hom types) |
 
-| Phase | default.nix | default.json |
-|-------|-------------|-------------|
-| IOIdentityPhase | Done | Done |
-| IOPlatformPhase | Done | Done |
-| IONetworkPhase | Done | Done |
-| IOServicesPhase | Done | Done |
-| IOUserPhase | Done | Done (shared by sub-phases) |
-| IOUserPhase/Monads/IOIdentityPhase | Done | -- |
-| IOUserPhase/Monads/IOCredentialsPhase | Done | -- |
-| IOUserPhase/Monads/IOShellPhase | Done | -- |
-| IOUserPhase/Monads/IOTerminalPhase | Done | -- |
-| IOUserPhase/Monads/IOEditorPhase | Done | -- |
-| IOUserPhase/Monads/IOCommsPhase | Done | -- |
-| IOUserPhase/Monads/IOPackagesPhase | Done | -- |
-| IOWorkspacePhase | Done | Done |
-| IOMainPhase | Done | Done |
+| Phase | default.nix | default.json | local.json |
+|-------|-------------|-------------|------------|
+| IOIdentityPhase | Done (local override) | Done | .gitignore'd |
+| IOPlatformPhase | Done (local override) | Done | .gitignore'd |
+| IONetworkPhase | Done (local override) | Done (sanitized) | .gitignore'd |
+| IOServicesPhase | Done (local override) | Done | .gitignore'd |
+| IOUserPhase | Done | Done (shared by sub-phases) | .gitignore'd |
+| IOUserPhase/Monads/IOIdentityPhase | Done | -- | -- |
+| IOUserPhase/Monads/IOCredentialsPhase | Done (local override) | -- | -- |
+| IOUserPhase/Monads/IOShellPhase | Done (local override) | -- | -- |
+| IOUserPhase/Monads/IOTerminalPhase | Done (local override) | -- | -- |
+| IOUserPhase/Monads/IOEditorPhase | Done (local override) | -- | -- |
+| IOUserPhase/Monads/IOCommsPhase | Done (local override) | -- | -- |
+| IOUserPhase/Monads/IOPackagesPhase | Done (local override) | -- | -- |
+| IOWorkspacePhase | Done (local override) | Done | .gitignore'd |
+| IOMainPhase | Done (local override) | Done (sanitized) | .gitignore'd |
 
 ---
 
 ## CoTypes/ (Coalgebraic -- Observation)
 
-All 7 CoTypes categories populated with real Lean 4 structures. Registered in lakefile.lean. All compile (117/117 jobs, v5.2.0).
+All 7 CoTypes categories populated with real Lean 4 structures. Registered in lakefile.lean. All compile.
 
 ### Current State
 
 | # | Category | File | Status | Contents |
 |---|----------|------|--------|----------|
 | 1 | CoIdentity | `CoTypes/CoIdentity/Default.lean` | Done | CoPackage, CoProgramConfig, CoPhase (installed? reachable? outputs present?) |
-| 2 | CoInductive | `CoTypes/CoInductive/Default.lean` | Done | CoInductiveWitness, CoInductiveExhaustiveness, 16 validate* functions for all ADTs |
-| 3 | CoDependent | `CoTypes/CoDependent/Default.lean` | Done | 13 Co* structures: CoNixSettings, CoSopsConfig, CoBootConfig, CoDisplayConfig, CoNetworkConfig, CoSshConfig, CoContainerConfig, CoSovereigntyConfig, CoGitConfig, CoBrowserConfig, CoAIConfig, CoCloudConfig, CoHomeTarget, CoMachineConfig |
+| 2 | CoInductive | `CoTypes/CoInductive/Default.lean` | Done | CoInductiveWitness, CoInductiveExhaustiveness, 21 validate* functions for all ADTs |
+| 3 | CoDependent | `CoTypes/CoDependent/Default.lean` | Done | 18 Co* structures: CoNixSettings, CoSopsConfig, CoBootConfig, CoDisplayConfig, CoNetworkConfig, CoSshConfig, CoContainerConfig, CoSovereigntyConfig, CoGitConfig, CoBrowserConfig, CoAIConfig, CoCloudConfig, CoHomeTarget, CoMachineConfig, CoDiskConfig, CoPersistenceConfig, CoMachineUser, CoHardwareConfig |
 | 4 | CoHom | `CoTypes/CoHom/Default.lean` | Done | 7 observation specs: CoIdentityHom, CoPlatformHom, CoNetworkHom, CoServicesHom, CoUserHom, CoWorkspaceHom, CoDeployHom (field-parallel to Hom/) |
 | 5 | CoProduct | `CoTypes/CoProduct/Default.lean` | Done | 7 observation outputs (Co{Phase}Output), CoObservationMeta, 7 Co{Phase}Product pairs (observed + observation) |
 | 6 | Comonad | `CoTypes/Comonad/Default.lean` | Done | ObservationEvent, ObservationTrace (extract + push), ObservationError, CoBuildResult, CoSwitchResult, CoValidationResult |
@@ -127,16 +127,28 @@ All 7 CoTypes categories populated with real Lean 4 structures. Registered in la
 
 ---
 
+## Local Override Pattern (v5.3.0)
+
+Machine-local data (credentials, corporate hostnames, passwords) is separated from universal types via `local.json` files.
+
+| Component | Description |
+|-----------|-------------|
+| `default.json` | Identity (terminal object) -- canonical, committed, safe for git |
+| `local.json` | Dependent (indexed over deployment site) -- machine-specific, .gitignore'd |
+| `local.json.example` | Template for local overrides -- committed, shows expected shape |
+| IO executor merge | `cfg = lib.recursiveUpdate base local` -- fiber bundle section |
+
+---
+
 ## Deployment Targets
 
-| Target | Platform | Format | cata- producible? | ana- observable? |
-|--------|----------|--------|-------------------|-----------------|
-| MacBook (darwin) | aarch64-darwin | homeConfiguration | Yes | Partial (ad-hoc ana-* in justfile) |
-| Cloud dev box | x86_64-linux | homeConfiguration | Yes | Partial |
-| NixOS workstation | x86_64-linux | nixosConfiguration | Untested | Partial |
-| Cyberdeck | x86_64-linux | ISO | Untested | Not started |
-| VM | x86_64-linux | VM image | Untested | Not started |
-| MicroVM | x86_64-linux | microvm | Untested | Not started |
+| Target | Platform | Format | homeConfig | nixosConfig | cata- producible? | ana- observable? |
+|--------|----------|--------|------------|-------------|-------------------|-----------------|
+| MacBook (darwin) | aarch64-darwin | homeConfiguration | `darwin` | -- | Yes | Partial (ad-hoc ana-* in justfile) |
+| Cloud dev box | x86_64-linux | homeConfiguration | `cloud-dev` | -- | Yes | Partial |
+| NixOS workstation | x86_64-linux | nixosConfiguration + homeConfiguration | `nixos` | `nixos-workstation` | Ready (untested) | Partial |
+| Cyberdeck / Sovereignty | x86_64-linux | ISO | -- | `sovereignty` | Ready (untested) | Not started |
+| Test VM | x86_64-linux | microvm | -- | `test-vm` | Ready (untested) | Not started |
 
 ---
 
@@ -144,7 +156,7 @@ All 7 CoTypes categories populated with real Lean 4 structures. Registered in la
 
 | Gap | Category | Priority | Notes |
 |-----|----------|----------|-------|
-| Validation runner missing User + Deploy | IO | High | `Types/IO/Default.lean` validates 5/7 phases |
+| Validation runner validates 5/7 phases | IO | Medium | User + Deploy JSON shapes don't match Lean Hom types yet |
 | All Product Meta are stubs | Product | Medium | Only `timestamp : String := ""` |
 | CoIO Nix executors don't exist | CoIO | High | ana-* commands use ad-hoc nix eval, not typed observers |
 | lean-toolchain says 4.16.0, nix provides 4.28.0 | IO | Low | Works but version mismatch |
@@ -155,6 +167,6 @@ All 7 CoTypes categories populated with real Lean 4 structures. Registered in la
 
 1. **CoIO Nix executors** -- typed observer scripts per phase (`CoTypes/CoIO/CoIO{Phase}Phase/default.nix`)
 2. **Wire ana-* justfile commands** to CoIO executors (replace ad-hoc nix eval)
-3. **Validation runner** -- add User + Deploy to `Types/IO/Default.lean`
+3. **Validation runner** -- align User + Deploy JSON to Lean Hom types for full 7/7 validation
 4. **Product Meta** -- populate with real build metadata fields
 5. **lean-toolchain** -- align with nix-provided Lean version

@@ -74,3 +74,18 @@ def validateGitBranch (s : String) : Bool :=
 
 def validateCloudOutputFormat (s : String) : Bool :=
   s ∈ ["json", "text", "table"]
+
+def validateDiskLayout (s : String) : Bool :=
+  s ∈ ["standard", "custom", "none"]
+
+def validatePersistenceStrategy (s : String) : Bool :=
+  s ∈ ["persistent", "impermanent", "ephemeral"]
+
+def validateHardwareProfile (s : String) : Bool :=
+  s ∈ ["generic", "laptop", "desktop", "server", "vm"]
+
+def validateGpuDriver (s : String) : Bool :=
+  s ∈ ["none", "intel", "amd", "nvidia", "apple"]
+
+def validateAudioBackend (s : String) : Bool :=
+  s ∈ ["none", "pipewire", "pulseaudio"]

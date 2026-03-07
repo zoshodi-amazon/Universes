@@ -55,5 +55,6 @@ structure CoWorkspaceHom where
 structure CoDeployHom where
   coHomeDarwin : CoHomeTarget := {}
   coHomeCloudDev : CoHomeTarget := {}
+  coHomeNixos : CoHomeTarget := {}
   coMachines : List CoMachineConfig := []
   deriving Repr, Lean.ToJson, Lean.FromJson
