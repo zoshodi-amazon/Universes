@@ -13,7 +13,71 @@ package «types» where
 lean_lib «Identity» where
   roots := #[`Types.Identity.Default]
 
--- Category 2: Inductive (Crystalline) — ADTs / sum types
+-- Category 2: Inductive (Crystalline) — ADTs / sum types (1-type-per-file)
+lean_lib «InductiveBootLoader» where
+  roots := #[`Types.Inductive.BootLoader.Default]
+
+lean_lib «InductiveDisplayBackend» where
+  roots := #[`Types.Inductive.DisplayBackend.Default]
+
+lean_lib «InductiveDisplayGreeter» where
+  roots := #[`Types.Inductive.DisplayGreeter.Default]
+
+lean_lib «InductiveContainerBackend» where
+  roots := #[`Types.Inductive.ContainerBackend.Default]
+
+lean_lib «InductiveGcInterval» where
+  roots := #[`Types.Inductive.GcInterval.Default]
+
+lean_lib «InductiveSovereigntyMode» where
+  roots := #[`Types.Inductive.SovereigntyMode.Default]
+
+lean_lib «InductiveSearchEngine» where
+  roots := #[`Types.Inductive.SearchEngine.Default]
+
+lean_lib «InductiveAIProvider» where
+  roots := #[`Types.Inductive.AIProvider.Default]
+
+lean_lib «InductiveMachineArch» where
+  roots := #[`Types.Inductive.MachineArch.Default]
+
+lean_lib «InductiveMachineFormat» where
+  roots := #[`Types.Inductive.MachineFormat.Default]
+
+lean_lib «InductiveShellEditor» where
+  roots := #[`Types.Inductive.ShellEditor.Default]
+
+lean_lib «InductiveTmuxPrefix» where
+  roots := #[`Types.Inductive.TmuxPrefix.Default]
+
+lean_lib «InductiveKittyTheme» where
+  roots := #[`Types.Inductive.KittyTheme.Default]
+
+lean_lib «InductiveColorscheme» where
+  roots := #[`Types.Inductive.Colorscheme.Default]
+
+lean_lib «InductiveGitBranch» where
+  roots := #[`Types.Inductive.GitBranch.Default]
+
+lean_lib «InductiveCloudOutputFormat» where
+  roots := #[`Types.Inductive.CloudOutputFormat.Default]
+
+lean_lib «InductiveDiskLayout» where
+  roots := #[`Types.Inductive.DiskLayout.Default]
+
+lean_lib «InductivePersistenceStrategy» where
+  roots := #[`Types.Inductive.PersistenceStrategy.Default]
+
+lean_lib «InductiveHardwareProfile» where
+  roots := #[`Types.Inductive.HardwareProfile.Default]
+
+lean_lib «InductiveGpuDriver» where
+  roots := #[`Types.Inductive.GpuDriver.Default]
+
+lean_lib «InductiveAudioBackend» where
+  roots := #[`Types.Inductive.AudioBackend.Default]
+
+-- Re-export all Inductive types
 lean_lib «Inductive» where
   roots := #[`Types.Inductive.Default]
 
