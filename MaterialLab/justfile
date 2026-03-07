@@ -1,0 +1,68 @@
+# MaterialLab justfile — Morphism dispatcher
+# Every recipe is a classified morphism: ana- (observe), cata- (produce), hylo- (composite).
+# No unprefixed commands except `default`.
+
+default:
+    @just --list
+
+# ─── Catamorphisms (produce → Types/IO/) ─────────────────────────────────────
+
+# Phase 1 (BEC): Search catalogs, find designs/materials
+cata-discover *ARGS:
+    uv run python -m Types.IO.IODiscoveryPhase.default {{ARGS}}
+
+# Phase 2 (Crystalline): Import/parse CAD files + material specs
+cata-ingest *ARGS:
+    uv run python -m Types.IO.IOIngestPhase.default {{ARGS}}
+
+# Phase 3 (Liquid Crystal): Parametric modeling, CSG operations
+cata-geometry *ARGS:
+    uv run python -m Types.IO.IOGeometryPhase.default {{ARGS}}
+
+# Phase 4 (Liquid): FEA stress, thermal, topology optimization
+cata-simulate *ARGS:
+    uv run python -m Types.IO.IOSimulationPhase.default {{ARGS}}
+
+# Phase 5 (Gas): Slicing, toolpath generation, G-code
+cata-fabricate *ARGS:
+    uv run python -m Types.IO.IOFabricationPhase.default {{ARGS}}
+
+# Phase 6 (Plasma): Dimensional analysis, tolerance checking
+cata-verify *ARGS:
+    uv run python -m Types.IO.IOVerifyPhase.default {{ARGS}}
+
+# ─── Anamorphisms (observe → CoTypes/IO/) ────────────────────────────────────
+
+# Observe Discovery phase results
+ana-discovery *ARGS:
+    uv run python -m CoTypes.IO.CoIODiscoveryPhase.default {{ARGS}}
+
+# Observe Ingest phase results
+ana-ingest *ARGS:
+    uv run python -m CoTypes.IO.CoIOIngestPhase.default {{ARGS}}
+
+# Observe Geometry phase results (3D mesh, CSG tree, parametric state)
+ana-geometry *ARGS:
+    uv run python -m CoTypes.IO.CoIOGeometryPhase.default {{ARGS}}
+
+# Observe Simulation phase results (stress/thermal fields, convergence)
+ana-simulation *ARGS:
+    uv run python -m CoTypes.IO.CoIOSimulationPhase.default {{ARGS}}
+
+# Observe Fabrication phase results (toolpaths, layer slices, G-code)
+ana-fabrication *ARGS:
+    uv run python -m CoTypes.IO.CoIOFabricationPhase.default {{ARGS}}
+
+# Observe Verify phase results (tolerance conformance, dimensional deviation)
+ana-verify *ARGS:
+    uv run python -m CoTypes.IO.CoIOVerifyPhase.default {{ARGS}}
+
+# Observe Main phase results (pipeline status, provenance, structural integrity)
+ana-main *ARGS:
+    uv run python -m CoTypes.IO.CoIOMainPhase.default {{ARGS}}
+
+# ─── Hylomorphisms (unfold+fold → Types/ ⊗ CoTypes/) ────────────────────────
+
+# Full pipeline: validate → produce → observe (the event loop)
+hylo-main *ARGS:
+    uv run python -m Types.IO.IOMainPhase.default {{ARGS}}

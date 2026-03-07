@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "materiallab"
+version = "0.1.0"
+description = "Typed material fabrication pipeline — CAD design to manufacturing deployment"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "cadquery>=2.4",
+    "trimesh>=4.0",
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "sqlalchemy>=2.0",
+]
+
+[project.optional-dependencies]
+simulation = [
+    "sfepy>=2024.1",
+]
+visualization = [
+    "rerun-sdk>=0.18",
+    "pyvista>=0.43",
+    "matplotlib>=3.8",
+    "rich>=13.0",
+]
+fabrication = [
+    # CuraEngine and PrusaSlicer are external CLI tools, not pip packages.
+    # Slicer integration calls them via subprocess.
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["Types", "CoTypes"]
