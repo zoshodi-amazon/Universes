@@ -2,7 +2,7 @@
 
 Formal glossary for the Universes repository. Every term used in AGENTS.md, README.md, and the codebase is defined here with its formal meaning, domain application, and directory mapping.
 
-Pattern Version: v5.1.0 | Type: CoIO (observation)
+Pattern Version: v5.2.0 | Type: CoIO (observation)
 
 ---
 

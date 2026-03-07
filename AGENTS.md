@@ -2,7 +2,11 @@
 
 Agent-optimized context for the Universes repository.
 
-Pattern Version: v5.1.0 | Structure: FROZEN
+Pattern Version: v5.2.0 | Structure: FROZEN
+
+## Doc Updates
+
+After every output, update TRACKER.md, DICTIONARY.md, TEMPLATE.md and AGENTS.md files where applicable, referencing/refreshing your context on them before every input and output.
 
 ## Domain Boundary
 

@@ -2,31 +2,31 @@
 
 Implementation state for the Universes repository. Single source of truth for what exists, what's stubbed, and what's planned.
 
-Pattern Version: v5.1.0 | Type: CoIO (observation of progress)
+Pattern Version: v5.2.0 | Type: CoIO (observation of progress)
 
 ---
 
-## Types/ (Algebraic — Production)
+## Types/ (Algebraic -- Production)
 
-### Category 1: Identity (BEC — Unit/⊤)
+### Category 1: Identity (BEC -- Unit/top)
 
 | File | Status | Contents |
 |------|--------|----------|
 | `Types/Identity/Default.lean` | Done | Package, ProgramConfig, Phase |
 
-### Category 2: Inductive (Crystalline — ADT/Sum)
+### Category 2: Inductive (Crystalline -- ADT/Sum)
 
 | File | Status | Contents |
 |------|--------|----------|
 | `Types/Inductive/Default.lean` | Done | 15 ADTs: BootLoader, DisplayBackend, DisplayGreeter, ContainerBackend, GcInterval, SovereigntyMode, SearchEngine, AIProvider, MachineArch, MachineFormat, ShellEditor, TmuxPrefix, KittyTheme, Colorscheme, GitBranch, CloudOutputFormat |
 
-### Category 3: Dependent (Liquid Crystal — Indexed)
+### Category 3: Dependent (Liquid Crystal -- Indexed)
 
 | File | Status | Contents |
 |------|--------|----------|
 | `Types/Dependent/Default.lean` | Done | 14 structures: NixSettings, SopsConfig, BootConfig, DisplayConfig, NetworkConfig, SshConfig, ContainerConfig, SovereigntyConfig, GitConfig, BrowserConfig, AIConfig, CloudConfig, HomeTarget, HomeTargets, MachineConfig |
 
-### Category 4: Hom (Liquid — A → B)
+### Category 4: Hom (Liquid -- A -> B)
 
 | Phase | File | Status |
 |-------|------|--------|
@@ -45,7 +45,7 @@ Pattern Version: v5.1.0 | Type: CoIO (observation of progress)
 | Workspace | `Types/Hom/Workspace/Default.lean` | Done |
 | Deploy | `Types/Hom/Deploy/Default.lean` | Done |
 
-### Category 5: Product (Gas — A × B)
+### Category 5: Product (Gas -- A x B)
 
 | Phase | Output | Meta |
 |-------|--------|------|
@@ -64,19 +64,19 @@ Pattern Version: v5.1.0 | Type: CoIO (observation of progress)
 | Workspace | Done | Stub |
 | Deploy | Done | Stub |
 
-### Category 6: Monad (Plasma — M A)
+### Category 6: Monad (Plasma -- M A)
 
 | File | Status | Contents |
 |------|--------|----------|
 | `Types/Monad/Default.lean` | Done | PhaseError, BuildResult, SwitchResult, ValidationResult |
 
-### Category 7: IO (QGP — Executors)
+### Category 7: IO (QGP -- Executors)
 
 | Component | Status |
 |-----------|--------|
-| `Types/IO/lakefile.lean` | Done (48 lean_lib + 1 lean_exe) |
-| `Types/IO/lean-toolchain` | Done (v4.16.0) |
-| `Types/IO/Default.lean` | Partial (validates 5/7 phases — missing User, Deploy) |
+| `Types/IO/lakefile.lean` | Done (48 lean_lib Types + 7 lean_lib CoTypes + 1 lean_exe, srcDir=repo root) |
+| `Types/IO/lean-toolchain` | Done (v4.16.0, runtime uses nix-provided 4.28.0) |
+| `Types/IO/Default.lean` | Partial (validates 5/7 phases -- missing User, Deploy) |
 
 | Phase | default.nix | default.json |
 |-------|-------------|-------------|
@@ -85,33 +85,33 @@ Pattern Version: v5.1.0 | Type: CoIO (observation of progress)
 | IONetworkPhase | Done | Done |
 | IOServicesPhase | Done | Done |
 | IOUserPhase | Done | Done (shared by sub-phases) |
-| IOUserPhase/Monads/IOIdentityPhase | Done | — |
-| IOUserPhase/Monads/IOCredentialsPhase | Done | — |
-| IOUserPhase/Monads/IOShellPhase | Done | — |
-| IOUserPhase/Monads/IOTerminalPhase | Done | — |
-| IOUserPhase/Monads/IOEditorPhase | Done | — |
-| IOUserPhase/Monads/IOCommsPhase | Done | — |
-| IOUserPhase/Monads/IOPackagesPhase | Done | — |
+| IOUserPhase/Monads/IOIdentityPhase | Done | -- |
+| IOUserPhase/Monads/IOCredentialsPhase | Done | -- |
+| IOUserPhase/Monads/IOShellPhase | Done | -- |
+| IOUserPhase/Monads/IOTerminalPhase | Done | -- |
+| IOUserPhase/Monads/IOEditorPhase | Done | -- |
+| IOUserPhase/Monads/IOCommsPhase | Done | -- |
+| IOUserPhase/Monads/IOPackagesPhase | Done | -- |
 | IOWorkspacePhase | Done | Done |
 | IOMainPhase | Done | Done |
 
 ---
 
-## CoTypes/ (Coalgebraic — Observation)
+## CoTypes/ (Coalgebraic -- Observation)
 
-All 7 CoTypes categories exist as directory stubs with `Default.lean` files containing only comments and `import Lean.Data.Json`. None define actual structures, functions, or observation types. CoTypes are not registered in `lakefile.lean`.
+All 7 CoTypes categories populated with real Lean 4 structures. Registered in lakefile.lean. All compile (117/117 jobs, v5.2.0).
 
 ### Current State
 
-| # | Category | File | Status | Planned Contents |
-|---|----------|------|--------|-----------------|
-| 1 | CoIdentity | `CoTypes/CoIdentity/Default.lean` | Stub | Introspection witnesses: CoPackage, CoPhase (installed? present? reachable?) |
-| 2 | CoInductive | `CoTypes/CoInductive/Default.lean` | Stub | Elimination forms: parsers, validators, exhaustiveness witnesses per ADT |
-| 3 | CoDependent | `CoTypes/CoDependent/Default.lean` | Stub | Lifting validators: schema conformance, fiber inhabitation checks |
-| 4 | CoHom | `CoTypes/CoHom/Default.lean` | Stub | Observation specs per phase (field-parallel to Hom/ with Bool/Option types) |
-| 5 | CoProduct | `CoTypes/CoProduct/Default.lean` | Stub | Observation results per phase: Output (what was seen) + Meta (when/how) |
-| 6 | Comonad | `CoTypes/Comonad/Default.lean` | Stub | ObservationTrace: extract (current) + extend (map over history) |
-| 7 | CoIO | `CoTypes/CoIO/Default.lean` | Stub | Observer result types: ObservationResult per phase |
+| # | Category | File | Status | Contents |
+|---|----------|------|--------|----------|
+| 1 | CoIdentity | `CoTypes/CoIdentity/Default.lean` | Done | CoPackage, CoProgramConfig, CoPhase (installed? reachable? outputs present?) |
+| 2 | CoInductive | `CoTypes/CoInductive/Default.lean` | Done | CoInductiveWitness, CoInductiveExhaustiveness, 16 validate* functions for all ADTs |
+| 3 | CoDependent | `CoTypes/CoDependent/Default.lean` | Done | 13 Co* structures: CoNixSettings, CoSopsConfig, CoBootConfig, CoDisplayConfig, CoNetworkConfig, CoSshConfig, CoContainerConfig, CoSovereigntyConfig, CoGitConfig, CoBrowserConfig, CoAIConfig, CoCloudConfig, CoHomeTarget, CoMachineConfig |
+| 4 | CoHom | `CoTypes/CoHom/Default.lean` | Done | 7 observation specs: CoIdentityHom, CoPlatformHom, CoNetworkHom, CoServicesHom, CoUserHom, CoWorkspaceHom, CoDeployHom (field-parallel to Hom/) |
+| 5 | CoProduct | `CoTypes/CoProduct/Default.lean` | Done | 7 observation outputs (Co{Phase}Output), CoObservationMeta, 7 Co{Phase}Product pairs (observed + observation) |
+| 6 | Comonad | `CoTypes/Comonad/Default.lean` | Done | ObservationEvent, ObservationTrace (extract + push), ObservationError, CoBuildResult, CoSwitchResult, CoValidationResult |
+| 7 | CoIO | `CoTypes/CoIO/Default.lean` | Done | ObservationStatus (inductive: pass/fail/skip/error), ObservationResult, ObservationSummary |
 
 ### CoIO Nix Executors (Planned)
 
@@ -124,30 +124,6 @@ All 7 CoTypes categories exist as directory stubs with `Default.lean` files cont
 | CoIOUserPhase | `CoTypes/CoIO/CoIOUserPhase/default.nix` | Not started |
 | CoIOWorkspacePhase | `CoTypes/CoIO/CoIOWorkspacePhase/default.nix` | Not started |
 | CoIODeployPhase | `CoTypes/CoIO/CoIODeployPhase/default.nix` | Not started |
-
-### CoHom Per-Phase (Planned)
-
-| Phase | File | Status |
-|-------|------|--------|
-| Identity | `CoTypes/CoHom/Identity/Default.lean` | Not started |
-| Platform | `CoTypes/CoHom/Platform/Default.lean` | Not started |
-| Network | `CoTypes/CoHom/Network/Default.lean` | Not started |
-| Services | `CoTypes/CoHom/Services/Default.lean` | Not started |
-| User | `CoTypes/CoHom/User/Default.lean` | Not started |
-| Workspace | `CoTypes/CoHom/Workspace/Default.lean` | Not started |
-| Deploy | `CoTypes/CoHom/Deploy/Default.lean` | Not started |
-
-### CoProduct Per-Phase (Planned)
-
-| Phase | Output | Meta |
-|-------|--------|------|
-| Identity | Not started | Not started |
-| Platform | Not started | Not started |
-| Network | Not started | Not started |
-| Services | Not started | Not started |
-| User | Not started | Not started |
-| Workspace | Not started | Not started |
-| Deploy | Not started | Not started |
 
 ---
 
@@ -170,19 +146,15 @@ All 7 CoTypes categories exist as directory stubs with `Default.lean` files cont
 |-----|----------|----------|-------|
 | Validation runner missing User + Deploy | IO | High | `Types/IO/Default.lean` validates 5/7 phases |
 | All Product Meta are stubs | Product | Medium | Only `timestamp : String := ""` |
-| CoTypes not in lakefile.lean | IO | High | No `lean_lib` entries for any CoTypes/ |
 | CoIO Nix executors don't exist | CoIO | High | ana-* commands use ad-hoc nix eval, not typed observers |
-| CoHom per-phase types don't exist | CoHom | High | No observation specification types |
-| CoProduct per-phase types don't exist | CoProduct | High | No observation result types |
-| Comonad trace type not defined | Comonad | Medium | No extract/extend observation history |
+| lean-toolchain says 4.16.0, nix provides 4.28.0 | IO | Low | Works but version mismatch |
 
 ---
 
 ## Next Steps (Priority Order)
 
-1. **CoIO + CoHom + CoProduct Lean types** — populate all 7 CoTypes with real structures across all 7 phases
-2. **lakefile.lean registration** — add CoTypes lean_lib entries
-3. **CoIO Nix executors** — typed observer scripts per phase
-4. **Validation runner** — add User + Deploy to `Types/IO/Default.lean`
-5. **Product Meta** — populate with real build metadata fields
-6. **Justfile ana-* backing** — connect existing ana-* commands to CoIO executors
+1. **CoIO Nix executors** -- typed observer scripts per phase (`CoTypes/CoIO/CoIO{Phase}Phase/default.nix`)
+2. **Wire ana-* justfile commands** to CoIO executors (replace ad-hoc nix eval)
+3. **Validation runner** -- add User + Deploy to `Types/IO/Default.lean`
+4. **Product Meta** -- populate with real build metadata fields
+5. **lean-toolchain** -- align with nix-provided Lean version
