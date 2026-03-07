@@ -284,6 +284,29 @@ Every IO executor is a self-contained QGP-layer module with its own `BaseSetting
 - **Docs first.** Update AGENTS.md and README.md before any code change.
 - **Read before write.** Re-read docs before every update.
 - **justfile is the only interface.** All phase execution goes through `just {prefix}-{phase}`. No raw `python -m` commands.
+- **Git commits as you go.** Commit after each logical unit of work. One-liner format:
+
+## Git Commit Convention
+
+Commits are classified morphisms. Format:
+
+```
+[{Scope} | {Category}] v{M}.{m}.{p}: {description}
+```
+
+- **Scope:** `MaterialLab`, `Types`, `CoTypes`, `IO`, `CoIO`, `Hom`, `Product`, `Docs`
+- **Category:** `Identity`, `Inductive`, `Dependent`, `Hom`, `Product`, `Monad`, `IO`, `CoIO`, `Refactor`, `Fix`, `Docs`
+- **Version:** Major (phase chain change), Minor (new types/executors), Patch (fixes/docs)
+
+Examples:
+
+```
+[MaterialLab | Docs] v0.1.0: 5 canonical docs, full Types/CoTypes scaffolding, Identity + Inductive types
+[MaterialLab | Dependent] v0.2.0: Dependent + Monad types (11 default.py)
+[MaterialLab | Hom] v0.3.0: all 7 Hom types + 14 Product types
+[MaterialLab | IO] v0.4.0: IO executor stubs, all 7 default.py + default.json
+[MaterialLab | CoIO] v0.5.0: full CoTypes scaffolding (CoHom, CoProduct, Comonad, CoIO)
+```
 
 ## Toolchain
 
