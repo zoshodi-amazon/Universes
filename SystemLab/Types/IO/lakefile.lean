@@ -9,7 +9,17 @@ package «types» where
 -- Types/ — Algebraic (production, catamorphic)
 -- ============================================================================
 
--- Category 1: Identity (BEC) — terminal objects
+-- Category 1: Identity (BEC) — terminal objects (1-type-per-file)
+lean_lib «IdentityPackage» where
+  roots := #[`Types.Identity.Package.Default]
+
+lean_lib «IdentityProgramConfig» where
+  roots := #[`Types.Identity.ProgramConfig.Default]
+
+lean_lib «IdentityPhase» where
+  roots := #[`Types.Identity.Phase.Default]
+
+-- Re-export all Identity types
 lean_lib «Identity» where
   roots := #[`Types.Identity.Default]
 
@@ -275,7 +285,20 @@ lean_lib «ProductUserCommsMeta» where
 lean_lib «ProductUserPackagesMeta» where
   roots := #[`Types.Product.User.Packages.Meta.Default]
 
--- Category 6: Monad (Plasma) — effect types
+-- Category 6: Monad (Plasma) — effect types (1-type-per-file)
+lean_lib «MonadPhaseError» where
+  roots := #[`Types.Monad.PhaseError.Default]
+
+lean_lib «MonadBuildResult» where
+  roots := #[`Types.Monad.BuildResult.Default]
+
+lean_lib «MonadSwitchResult» where
+  roots := #[`Types.Monad.SwitchResult.Default]
+
+lean_lib «MonadValidationResult» where
+  roots := #[`Types.Monad.ValidationResult.Default]
+
+-- Re-export all Monad types
 lean_lib «MonadTypes» where
   roots := #[`Types.Monad.Default]
 
