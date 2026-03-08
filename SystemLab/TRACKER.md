@@ -1,6 +1,8 @@
 # TRACKER.md
 
-Implementation state for the Universes repository. Single source of truth for what exists, what's stubbed, and what's planned.
+This document extends `Universes/TRACKER.md` with SystemLab-specific implementation state.
+
+For cross-lab dashboard, inter-lab dependencies, and universal invariant compliance, see the root `TRACKER.md`.
 
 Pattern Version: v5.3.0 | Type: CoIO (observation of progress)
 
