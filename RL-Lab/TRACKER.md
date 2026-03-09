@@ -5,6 +5,53 @@ Most recent entries first.
 
 ---
 
+## 2026-03-09 — Session 4: Documentation Reconciliation + v0.3.0
+
+### What happened
+- Closed B17 (CoProduct stubs for Eval, Feature, Serve, Train -- all 7 phases now have real Output + Meta types).
+- Added 7 per-stratum README.md files to CoTypes/ (CoIdentity, CoInductive, CoDependent, CoHom, CoProduct, Comonad, CoIO) with Lean 4 formal specs and validation checklists.
+- Corrected stale field counts in CoHom README (5 types updated), CoProduct README (5 types updated), CoInductive README (1 type updated).
+- Fixed CoInductive README naming: `CoAlgoIdentity` -> `CoAlgoInductive` (matches actual class name).
+- Reconciled Morphism Surface against actual justfile: 4 former commands (ana-tail, ana-visualize, ana-render, ana-validate) dissolved into composite observers; ana-check reclassified from MISSING to DONE.
+- Replaced all stale `ana-validate` references in AGENTS.md (2) and DICTIONARY.md (2) with `ana-main` / `ana-check`.
+- Rewrote README.md Synopsis to match actual 15-command justfile surface.
+- Created RL-Lab/TEMPLATE.md extending root Universes/TEMPLATE.md.
+- Fixed justfile header comment (7 cata- -> 6 cata-).
+- Bumped version to v0.3.0.
+
+### Bug Status Changes
+
+| Bug | Before | After | Evidence |
+|-----|--------|-------|----------|
+| B17 | OPEN | **CLOSED** | All 7 CoProduct phases have Output + Meta with real pydantic fields, proper TraceComonad imports |
+
+### Doc Corrections
+
+| File | What Changed |
+|------|-------------|
+| `CoTypes/CoHom/README.md` | Field counts: Feature 3->4, Train 3->4, Eval 4->5, Serve 3->5, Main 5->7 |
+| `CoTypes/CoProduct/README.md` | Field counts: Ingest/Feature/Train/Serve Output 4->5, Main Output 5->7, Main Meta 3->7 |
+| `CoTypes/CoInductive/README.md` | Field count: Screener 3->2. Naming: CoAlgoIdentity -> CoAlgoInductive |
+| `AGENTS.md` | 2 stale `ana-validate` references -> `ana-check` / `ana-main` |
+| `DICTIONARY.md` | 2 stale `ana-validate` references -> `ana-check` / `ana-main` |
+| `README.md` | B17 closed. Synopsis rewritten (removed ana-validate, ana-render, duplicate ana-main; added ana-check). Competitive Positioning updated. |
+| `justfile` | Header comment: 7 cata- -> 6 cata- |
+
+### New Files
+
+| File | Content |
+|------|---------|
+| `CoTypes/CoIdentity/README.md` | CoStratum 1 formal spec + validation checklist |
+| `CoTypes/CoInductive/README.md` | CoStratum 2 formal spec + validation checklist |
+| `CoTypes/CoDependent/README.md` | CoStratum 3 formal spec + validation checklist |
+| `CoTypes/CoHom/README.md` | CoStratum 4 formal spec + validation checklist |
+| `CoTypes/CoProduct/README.md` | CoStratum 5 formal spec + validation checklist |
+| `CoTypes/Comonad/README.md` | CoStratum 6 formal spec + validation checklist |
+| `CoTypes/CoIO/README.md` | CoStratum 7 formal spec + validation checklist |
+| `TEMPLATE.md` | Lab-specific naming, phase chain, file extensions, IO/observer patterns |
+
+---
+
 ## 2026-03-08d — Session 3: Type-Theoretic Purification (Parts 4-10)
 
 ### What happened
@@ -120,7 +167,7 @@ Most recent entries first.
 
 | ID | Severity | Summary | Status |
 |----|----------|---------|--------|
-| B17 | GAP | `CoTypes/CoProduct/{Eval,Feature,Serve,Train}/` are stubs — only `__init__.py`, no Output/Meta | OPEN |
+| B17 | GAP | `CoTypes/CoProduct/{Eval,Feature,Serve,Train}/` are stubs — only `__init__.py`, no Output/Meta | **CLOSED** |
 
 ### Current State Summary
 
@@ -178,9 +225,9 @@ Types/ count updated from 47 to 49 (added PipelineHom, ServeInputHom).
 | B14 | COSMETIC | `CoTypes/CoIO/IOTailPhase/` uses `IO` prefix, not `CoIO` prefix | **CLOSED** (dissolved) |
 | B15 | COSMETIC | `CoTypes/CoIO/IOVisualizePhase/` uses `IO` prefix, not `CoIO` prefix | **CLOSED** (dissolved) |
 | B16 | COSMETIC | Stale `Types/IO/Validate/default.py` superseded by CoIO version | **CLOSED** |
-| B17 | GAP | `CoTypes/CoProduct/{Eval,Feature,Serve,Train}/` are stubs (no Output/Meta) | OPEN |
+| B17 | GAP | `CoTypes/CoProduct/{Eval,Feature,Serve,Train}/` are stubs (no Output/Meta) | **CLOSED** |
 
-**Open: 1** (0 blocker, 0 bug, 1 gap, 0 cosmetic). **Closed: 16.**
+**Open: 0** (0 blocker, 0 bug, 0 gap, 0 cosmetic). **Closed: 17.**
 
 ---
 
@@ -247,7 +294,7 @@ All 4 tasks done: B1 closed, B2 closed, B7 closed, B8 closed.
 
 Justfile renamed (T2.1 done). JSON fidelity verified clean across all 16 files (T2.2, T2.3 done).
 
-### Tier 3 — CoTypes Completion: **~85% COMPLETE**
+### Tier 3 — CoTypes Completion: **COMPLETE**
 
 | # | Task | Status |
 |---|------|--------|
@@ -256,10 +303,10 @@ Justfile renamed (T2.1 done). JSON fidelity verified clean across all 16 files (
 | T3.3 | Implement CoOHLCVInductive, CoScreenerInductive, CoAlgoInductive, CoTickerInfoInductive, CoScreenerQuoteInductive | **DONE** |
 | T3.4 | Implement CoEnvDependent, CoRiskDependent, CoLiquidityDependent, CoAlarmDependent, CoOptimizeDependent | **DONE** |
 | T3.5 | Implement per-phase CoHom duals (7 types) | **DONE** |
-| T3.6 | Implement per-phase CoProduct duals (14 types) | **PARTIAL** (Discovery, Ingest, Main done; Eval, Feature, Serve, Train are stubs — B17) |
+| T3.6 | Implement per-phase CoProduct duals (14 types) | **DONE** (all 7 phases have Output + Meta — B17 closed) |
 | T3.7 | Implement per-phase ana- observer commands (7 CoIO executors) | **DONE** |
 | T3.8 | Implement `ana-store` (list runs, artifacts, blob sizes) | OPEN |
-| T3.9 | Implement `ana-check` (full system health: store, deps, imports) | OPEN |
+| T3.9 | Implement `ana-check` (full system health: store, deps, imports) | **DONE** (delegates to CoIOMainPhase with all validation flags) |
 
 ### Tier 4 — Bidirectional Path Closure
 
@@ -276,7 +323,7 @@ Justfile renamed (T2.1 done). JSON fidelity verified clean across all 16 files (
 | C1 | ~~Rename `CoTypes/CoIO/IOTailPhase/` -> `CoIOTailPhase/`~~ | ~~B14~~ **DISSOLVED** — absorbed into CoIOMainPhase |
 | C2 | ~~Rename `CoTypes/CoIO/IOVisualizePhase/` -> `CoIOVisualizePhase/`~~ | ~~B15~~ **DISSOLVED** — absorbed into CoIOMainPhase |
 | C3 | ~~Remove stale `Types/IO/Validate/default.py`~~ | ~~B16~~ **CLOSED** |
-| C4 | Populate CoProduct stubs for Eval, Feature, Serve, Train (Output + Meta) | B17 |
+| C4 | ~~Populate CoProduct stubs for Eval, Feature, Serve, Train (Output + Meta)~~ | ~~B17~~ **CLOSED** |
 
 ---
 
@@ -297,19 +344,24 @@ Justfile renamed (T2.1 done). JSON fidelity verified clean across all 16 files (
 
 | Command | 6FF | What It Observes | Status |
 |---------|-----|-----------------|--------|
-| `ana-tail` | f* pullback | SSE event stream | **DONE** |
-| `ana-visualize` | f* pullback | Rerun multi-modal dashboard | **DONE** |
-| `ana-render` | f* pullback | gym-trading-env Flask dashboard | **DONE** |
-| `ana-validate` | f! shriek pullback | Type schemas + JSON roundtrip | **DONE** |
 | `ana-discover` | f* pullback | Last DiscoveryProductOutput from store | **DONE** |
 | `ana-ingest` | f* pullback | Last IngestProductOutput | **DONE** |
 | `ana-feature` | f* pullback | FeatureProductOutput geometry stats | **DONE** |
 | `ana-train` | f* pullback | TrainProductOutput learning curves | **DONE** |
-| `ana-eval` | f* pullback | EvalProductOutput return/drawdown | **DONE** |
+| `ana-eval` | f* pullback | EvalProductOutput return/drawdown (+ optional Flask renderer) | **DONE** |
 | `ana-serve` | f* pullback | ServeProductOutput broker/audit | **DONE** |
-| `ana-main` | f* pullback | MainProductOutput pipeline summary | **DONE** |
+| `ana-main` | f* pullback | MainProductOutput + type validation + optional Rerun viz | **DONE** |
+| `ana-check` | f! shriek pullback | Cross-cutting: imports, field counts, JSON fidelity | **DONE** |
 | `ana-store` | Hom internal | All runs, artifacts, blob sizes | MISSING |
-| `ana-check` | f! shriek pullback | Full system health | MISSING |
+
+### Dissolved (absorbed into composite observers)
+
+| Former Command | Was | Absorbed Into | When |
+|---------------|-----|---------------|------|
+| `ana-tail` | SSE event stream observer | `ana-main` (CoIOMainPhase) | Session 3 |
+| `ana-visualize` | Rerun multi-modal dashboard | `ana-main --main.visualize true` | Session 3 |
+| `ana-render` | gym-trading-env Flask dashboard | `ana-eval --eval.launch_renderer true` | Session 3 |
+| `ana-validate` | Type schemas + JSON roundtrip | `ana-main` / `ana-check` | Session 3 |
 
 ### hylo- (Hylomorphism / Composite)
 
@@ -318,7 +370,7 @@ Justfile renamed (T2.1 done). JSON fidelity verified clean across all 16 files (
 | `hylo-main` | tensor | discover -> ingest -> feature -> train -> eval (walk-forward) | **DONE** |
 | `hylo-optimize` | tensor | Optuna HPO wrapping train -> eval | **DONE** (inside `hylo-main --main.optimize true`) |
 
-**Morphism surface: 16/18 implemented (89%).** Missing: `ana-store`, `ana-check`.
+**Justfile surface: 15 commands (6 cata + 7 ana-phase + 1 ana-check + 1 hylo). All implemented.** 4 former commands dissolved into composite observers. 1 missing: `ana-store`.
 
 ---
 
@@ -342,7 +394,7 @@ Justfile renamed (T2.1 done). JSON fidelity verified clean across all 16 files (
 
 ### Remaining TODO Items
 
-All DoD items complete. Remaining non-DoD tasks: B17 (CoProduct stubs), T3.8-T3.9 (ana-store, ana-check), T4.1/T4.3 (path closure).
+All DoD items complete. All bugs closed. Remaining non-DoD tasks: T3.8 (ana-store), T4.1/T4.3 (path closure).
 
 ---
 

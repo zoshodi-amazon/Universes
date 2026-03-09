@@ -226,7 +226,7 @@ IOServePhase includes the following safeguards for live trading:
 15. **Meta extends Product symmetry group** — when more observables are needed, add Meta types, not Output fields.
 16. **Input sanitization via pydantic** — users cannot set values outside bounded fields. No manual validation.
 17. **Eval/Serve env parity** — `Types/Dependent/Env/` and `Types/Dependent/Risk/` are the parity contract; not shared implementation.
-18. **`default.json` is committed** — it is the IO boundary, equivalent to a lock file. Regenerate via `just ana-validate` when types change.
+18. **`default.json` is committed** — it is the IO boundary, equivalent to a lock file. Regenerate via `just ana-check` when types change.
 19. **Invariants are never traded away for convenience** — there are no exceptions to phase placement rules. If a type feels like it belongs in a different phase for import-isolation reasons or any other practical reason, the type must move to its correct phase. Suggesting or accepting an "exception" to a type-theoretic invariant is an anti-pattern.
 20. **Phase placement is determined solely by type theory** — Identity = `Unit (⊤)` (one inhabitant), Inductive = sum/product ADTs and finite enums, Dependent = indexed/parameterized types, Hom = morphisms in, Product = morphisms out, Monad = effect types, IO = executors. Semantic convenience never overrides this.
 
@@ -329,7 +329,7 @@ Each of the 7 production phases has its own observation triad: `CoHom(phase) -> 
 
 CoTypes/ is the bidirectional path closure witness. Two observation paths must agree:
 
-**Path (a) — Schema observation (pure):** `Hom -> toJson -> fromJson -> Hom` roundtrip closure. Validated by `ana-validate`.
+**Path (a) — Schema observation (pure):** `Hom -> toJson -> fromJson -> Hom` roundtrip closure. Validated by `ana-main --main.validate_json true` or `ana-check`.
 
 **Path (b) — Runtime observation (effectful):** `Product -> CoIO observer -> CoProduct`. Each ana-{phase} command pulls the last ProductOutput from StoreMonad and populates CoProduct.
 

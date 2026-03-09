@@ -1,6 +1,6 @@
 # RL Trading Sandbox -- justfile
 # Every command is a classified morphism: ana- (observe), cata- (produce), hylo- (composite).
-# 7 cata- phases (Types/IO), 7 ana- observers (CoTypes/CoIO), 1 hylo- composite.
+# 6 cata- phases (Types/IO), 7 ana- observers (CoTypes/CoIO), 1 hylo- composite, 1 ana- cross-cutting.
 # No ad-hoc commands. Every recipe maps to exactly one IO or CoIO executor.
 
 # ── cata- (Catamorphism / Production) ─────────────────────────────────
@@ -69,3 +69,8 @@ ana-serve *ARGS:
 # Usage: just ana-main --main.visualize true        (also log to Rerun)
 ana-main *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOMainPhase.default {{ARGS}}
+
+# Cross-cutting: system health check — imports, field counts, JSON fidelity, roundtrip closure
+# Delegates to ana-main with all validation flags enabled, no artifact probe
+ana-check:
+    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOMainPhase.default --main.validate_imports true --main.validate_fields true --main.validate_json true --main.visualize false

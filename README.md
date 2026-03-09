@@ -99,7 +99,7 @@ See `AGENTS.md` for the full list (32 invariants). The non-negotiable foundation
 | HomeLab | homeConfigurations (user dotfiles) | Yes (scaffold) | Nix | scaffold (v0.1.0) |
 | MaterialLab | 3D prints, CNC parts, laser-cut assemblies | Provisional (Python) | Python | active (v0.2.0) |
 | PlatformLab | Firmware images, board definitions | Provisional (Rust) | Rust + Nix | scaffold (v0.1.0) |
-| RL-Lab | Autonomous quant RL pipeline (single-asset) | Provisional (Python) | Python | active (v0.2.0) |
+| RL-Lab | Autonomous quant RL pipeline (single-asset) | Provisional (Python) | Python | active (v0.3.0) |
 
 ## Type-Theoretic Formalism
 

@@ -159,7 +159,7 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 ### default.json
 - **What:** Committed JSON config file for each IO executor. The IO boundary — equivalent to a lock file.
 - **Where:** Every `Types/IO/IO{X}Phase/` and `CoTypes/CoIO/CoIO{X}Phase/` directory.
-- **Invariant:** Must be faithful serialization of the Settings type. Regenerate via `just ana-validate`.
+- **Invariant:** Must be faithful serialization of the Settings type. Regenerate via `just ana-check`.
 
 ---
 
@@ -405,7 +405,7 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 
 ### Bidirectional Path Closure
 - **What:** Agreement between two observation paths to the same codomain. Path (a) destructures the typed output (schema observation). Path (b) probes the live artifact (runtime observation). Both yield CoProduct. If they agree, the path is closed.
-- **Domain:** CoTypes/ is the bidirectional path closure witness. Path (a): `Hom -> toJson -> fromJson -> Hom` roundtrip (validated by `ana-validate`). Path (b): `Product -> CoIO observer -> CoProduct` (validated by per-phase `ana-{phase}` commands). Agreement = correctness.
+- **Domain:** CoTypes/ is the bidirectional path closure witness. Path (a): `Hom -> toJson -> fromJson -> Hom` roundtrip (validated by `ana-main` / `ana-check`). Path (b): `Product -> CoIO observer -> CoProduct` (validated by per-phase `ana-{phase}` commands). Agreement = correctness.
 
 ### Free-Forgetful Adjunction (F -| U)
 - **What:** The relationship between production and observation. F (free, left adjoint) is the production path: Types/ -> IO -> Product. U (forgetful, right adjoint) is the observation path: Product -> CoIO -> CoProduct. The unit n = toJson, the counit e = fromJson. Roundtrip closure (fromJson . toJson = id) is the adjunction identity.

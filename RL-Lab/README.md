@@ -14,16 +14,14 @@ just cata-eval           # Phase 5 (Gas): Out-of-sample evaluation
 just cata-serve          # Phase 6 (Plasma): Live serving with broker
 
 # ana- (Anamorphism) — observation, Artifact -> CoTypes/
-just ana-validate         # Validate type schemas + JSON roundtrip
 just ana-discover        # Observe last DiscoveryProductOutput from store
 just ana-ingest          # Observe last IngestProductOutput
 just ana-feature         # Observe FeatureProductOutput geometry stats
 just ana-train           # Observe TrainProductOutput learning curves
 just ana-eval            # Observe EvalProductOutput return/drawdown
 just ana-serve           # Observe ServeProductOutput broker/audit
-just ana-main            # Observe MainProductOutput pipeline summary
-just ana-render <run_id> # Render dashboard for a specific run
-just ana-main            # Observe MainProductOutput pipeline summary
+just ana-main            # Observe MainProductOutput + type validation + optional Rerun viz
+just ana-check           # Cross-cutting: imports, field counts, JSON fidelity
 
 # hylo- (Hylomorphism) — composite, ana then cata
 just hylo-main           # Phase 7 (QGP): Full pipeline
@@ -197,7 +195,7 @@ Tracked issues that must be fixed before the system is considered done.
 | B14 | COSMETIC | `CoTypes/CoIO/IOTailPhase/` uses `IO` prefix, not `CoIO` | **CLOSED** (dissolved) |
 | B15 | COSMETIC | `CoTypes/CoIO/IOVisualizePhase/` uses `IO` prefix, not `CoIO` | **CLOSED** (dissolved) |
 | B16 | COSMETIC | Stale `Types/IO/Validate/default.py` superseded by CoIO version | **CLOSED** |
-| B17 | GAP | `CoTypes/CoProduct/{Eval,Feature,Serve,Train}/` stubs (no Output/Meta) | OPEN |
+| B17 | GAP | `CoTypes/CoProduct/{Eval,Feature,Serve,Train}/` stubs (no Output/Meta) | **CLOSED** |
 
 ---
 
@@ -456,7 +454,7 @@ Compared against FinRL (14k stars), TensorTrade (6k stars), gym-trading-env, and
 - Audit trail (JSONL trade log)
 - Full typed pipeline orchestration with artifact store (StoreMonad)
 - Wavelet denoising on all OHLCV channels
-- Coalgebraic observer layer (Tail + Visualize)
+- Coalgebraic observer layer (per-phase ana- observers + composite CoIOMainPhase)
 
 **What this project does not do (by design):**
 - Multi-asset simultaneous portfolio (single-asset focus; AssetIdentity supports rotation)
