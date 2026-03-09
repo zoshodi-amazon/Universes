@@ -18,7 +18,6 @@ from pydantic_settings import (
 )
 
 from Types.Hom.Feature.default import FeatureHom
-from Types.Hom.Ingest.default import IngestHom
 from Types.Product.Feature.Output.default import FeatureProductOutput
 from Types.Product.Ingest.Output.default import IngestProductOutput
 from Types.Identity.Asset.default import AssetIdentity
@@ -244,7 +243,7 @@ def run(
 
 
 class Settings(BaseSettings):
-    """IOFeaturePhase Settings [Plasma] — Standalone entrypoint for feature engineering (runs ingest first)."""
+    """IOFeaturePhase Settings [Plasma] — Standalone entrypoint for feature engineering (4 fields)."""
 
     model_config = SettingsConfigDict(
         json_file="Types/IO/IOFeaturePhase/default.json",
@@ -257,9 +256,6 @@ class Settings(BaseSettings):
     )
     run: RunIdentity = Field(
         default=RunIdentity(), description="Run context — ID, seed, store"
-    )
-    ingest: IngestHom = Field(
-        default=IngestHom(), description="Ingest config — lookback period, warmup"
     )
     store: StoreMonad = Field(
         default_factory=StoreMonad, description="Artifact store — DB + blob dir"
@@ -287,6 +283,8 @@ class Settings(BaseSettings):
 
 
 if __name__ == "__main__":
+    from Types.Hom.Ingest.default import IngestHom
+
     s = Settings()
-    ingest_record = ingest(s.ingest, s.asset, s.run, s.store)
+    ingest_record = ingest(IngestHom(), s.asset, s.run, s.store)
     run(ingest_record, s.feature, s.run, s.store)

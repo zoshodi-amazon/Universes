@@ -1,6 +1,9 @@
 # RL Trading Sandbox -- justfile
 # Every command is a classified morphism: ana- (observe), cata- (produce), hylo- (composite).
-# Types/IO (7 phases) + CoTypes/CoIO (observers). Each phase has own BaseSettings + default.json.
+# 7 cata- phases (Types/IO), 7 ana- observers (CoTypes/CoIO), 1 hylo- composite.
+# No ad-hoc commands. Every recipe maps to exactly one IO or CoIO executor.
+
+# ── cata- (Catamorphism / Production) ─────────────────────────────────
 
 # Phase 1 (BEC): Discovery — find trending assets via screener + ADX filter
 cata-discover *ARGS:
@@ -26,52 +29,43 @@ cata-eval *ARGS:
 cata-serve *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOServePhase.default {{ARGS}}
 
+# ── hylo- (Hylomorphism / Composite) ─────────────────────────────────
+
 # Phase 7 (QGP): Main — full pipeline with optional Optuna optimization
 # Usage: just hylo-main                           (standard walk-forward)
 # Usage: just hylo-main --main.optimize true      (Optuna hyperparameter search)
 hylo-main *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOMainPhase.default {{ARGS}}
 
-# Render dashboard — visualize results via gym-trading-env Flask app
-# Usage: just ana-render <run_id>    (e.g. just ana-render a1b2c3d4)
-ana-render run_id:
-    .venv/bin/python -W ignore::ResourceWarning -c "from gym_trading_env.renderer import Renderer; Renderer(render_logs_dir=\"store/blobs/{{run_id}}/render_logs\").run()"
+# ── ana- (Anamorphism / Observation) ──────────────────────────────────
 
-# Observer (CoAlgebra): tail OpenCode SSE event stream
-# Usage: just ana-tail
-# Usage: just ana-tail --tail.port 4096 --tail.filter_kinds '["tool","file"]'
-ana-tail *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.IOTailPhase.default {{ARGS}}
-
-# Observer (CoAlgebra): Rerun multi-modal visualization of run outputs
-# Usage: just ana-visualize
-# Usage: just ana-visualize --visualize.include_features true
-ana-visualize *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.IOVisualizePhase.default {{ARGS}}
-
-# Observer (CoAlgebra): system integrity checker (nix eval equivalent)
-# Checks: imports, field counts, descriptions, bounds, JSON fidelity, phase mapping
-ana-validate:
-    .venv/bin/python -W ignore::ResourceWarning CoTypes/CoIO/CoIOValidatePhase/default.py
-
-# Per-phase observers (CoAlgebra): probe last artifact from StoreMonad
+# Phase 1 observer: probe last DiscoveryProductOutput from StoreMonad
 ana-discover *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIODiscoveryPhase.default {{ARGS}}
 
+# Phase 2 observer: probe last IngestProductOutput
 ana-ingest *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOIngestPhase.default {{ARGS}}
 
+# Phase 3 observer: probe FeatureProductOutput geometry stats
 ana-feature *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOFeaturePhase.default {{ARGS}}
 
+# Phase 4 observer: probe TrainProductOutput learning curves
 ana-train *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOTrainPhase.default {{ARGS}}
 
+# Phase 5 observer: probe EvalProductOutput return/drawdown
+# Usage: just ana-eval --eval.launch_renderer true  (launches Flask render dashboard)
 ana-eval *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOEvalPhase.default {{ARGS}}
 
+# Phase 6 observer: probe ServeProductOutput broker/audit
 ana-serve *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOServePhase.default {{ARGS}}
 
+# Phase 7 observer: probe MainProductOutput + validate type system + optional Rerun visualization
+# Usage: just ana-main                              (artifact probe + validation)
+# Usage: just ana-main --main.visualize true        (also log to Rerun)
 ana-main *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOMainPhase.default {{ARGS}}

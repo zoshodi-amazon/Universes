@@ -4,10 +4,10 @@ Discovery -> Ingest -> Feature -> (Train -> Eval)* with walk-forward windowing.
 If optimize=True, runs Optuna hyperparameter search over learning rate and timesteps.
 All effectful calls wrapped with typed error handling.
 
-Own BaseSettings + default.json. No cross-phase imports for settings.
+Each sub-phase Hom is instantiated locally with defaults — IOMainPhase is a
+parameterized wrapper, not a cross-phase config aggregator.
 """
 
-import time
 import uuid
 from datetime import datetime, timezone
 import numpy as np
@@ -28,7 +28,11 @@ from Types.Monad.Store.default import StoreMonad
 from Types.Product.Main.Meta.default import MainProductMeta
 from Types.Monad.Metric.default import MetricMonad
 from Types.Hom.Main.default import MainHom
-from Types.Hom.Pipeline.default import PipelineHom
+from Types.Hom.Discovery.default import DiscoveryHom
+from Types.Hom.Ingest.default import IngestHom
+from Types.Hom.Feature.default import FeatureHom
+from Types.Hom.Train.default import TrainHom
+from Types.Hom.Eval.default import EvalHom
 from Types.Product.Main.Output.default import MainProductOutput, MainStatus
 
 from Types.IO.IODiscoveryPhase.default import run as discover
@@ -39,7 +43,7 @@ from Types.IO.IOEvalPhase.default import run as evaluate
 
 
 class Settings(BaseSettings):
-    """IOMainPhase Settings [Plasma] — Composes all phase configs for full pipeline execution."""
+    """IOMainPhase Settings [Plasma] — Standalone entrypoint for full pipeline execution (6 fields)."""
 
     model_config = SettingsConfigDict(
         json_file="Types/IO/IOMainPhase/default.json",
@@ -59,10 +63,6 @@ class Settings(BaseSettings):
     main: MainHom = Field(
         default_factory=MainHom,
         description="Main phase config — walk-forward + optimization",
-    )
-    pipeline: PipelineHom = Field(
-        default_factory=PipelineHom,
-        description="Per-phase Hom configs for pipeline orchestration",
     )
     store: StoreMonad = Field(
         default_factory=StoreMonad,
@@ -97,14 +97,19 @@ def _run_pipeline(
     meta.obs.started_at = started
     meta.obs.phase = PhaseId.pipeline
 
-    train_cfg = trial_train if trial_train else settings.pipeline.train
+    # Each phase handles its own parameterization — defaults used internally
+    discovery_cfg = DiscoveryHom()
+    ingest_cfg = IngestHom()
+    feature_cfg = FeatureHom()
+    train_cfg = trial_train if trial_train else TrainHom()
+    eval_cfg = EvalHom()
 
     np.random.seed(settings.run.seed)
     torch.manual_seed(settings.run.seed)
 
     try:
         discovery_record = discover(
-            settings.pipeline.discovery, settings.asset, settings.run, settings.store
+            discovery_cfg, settings.asset, settings.run, settings.store
         )
     except Exception as e:
         meta.obs.errors.append(
@@ -150,11 +155,9 @@ def _run_pipeline(
     asset = settings.asset.model_copy(update={"io_ticker": chosen})
 
     try:
-        ingest_record = ingest(
-            settings.pipeline.ingest, asset, settings.run, settings.store
-        )
+        ingest_record = ingest(ingest_cfg, asset, settings.run, settings.store)
         feature_record = feature(
-            ingest_record, settings.pipeline.feature, settings.run, settings.store
+            ingest_record, feature_cfg, settings.run, settings.store
         )
     except Exception as e:
         meta.obs.errors.append(
@@ -179,7 +182,7 @@ def _run_pipeline(
     ).get(settings.run.run_id, "feature", "features")
     df = pd.read_pickle(feat_row.blob_path)
     train_bars = train_cfg.episode_duration_min // asset.interval_min
-    eval_bars = settings.pipeline.eval.forward_steps_min // asset.interval_min
+    eval_bars = eval_cfg.forward_steps_min // asset.interval_min
     stride_bars = settings.main.stride_min // asset.interval_min
     split_idx = int(len(df) * settings.main.train_split_pct / 100.0)
     train_pool = df.iloc[:split_idx]
@@ -223,7 +226,7 @@ def _run_pipeline(
             )
             eval_record = evaluate(
                 train_record,
-                settings.pipeline.eval,
+                eval_cfg,
                 settings.env,
                 settings.risk,
                 asset,
@@ -322,18 +325,16 @@ def _run_optimize(settings: Settings) -> MainProductOutput:
             opt.search_space_timesteps_max,
         )
 
-        trial_train = settings.pipeline.train.model_copy(
+        trial_train = TrainHom().model_copy(
             update={"learning_rate": lr, "total_timesteps": timesteps}
         )
         trial_run = settings.run.model_copy(update={"run_id": uuid.uuid4().hex[:8]})
-        trial_pipeline = settings.pipeline.model_copy(update={"train": trial_train})
         trial_settings = Settings(
             asset=settings.asset,
             run=trial_run,
             env=settings.env,
             risk=settings.risk,
             main=settings.main.model_copy(update={"optimize": False}),
-            pipeline=trial_pipeline,
             store=settings.store,
         )
 
@@ -360,8 +361,14 @@ def _run_optimize(settings: Settings) -> MainProductOutput:
     # Store journal blob in StoreMonad — IO paths belong in the DB, not Product types
     try:
         store.put("study_log", meta, blob_path=str(journal_path))
-    except Exception:
-        pass
+    except Exception as e:
+        meta.obs.errors.append(
+            ErrorMonad(
+                phase=PhaseId.pipeline,
+                message=f"study journal store.put failed: {str(e)[:128]}",
+                severity=Severity.warn,
+            )
+        )
 
     # Complete timing
     completed = datetime.now(timezone.utc)

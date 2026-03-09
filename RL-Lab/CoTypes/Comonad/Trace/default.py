@@ -14,7 +14,7 @@ extend(f)(tc)         → new TraceComonad after applying observation function f
 
 Fields satisfy Independence, Completeness, Locality:
 - observer_id:   identity of this observer instance — unique per executor run
-- cursor:        current position in stream/scan space — SSE last_event_id or last filepath
+- cursor:        current position in scan space — last artifact path or store cursor
 - events_seen:   total items observed so far — monotonically increasing counter
 - connection_ok: liveness of the source — independent boolean axis
 - last_seen_at:  ISO timestamp of most recent observation — temporal coordinate
@@ -29,11 +29,9 @@ class CoPhaseId(str, Enum):
     """Observer phase identifier — which coalgebraic executor produced this trace.
 
     Dual of PhaseId in Types/Monad/Error/ — CoPhaseId identifies observer executors,
-    not pipeline phases. Observer errors never mix with pipeline errors.
+    not pipeline phases. Exactly 7 variants matching the 7 canonical phases.
     """
 
-    tail = "tail"
-    visualize = "visualize"
     discovery = "discovery"
     ingest = "ingest"
     feature = "feature"
@@ -41,7 +39,6 @@ class CoPhaseId(str, Enum):
     eval = "eval"
     serve = "serve"
     main = "main"
-    validate = "validate"
 
 
 class TraceComonad(BaseModel):
@@ -56,7 +53,7 @@ class TraceComonad(BaseModel):
     )
     cursor: Annotated[str, StringConstraints(min_length=0, max_length=512)] = Field(
         default="",
-        description="Current position in observation space — SSE last_event_id or last file path scanned; empty = not started",
+        description="Current position in observation space — last artifact path scanned; empty = not started",
     )
     events_seen: int = Field(
         default=0,

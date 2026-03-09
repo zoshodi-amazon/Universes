@@ -12,9 +12,9 @@ Blob layout on disk:
     {blob_dir}/{run_id}/{phase}_{artifact_type}.{ext}
 
 Monad operations (bind/return pattern over IO effects):
-    put(artifact_type, blob_path, metadata) → inserts/replaces DB row
-    get(run_id, phase, artifact_type)       → ArtifactRow (raises if not found)
-    latest(phase, artifact_type)            → most recent row across all run_ids
+    put(artifact_type, blob_path, metadata) -> inserts/replaces DB row
+    get(run_id, phase, artifact_type)       -> ArtifactRow (raises if not found)
+    latest(phase, artifact_type)            -> most recent row across all run_ids
 
 Fields satisfy Independence, Completeness, Locality:
 - db_url:     where the DB lives — independent of blob storage location
@@ -26,7 +26,7 @@ Fields satisfy Independence, Completeness, Locality:
 Default db_url uses SQLite at store/.rl.db — spin up is automatic (no server needed).
 Any SQLAlchemy-compatible URL works: postgresql://..., etc.
 """
-import json
+
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
@@ -34,46 +34,44 @@ from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 
 from Types.Monad.Error.default import PhaseId
-
-_Path = Annotated[str, StringConstraints(min_length=1, max_length=512, pattern=r"^[A-Za-z0-9_\-./: @]+$")]
-_Url  = Annotated[str, StringConstraints(min_length=1, max_length=512)]
-
-
-class ArtifactRow(BaseModel):
-    """ArtifactRow — Single row returned from StoreMonad.get() / .latest() (6 fields)."""
-    run_id: Annotated[str, StringConstraints(min_length=1, max_length=64)] = Field(
-        description="Run identifier that produced this artifact")
-    phase: Annotated[str, StringConstraints(min_length=1, max_length=32)] = Field(
-        description="Phase name that produced this artifact")
-    artifact_type: Annotated[str, StringConstraints(min_length=1, max_length=64)] = Field(
-        description="Artifact kind — e.g. 'ingest', 'model', 'normalize', 'features', 'discovery'")
-    blob_path: Annotated[str, StringConstraints(min_length=0, max_length=512)] = Field(
-        default="",
-        description="Absolute or relative path to binary blob — empty for metadata-only artifacts")
-    metadata_json: Annotated[str, StringConstraints(min_length=2)] = Field(
-        default="{}",
-        description="Full ProductOutput model_dump_json() for this artifact")
-    created_at: Annotated[str, StringConstraints(min_length=1, max_length=32)] = Field(
-        description="ISO timestamp when this artifact was written")
+from Types.Monad.Artifact.default import ArtifactRow
 
 
 class StoreMonad(BaseModel):
     """StoreMonad [Monad] — Typed artifact store binding DB metadata to filesystem blobs (5 fields)."""
-    db_url: _Url = Field(
+
+    db_url: Annotated[str, StringConstraints(min_length=1, max_length=512)] = Field(
         default="sqlite:///store/.rl.db",
-        description="SQLAlchemy DB URL — default SQLite at store/.rl.db; swappable to any engine")
-    blob_dir: _Path = Field(
+        description="SQLAlchemy DB URL — default SQLite at store/.rl.db; swappable to any engine",
+    )
+    blob_dir: Annotated[
+        str,
+        StringConstraints(
+            min_length=1, max_length=512, pattern=r"^[A-Za-z0-9_\-./: @]+$"
+        ),
+    ] = Field(
         default="store/blobs",
-        description="Root directory for binary artifact blobs — layout: {blob_dir}/{run_id}/{phase}_{artifact_type}.{ext}")
-    run_id: Annotated[str, StringConstraints(min_length=1, max_length=64, pattern=r"^[a-f0-9]{8}$")] = Field(
+        description="Root directory for binary artifact blobs — layout: {blob_dir}/{run_id}/{phase}_{artifact_type}.{ext}",
+    )
+    run_id: Annotated[
+        str, StringConstraints(min_length=1, max_length=64, pattern=r"^[a-f0-9]{8}$")
+    ] = Field(
         default="00000000",
-        description="Current run identifier — scopes all put() writes; overridden at runtime by RunIdentity.run_id")
+        description="Current run identifier — scopes all put() writes; overridden at runtime by RunIdentity.run_id",
+    )
     phase: PhaseId = Field(
         default=PhaseId.pipeline,
-        description="Current phase — scopes put() writes; overridden at runtime by each IO executor")
-    docs_dir: _Path = Field(
+        description="Current phase — scopes put() writes; overridden at runtime by each IO executor",
+    )
+    docs_dir: Annotated[
+        str,
+        StringConstraints(
+            min_length=1, max_length=512, pattern=r"^[A-Za-z0-9_\-./: @]+$"
+        ),
+    ] = Field(
         default="store/docs",
-        description="Directory for docs and tracker logs — independent of artifact blobs")
+        description="Directory for docs and tracker logs — independent of artifact blobs",
+    )
 
     # ------------------------------------------------------------------
     # Internal helpers — not fields, not validators. Keep side-effect-free
@@ -83,14 +81,16 @@ class StoreMonad(BaseModel):
     def _engine(self):
         """Return a SQLAlchemy engine, creating the DB and table if needed."""
         from sqlalchemy import create_engine, text
+
         url = self.db_url
         # SQLite: ensure parent directory exists
         if url.startswith("sqlite:///"):
-            db_path = Path(url[len("sqlite:///"):])
+            db_path = Path(url[len("sqlite:///") :])
             db_path.parent.mkdir(parents=True, exist_ok=True)
         engine = create_engine(url)
         with engine.connect() as conn:
-            conn.execute(text("""
+            conn.execute(
+                text("""
                 CREATE TABLE IF NOT EXISTS artifacts (
                     id            INTEGER PRIMARY KEY AUTOINCREMENT,
                     run_id        TEXT NOT NULL,
@@ -101,10 +101,13 @@ class StoreMonad(BaseModel):
                     created_at    TEXT NOT NULL,
                     UNIQUE(run_id, phase, artifact_type)
                 )
-            """))
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_run_phase ON artifacts(run_id, phase)"
-            ))
+            """)
+            )
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_run_phase ON artifacts(run_id, phase)"
+                )
+            )
             conn.commit()
         return engine
 
@@ -121,80 +124,107 @@ class StoreMonad(BaseModel):
         update in place rather than accumulating stale rows.
         """
         from sqlalchemy import text
+
         engine = self._engine()
         now = datetime.now(timezone.utc).isoformat()
         meta_json = metadata.model_dump_json()
         with engine.connect() as conn:
-            conn.execute(text("""
+            conn.execute(
+                text("""
                 INSERT INTO artifacts(run_id, phase, artifact_type, blob_path, metadata_json, created_at)
                 VALUES (:run_id, :phase, :artifact_type, :blob_path, :metadata_json, :created_at)
                 ON CONFLICT(run_id, phase, artifact_type) DO UPDATE SET
                     blob_path     = excluded.blob_path,
                     metadata_json = excluded.metadata_json,
                     created_at    = excluded.created_at
-            """), {
-                "run_id":        self.run_id,
-                "phase":         self.phase.value,
-                "artifact_type": artifact_type,
-                "blob_path":     blob_path,
-                "metadata_json": meta_json,
-                "created_at":    now,
-            })
+            """),
+                {
+                    "run_id": self.run_id,
+                    "phase": self.phase.value,
+                    "artifact_type": artifact_type,
+                    "blob_path": blob_path,
+                    "metadata_json": meta_json,
+                    "created_at": now,
+                },
+            )
             conn.commit()
 
     def get(self, run_id: str, phase: str, artifact_type: str) -> ArtifactRow:
         """Extract: retrieve artifact row by (run_id, phase, artifact_type). Raises if not found."""
         from sqlalchemy import text
+
         engine = self._engine()
         with engine.connect() as conn:
-            row = conn.execute(text("""
+            row = conn.execute(
+                text("""
                 SELECT run_id, phase, artifact_type, blob_path, metadata_json, created_at
                 FROM artifacts
                 WHERE run_id = :run_id AND phase = :phase AND artifact_type = :artifact_type
-            """), {"run_id": run_id, "phase": phase, "artifact_type": artifact_type}).fetchone()
+            """),
+                {"run_id": run_id, "phase": phase, "artifact_type": artifact_type},
+            ).fetchone()
         if row is None:
             raise KeyError(
                 f"StoreMonad.get: no artifact ({run_id}, {phase}, {artifact_type}) in {self.db_url}"
             )
         return ArtifactRow(
-            run_id=row[0], phase=row[1], artifact_type=row[2],
-            blob_path=row[3], metadata_json=row[4], created_at=row[5],
+            run_id=row[0],
+            phase=row[1],
+            artifact_type=row[2],
+            blob_path=row[3],
+            metadata_json=row[4],
+            created_at=row[5],
         )
 
     def latest(self, phase: str, artifact_type: str) -> ArtifactRow:
         """Extract: retrieve most recently written artifact for (phase, artifact_type) across all runs."""
         from sqlalchemy import text
+
         engine = self._engine()
         with engine.connect() as conn:
-            row = conn.execute(text("""
+            row = conn.execute(
+                text("""
                 SELECT run_id, phase, artifact_type, blob_path, metadata_json, created_at
                 FROM artifacts
                 WHERE phase = :phase AND artifact_type = :artifact_type
                 ORDER BY created_at DESC LIMIT 1
-            """), {"phase": phase, "artifact_type": artifact_type}).fetchone()
+            """),
+                {"phase": phase, "artifact_type": artifact_type},
+            ).fetchone()
         if row is None:
             raise KeyError(
                 f"StoreMonad.latest: no artifact ({phase}, {artifact_type}) in {self.db_url}"
             )
         return ArtifactRow(
-            run_id=row[0], phase=row[1], artifact_type=row[2],
-            blob_path=row[3], metadata_json=row[4], created_at=row[5],
+            run_id=row[0],
+            phase=row[1],
+            artifact_type=row[2],
+            blob_path=row[3],
+            metadata_json=row[4],
+            created_at=row[5],
         )
 
     def all_runs(self) -> list[ArtifactRow]:
         """Extract: return all artifact rows ordered by created_at DESC — used by IOVisualizePhase."""
         from sqlalchemy import text
+
         engine = self._engine()
         with engine.connect() as conn:
-            rows = conn.execute(text("""
+            rows = conn.execute(
+                text("""
                 SELECT run_id, phase, artifact_type, blob_path, metadata_json, created_at
                 FROM artifacts
                 ORDER BY created_at DESC
-            """)).fetchall()
+            """)
+            ).fetchall()
         return [
             ArtifactRow(
-                run_id=r[0], phase=r[1], artifact_type=r[2],
-                blob_path=r[3], metadata_json=r[4], created_at=r[5],
+                run_id=r[0],
+                phase=r[1],
+                artifact_type=r[2],
+                blob_path=r[3],
+                metadata_json=r[4],
+                created_at=r[5],
             )
             for r in rows
         ]

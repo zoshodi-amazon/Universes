@@ -2,6 +2,7 @@
 
 Coalgebraic observer: probes the last eval artifact from StoreMonad,
 checks it against CoEvalHom specification, populates CoEvalProductOutput.
+Optionally launches gym-trading-env Flask render dashboard (absorbed from ana-render).
 """
 
 import json
@@ -67,13 +68,28 @@ def run(cfg: CoEvalHom, store: StoreMonad) -> CoEvalProductOutput:
             meta.schema_valid = False
 
         # Check render logs path
+        render_dir = Path(store.blob_dir) / store.run_id / "render_logs"
         try:
-            render_dir = Path(store.blob_dir) / store.run_id
             if render_dir.exists():
-                log_files = list(render_dir.glob("eval_render*"))
+                log_files = list(render_dir.glob("*"))
                 render_logs_present = len(log_files) > 0
+            else:
+                # Also check for eval_render* pattern in run dir
+                run_dir = Path(store.blob_dir) / store.run_id
+                if run_dir.exists():
+                    log_files = list(run_dir.glob("eval_render*"))
+                    render_logs_present = len(log_files) > 0
         except (OSError, ValueError):
             render_logs_present = False
+
+    # Launch Flask render dashboard if requested and logs are present
+    if cfg.launch_renderer and render_logs_present:
+        render_dir = Path(store.blob_dir) / store.run_id / "render_logs"
+        if render_dir.exists():
+            from gym_trading_env.renderer import Renderer
+
+            renderer = Renderer(dir=str(render_dir))
+            renderer.run()
 
     return CoEvalProductOutput(
         observer_id=observer_id,

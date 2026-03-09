@@ -25,6 +25,7 @@ from Types.Identity.Run.default import RunIdentity
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Metric.default import MetricMonad
 from Types.Monad.Alarm.default import AlarmMonad
+from Types.Inductive.AlarmSeverity.default import AlarmSeverity
 from Types.Monad.Observability.default import ObservabilityMonad
 from Types.Product.Discovery.Output.default import DiscoveryProductOutput
 from Types.Product.Discovery.Meta.default import DiscoveryProductMeta
@@ -152,7 +153,14 @@ def _filter_by_liquidity(
             ticker_data.append(
                 (ticker, avg_vol, price, atr_pct, turnover_pct, shortable)
             )
-        except Exception:
+        except Exception as e:
+            meta.obs.errors.append(
+                ErrorMonad(
+                    phase=PhaseId.discovery,
+                    message=f"liquidity fetch failed for {ticker}: {str(e)[:64]}",
+                    severity=Severity.warn,
+                )
+            )
             continue
 
     if len(ticker_data) == 0:
@@ -200,7 +208,9 @@ def _evaluate_alarms(
         meta.obs.alarms.append(
             AlarmMonad(
                 name="discovery_low_qualifying",
-                severity="warn" if n_qualifying > 0 else "critical",
+                severity=AlarmSeverity.warn
+                if n_qualifying > 0
+                else AlarmSeverity.critical,
                 message=f"Only {n_qualifying} tickers qualified (min: {specs.alarms.min_qualifying_tickers})",
                 threshold=float(specs.alarms.min_qualifying_tickers),
                 actual=float(n_qualifying),
@@ -214,7 +224,7 @@ def _evaluate_alarms(
         meta.obs.alarms.append(
             AlarmMonad(
                 name="discovery_api_failures",
-                severity="critical",
+                severity=AlarmSeverity.critical,
                 message=f"{api_failures} API failures exceeded threshold",
                 threshold=float(specs.alarms.max_api_failures),
                 actual=float(api_failures),

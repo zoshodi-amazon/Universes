@@ -27,8 +27,6 @@ from Types.Identity.Asset.default import AssetIdentity
 from Types.Identity.Run.default import RunIdentity
 from Types.Dependent.Env.default import EnvDependent, BrokerMode
 from Types.Hom.Train.default import TrainHom
-from Types.Hom.Ingest.default import IngestHom
-from Types.Hom.Feature.default import FeatureHom
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Store.default import StoreMonad
 from Types.Product.Train.Meta.default import TrainProductMeta
@@ -203,7 +201,7 @@ def run(
 
 
 class Settings(BaseSettings):
-    """IOTrainPhase Settings [Plasma] — Standalone entrypoint for RL training (runs ingest → feature first)."""
+    """IOTrainPhase Settings [Plasma] — Standalone entrypoint for RL training (5 fields)."""
 
     model_config = SettingsConfigDict(
         json_file="Types/IO/IOTrainPhase/default.json",
@@ -220,13 +218,6 @@ class Settings(BaseSettings):
     env: EnvDependent = Field(
         default=EnvDependent(),
         description="Trading environment — fees, positions, stop-loss, broker mode",
-    )
-    ingest_cfg: IngestHom = Field(
-        default=IngestHom(), description="Ingest config — lookback period, warmup"
-    )
-    feature_cfg: FeatureHom = Field(
-        default=FeatureHom(),
-        description="Feature config — wavelet, trend indicators, regime threshold",
     )
     train: TrainHom = Field(
         default=TrainHom(),
@@ -255,9 +246,12 @@ class Settings(BaseSettings):
 
 
 if __name__ == "__main__":
+    from Types.Hom.Ingest.default import IngestHom
+    from Types.Hom.Feature.default import FeatureHom
+
     s = Settings()
-    ingest_record = ingest(s.ingest_cfg, s.asset, s.run, s.store)
-    feature_record = feature(ingest_record, s.feature_cfg, s.run, s.store)
+    ingest_record = ingest(IngestHom(), s.asset, s.run, s.store)
+    feature_record = feature(ingest_record, FeatureHom(), s.run, s.store)
     # Load feature blob from store
     store = s.store.model_copy(
         update={"run_id": s.run.run_id, "phase": PhaseId.feature}

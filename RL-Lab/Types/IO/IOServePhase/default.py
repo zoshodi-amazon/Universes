@@ -29,7 +29,6 @@ from pydantic_settings import (
 from Types.Hom.Serve.default import ServeHom
 from Types.Hom.Ingest.default import IngestHom
 from Types.Hom.Feature.default import FeatureHom
-from Types.Hom.ServeInput.default import ServeInputHom
 from Types.Dependent.Env.default import EnvDependent, BrokerMode
 from Types.Dependent.Risk.default import RiskDependent
 from Types.Identity.Asset.default import AssetIdentity
@@ -238,8 +237,6 @@ def _execute_broker(
 
 def run(
     serve_specs: ServeHom,
-    feature_cfg: FeatureHom,
-    ingest_cfg: IngestHom,
     env_base: EnvDependent,
     risk: RiskDependent,
     asset: AssetIdentity,
@@ -250,6 +247,10 @@ def run(
     meta = ServeProductMeta()
     meta.obs.started_at = started
     meta.obs.phase = PhaseId.serve
+
+    # Each phase handles its own parameterization — defaults used internally
+    ingest_cfg = IngestHom()
+    feature_cfg = FeatureHom()
 
     # Resolve model + normalize from store using train_run_id
     store = store_base.model_copy(
@@ -304,7 +305,7 @@ def run(
     try:
         feat_row = feat_store.get(run_base.run_id, PhaseId.feature.value, "features")
         df = pd.read_pickle(feat_row.blob_path)
-    except (KeyError, Exception) as e:
+    except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
                 phase=PhaseId.serve,
@@ -557,7 +558,7 @@ def run(
 
 
 class Settings(BaseSettings):
-    """IOServePhase Settings [Plasma] — Standalone entrypoint for live bar-by-bar serving."""
+    """IOServePhase Settings [Plasma] — Standalone entrypoint for live bar-by-bar serving (6 fields)."""
 
     model_config = SettingsConfigDict(
         json_file="Types/IO/IOServePhase/default.json",
@@ -583,10 +584,6 @@ class Settings(BaseSettings):
     serve: ServeHom = Field(
         ..., description="Serve config — train_run_id, algo, poll interval"
     )
-    serve_input: ServeInputHom = Field(
-        default_factory=ServeInputHom,
-        description="Feature + ingest config bundle for live serving",
-    )
     store: StoreMonad = Field(
         default_factory=StoreMonad,
         description="Artifact store — DB + blob dir",
@@ -611,13 +608,4 @@ class Settings(BaseSettings):
 
 if __name__ == "__main__":
     s = Settings()
-    run(
-        s.serve,
-        s.serve_input.feature,
-        s.serve_input.ingest,
-        s.env,
-        s.risk,
-        s.asset,
-        s.run,
-        s.store,
-    )
+    run(s.serve, s.env, s.risk, s.asset, s.run, s.store)
