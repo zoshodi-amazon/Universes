@@ -1,0 +1,37 @@
+{
+  "asset": {
+    "asset_type": "stock",
+    "io_ticker": "AAPL",
+    "interval_min": 5,
+    "trade_start_min": 570,
+    "trade_end_min": 960,
+    "holidays": "us_market"
+  },
+  "run": {
+    "seed": 42,
+    "name": "eval",
+    "verbose": 0
+  },
+  "store": {
+    "db_url": "sqlite:///store/.rl.db",
+    "blob_dir": "store/blobs",
+    "run_id": "00000000",
+    "phase": "eval",
+    "docs_dir": "store/docs"
+  },
+  "env": {
+    "initial_value": 10000.0,
+    "fees_pct": 0.1,
+    "borrow_rate_pct": 0.0,
+    "positions": [-1.0, 0.0, 1.0],
+    "broker_mode": "sim",
+    "io_broker_key": "sim"
+  },
+  "risk": {
+    "stop_loss_pct": -2.0,
+    "profit_threshold_pct": 0.5
+  },
+  "eval": {
+    "forward_steps_min": 1440
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "feature": {},
+  "store": {
+    "db_url": "sqlite:///store/.rl.db",
+    "blob_dir": "store/blobs",
+    "run_id": "00000000",
+    "phase": "feature",
+    "docs_dir": "store/docs"
+  }
+}

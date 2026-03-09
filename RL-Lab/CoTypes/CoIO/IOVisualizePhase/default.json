@@ -1,0 +1,9 @@
+{
+  "visualize": {
+    "db_url": "sqlite:///store/.rl.db",
+    "recording_id": "",
+    "spawn_viewer": false,
+    "serve_web": true,
+    "include_features": false
+  }
+}

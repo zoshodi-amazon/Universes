@@ -1,0 +1,91 @@
+{
+  "asset": {
+    "asset_type": "stock",
+    "io_ticker": "AAPL",
+    "interval_min": 5,
+    "trade_start_min": 570,
+    "trade_end_min": 960,
+    "holidays": "us_market"
+  },
+  "run": {
+    "seed": 42,
+    "name": "main",
+    "verbose": 0
+  },
+  "store": {
+    "db_url": "sqlite:///store/.rl.db",
+    "blob_dir": "store/blobs",
+    "run_id": "00000000",
+    "phase": "pipeline",
+    "docs_dir": "store/docs"
+  },
+  "env": {
+    "initial_value": 10000.0,
+    "fees_pct": 0.1,
+    "borrow_rate_pct": 0.0,
+    "positions": [-1.0, 0.0, 1.0],
+    "broker_mode": "sim",
+    "io_broker_key": "sim"
+  },
+  "risk": {
+    "stop_loss_pct": -2.0,
+    "profit_threshold_pct": 0.5
+  },
+  "main": {
+    "stride_min": 1440,
+    "train_split_pct": 80.0,
+    "optimize": false,
+    "optimize_config": {
+      "n_trials": 20,
+      "n_parallel": 1,
+      "objective_metric": "win_rate_pct",
+      "search_space_lr_min": 0.00001,
+      "search_space_lr_max": 0.01,
+      "search_space_timesteps_min": 10000,
+      "search_space_timesteps_max": 200000
+    }
+  },
+  "pipeline": {
+    "discovery": {
+      "io_universe": [],
+      "screener": "most_actives",
+      "min_adx": 20.0,
+      "min_bars": 360,
+      "adx_lookback_period": "60d",
+      "liquidity": {
+        "min_volume_percentile": 30.0,
+        "min_price_percentile": 5.0,
+        "max_spread_pct": 10.0,
+        "min_turnover_pct": 0.1,
+        "require_shortable": false,
+        "enabled": true,
+        "min_universe_size": 5
+      }
+    },
+    "ingest": {
+      "period": "60d",
+      "warmup_bars": 28
+    },
+    "feature": {
+      "wavelet": "db4",
+      "level": 4,
+      "threshold_mode": "soft",
+      "adx_period": 14,
+      "supertrend_period": 10,
+      "supertrend_multiplier": 3.0,
+      "regime_threshold": 25.0
+    },
+    "train": {
+      "algo": "PPO",
+      "n_envs": 1,
+      "learning_rate": 0.0003,
+      "total_timesteps": 50000,
+      "episode_duration_min": 1440,
+      "normalize_obs": true,
+      "normalize_reward": true
+    },
+    "eval": {
+      "forward_steps_min": 1440
+    }
+  }
+}
