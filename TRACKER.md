@@ -8,13 +8,13 @@ Lab-specific TRACKER.md files track per-type implementation state within each la
 
 ## Universal Docs Status
 
-| Doc | Lines | Status | Last Updated |
-|-----|-------|--------|-------------|
-| README.md | ~130 | Complete | v7.1.0 |
-| AGENTS.md | ~325 | Complete | v7.1.0 |
-| DICTIONARY.md | ~460 | Complete | v7.1.0 |
-| TEMPLATE.md | ~570 | Complete | v7.1.0 |
-| TRACKER.md | (this file) | Complete | v7.1.0 |
+| Doc | Status | Last Updated |
+|-----|--------|-------------|
+| README.md | Complete | v7.2.0 |
+| AGENTS.md | Complete | v7.2.0 |
+| DICTIONARY.md | Complete | v7.2.0 |
+| TEMPLATE.md | Complete | v7.2.0 |
+| TRACKER.md | Complete | v7.2.0 |
 
 ---
 
@@ -32,9 +32,12 @@ Lab-specific TRACKER.md files track per-type implementation state within each la
 | Bidirectional path closure | AGENTS.md, DICTIONARY.md | Defined |
 | Sheaf-theoretic frame | AGENTS.md, DICTIONARY.md | Defined (8 entries) |
 | Per-stratum Lean type templates | TEMPLATE.md Section 14 | Defined (strata 1-7 + CoTypes duals) |
+| Lean-to-IO projection table | TEMPLATE.md Section 15 | Defined (Python, Rust, Nix) |
 | Sheaf section template (new lab) | TEMPLATE.md Section 13 | Defined (7-step + checklist) |
 | Import DAG | AGENTS.md | Defined (strict layering) |
 | 31 universal invariants | AGENTS.md | Defined |
+| Lean Canonical Primacy | AGENTS.md | Defined (Invariant 32) |
+| Projection Functor + Codec | DICTIONARY.md | Defined |
 | Anti-patterns table | AGENTS.md | Defined (13 entries) |
 | Git commit format | TEMPLATE.md | Defined |
 | Justfile command classification | TEMPLATE.md, AGENTS.md | Defined (ana-/cata-/hylo-) |
@@ -43,13 +46,13 @@ Lab-specific TRACKER.md files track per-type implementation state within each la
 
 ## Lab Inventory
 
-| Lab | Artifact Type | Language | Runtime | Version | Status |
-|-----|--------------|----------|---------|---------|--------|
-| SystemLab | nixosConfigurations, darwinConfigurations | Lean 4 | Nix | v5.3.0 | Active |
-| HomeLab | homeConfigurations (user dotfiles) | Lean 4 | Nix | v0.1.0 | Scaffold |
-| MaterialLab | Physical material artifacts (3D prints, CNC, laser) | Python | pydantic | v0.2.0 | Active |
-| PlatformLab | Firmware images, board definitions | Rust | Nix | v0.1.0 | Scaffold |
-| RL-Lab | Autonomous quant RL pipeline (single-asset) | Python | pydantic | v0.2.0 | Active |
+| Lab | Artifact Type | Lean Type Core | IO Runtime | Version | Status |
+|-----|--------------|---------------|------------|---------|--------|
+| SystemLab | nixosConfigurations, darwinConfigurations | Yes | Nix | v5.3.0 | Active |
+| HomeLab | homeConfigurations (user dotfiles) | Yes (scaffold) | Nix | v0.1.0 | Scaffold |
+| MaterialLab | Physical material artifacts (3D prints, CNC, laser) | Provisional (Python) | Python | v0.2.0 | Active |
+| PlatformLab | Firmware images, board definitions | Provisional (Rust) | Rust + Nix | v0.1.0 | Scaffold |
+| RL-Lab | Autonomous quant RL pipeline (single-asset) | Provisional (Python) | Python | v0.2.0 | Active |
 | IntelLab | (TBD) | -- | -- | -- | Empty |
 
 ---

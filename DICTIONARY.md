@@ -440,3 +440,19 @@ The formal definitions below ground every term used in the system. Each entry pr
 **Domain:** Site-specific data (credentials, hostnames, hardware details) lives in `local.json` files that are `.gitignore`'d. The committed `default.json` contains universal defaults. The IO executor takes the fiber bundle section (merge) and produces artifact state. This separates what a thing IS (universal type) from which specific instance (local observation).
 
 **Pattern:** `default.json (Identity) <- merge <- local.json (Dependent) -> cfg (Product)`
+
+### Projection Functor
+
+**Formal:** A functor P : C -> D that maps objects and morphisms from a source category to a target category. Faithful if injective on Hom-sets.
+
+**Domain:** The projection P : Lean_Types (strata 1-6) -> IO_Types (stratum 7) maps Lean type definitions to IO-layer language types via the JSON codec. P is faithful: every Lean type has a unique IO-layer projection. P is not full: IO-layer types may carry runtime-specific fields (e.g., Python method implementations) not present in the Lean source. The projection factors through JSON: `Lean --toJson--> JSON --fromJson (IO lang)--> IO-layer type`. Labs without Lean types yet carry provisional IO-layer types -- unfactored projections that must be replaced.
+
+**Pattern:** `Lean type -> toJson -> default.json -> fromJson (IO lang) -> IO-layer type`
+
+### Codec
+
+**Formal:** An invertible encoding/decoding pair (encode : A -> B, decode : B -> A) where decode . encode = id. The unit and counit of the serialization adjunction.
+
+**Domain:** The JSON codec (toJson, fromJson) mediates the Lean-IO boundary. `toJson` is the adjunction unit (eta): it serializes the Lean-typed Hom into `default.json`. `fromJson` (in the IO-layer language) is the adjunction counit (epsilon): it reconstructs the type from JSON. Roundtrip closure (`fromJson . toJson = id`) is the proof that the codec is well-typed. The codec is the witness to the Lean-IO adjunction -- it certifies that the IO-layer type is a faithful projection of the Lean type.
+
+**Pattern:** `toJson (unit eta) -> default.json (boundary) -> fromJson (counit epsilon)`

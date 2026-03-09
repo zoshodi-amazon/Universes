@@ -369,8 +369,10 @@ The answer defines the lab boundary (Invariant 28). One artifact type = one lab.
 |-------|-------|
 | Lab name | `{Name}Lab` |
 | Artifact type | (e.g., "NixOS system configurations", "3D-printed parts", "firmware images") |
-| Type language | (e.g., Lean 4, Python + pydantic, Rust + serde) |
-| IO runtime | (e.g., Nix, Python, Cargo + Nix) |
+| Type language | **Lean 4** (canonical, strata 1-6) |
+| IO runtime | (e.g., Nix, Python, Cargo + Nix) -- stratum 7 only |
+
+**Lean type core:** Every lab defines Lean 4 types for strata 1-6, regardless of what IO-layer language executes stratum 7. The Lean types are the source of truth. The IO-layer language reconstructs types from the JSON codec at the IO boundary. Labs that begin with IO-layer types (e.g., Python BaseModel) carry **provisional types** -- technical debt that must be replaced by Lean-generated projections. See Section 15 for the per-stratum projection table.
 
 ### Stratum 1: Identity (BEC) -- Trivial {e}, 0 DOF
 
@@ -696,3 +698,46 @@ The coalgebraic dual of each stratum, using the most precise Lean construct avai
 | 5 Product | `structure {Phase}Output` + `{Phase}Meta` | `structure Co{Phase}Output` + `CoObservationMeta` (what was seen vs. what was expected) |
 | 6 Monad | `ExceptT`/`Monad` instance/transformer stack | `structure` with `extract : W A → A` + `extend : (W A → B) → W A → W B` (comonad: trace observation) |
 | 7 IO | `default.json` + `default.{ext}` (executor) | `default.json` (expected) + `default.{ext}` (observer: probe artifact, compare against CoHom) |
+
+---
+
+## 15. Lean-to-IO Projection Table
+
+Lean 4 is the canonical DSL for strata 1-6. IO-layer languages reconstruct types from the JSON codec at the IO boundary. This table defines the projection functor P : Lean_Types -> IO_Types for each stratum and each supported IO-layer language.
+
+The JSON boundary (`default.json`) is the universal codec. All projections factor through it:
+
+```
+Lean type  --toJson-->  default.json  --fromJson (IO lang)-->  IO-layer type
+  (define)               (serialize)                             (reconstruct)
+```
+
+### Per-Stratum Projection
+
+| Stratum | Lean 4 (Canonical) | JSON Schema | Python (pydantic) | Rust (serde) | Nix |
+|---------|-------------------|-------------|-------------------|-------------|-----|
+| 1 Identity | `inductive \| mk` or `structure` (Inhabited + BEq) | `{}` or `{"field": default}` | `class Name(BaseModel)` with defaults | `#[derive(Default, Deserialize)]` struct | attrset with defaults |
+| 2 Inductive | `inductive` + manual ToJson/FromJson | `"variant"` (string enum) | `class Name(StrEnum)` | `#[derive(Deserialize)] enum` | string from finite set |
+| 3 Dependent | `abbrev Name (idx) : Type` (fibration) | object with index field | `class Name(BaseModel)` with discriminated union | `#[serde(tag = "index")]` enum | attrset keyed by variant |
+| 4 Hom | `structure {Phase}Hom` | nested object | `class {Phase}Hom(BaseModel)` | `#[derive(Deserialize)]` struct | attrset (the `default.json` itself) |
+| 5 Product | `structure {Phase}Output` + `{Phase}Meta` | `{"output": {}, "meta": {}}` | `class {Phase}Output(BaseModel)` + `{Phase}Meta(BaseModel)` | paired structs | attrset with output + meta keys |
+| 6 Monad | `ExceptT` / `Monad` instance / transformer | `{"ok": value}` or `{"error": msg}` | `try`/`except` + custom exception class | `Result<T, E>` | `builtins.tryEval` or `lib.throwIf` |
+| 7 IO | `IO α` / `{Phase}M` | N/A (runtime) | `def main()` / `async def` | `fn main()` / `async fn` | `default.nix` (derivation or module) |
+
+### Roundtrip Invariant
+
+For every Lean type T at strata 1-6:
+
+```
+fromJson_{IO-lang}(toJson_{Lean}(t : T)) ≅ t
+```
+
+The JSON boundary preserves the type structure. The IO-layer reconstruction is faithful -- it recovers the same fields, constraints, and defaults as the Lean definition. If the IO-layer type diverges from the Lean type, the IO-layer type is wrong.
+
+### Provisional Types
+
+Labs that currently define types only in an IO-layer language (e.g., RL-Lab in Python, MaterialLab in Python) carry **provisional types**. These are technically correct at the IO boundary but lack the Lean-verified type core. They are technical debt:
+
+- They MUST be replaced by Lean-generated projections as the Lean type core is built
+- They do NOT extend the type theory -- they are temporary inhabitants of strata they do not own
+- The migration path is: define Lean types -> generate `default.json` -> validate IO-layer types agree

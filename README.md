@@ -42,14 +42,18 @@ Each stratum has strictly more degrees of freedom than the one below. This is an
 Universes/
 ├── SystemLab/      -- system-level NixOS/nix-darwin configurations (Lean 4 + Nix)
 ├── HomeLab/        -- user-level home-manager configurations (Lean 4 + Nix)
-├── MaterialLab/    -- physical material fabrication (Python + pydantic)
-├── PlatformLab/    -- hardware platform / firmware definition (Rust + Nix)
+├── MaterialLab/    -- physical material fabrication (Lean 4 + Python)
+├── PlatformLab/    -- hardware platform / firmware definition (Lean 4 + Rust)
+├── RL-Lab/         -- autonomous quant RL pipeline (Lean 4 + Python)
+├── IntelLab/       -- (TBD)
 ├── AGENTS.md       -- universal type-theoretic invariants (single source of truth)
-├── DICTIONARY.md   -- universal formal glossary
-├── TEMPLATE.md     -- universal naming and structural templates
-├── TRACKER.md      -- cross-lab dashboard
+├── DICTIONARY.md   -- universal formal glossary + Rosetta stone
+├── TEMPLATE.md     -- universal naming, structural templates, Lean type templates
+├── TRACKER.md      -- cross-lab formalism tracker
 └── README.md       -- this file
 ```
+
+**Lean 4 defines strata 1-6 for every lab.** IO-layer languages (Nix, Python, Rust) execute stratum 7. The JSON codec (`default.json`) mediates the boundary. See `AGENTS.md` for the Lean Canonical Primacy section and `TEMPLATE.md` Section 15 for the Lean-to-IO projection table.
 
 Each lab follows the same fractal structure:
 
@@ -79,24 +83,23 @@ Each lab follows the same fractal structure:
 
 ## Universal Invariants
 
-See `AGENTS.md` for the full list (31 invariants). Key principles:
+See `AGENTS.md` for the full list (32 invariants). The non-negotiable foundation:
 
-1. **One type per file** -- all filenames are `default.*`. The type name is the directory path.
-2. **IO/ capped at 7 subdirectories** -- the 7 canonical phases of artifact production.
-3. **Project boundary = artifact type** -- "what typed artifact are we producing?" defines the lab boundary.
-4. **Types/ and CoTypes/ maintain 1:1 duality** -- every algebraic category has a coalgebraic dual.
-5. **Language-agnostic structure** -- Lean 4, Python, Rust share the same 7-category architecture.
-6. **`local.json` for deployment-site secrets** -- never committed, `.gitignore`'d.
-7. **Fractal self-similarity** -- if a phase needs sub-phases, apply the same 7-category structure recursively.
+- **Lean 4 is the canonical DSL** for strata 1-6 in every lab. IO-layer languages are projections. No exceptions.
+- **Adherence to the type-theoretic framework is unconditional.** It is never traded for convenience. Violations are ill-typed artifacts, not pragmatic trade-offs.
+- **One type per file** -- all filenames are `default.*`. The type name is the directory path.
+- **Types/ and CoTypes/ maintain 1:1 duality** -- every algebraic category has a coalgebraic dual.
+- **Fractal self-similarity** -- the same 7-category structure recurses at every level.
 
 ## Labs
 
-| Lab | Artifact | Language | Runtime | Status |
-|-----|----------|----------|---------|--------|
-| SystemLab | nixosConfigurations, darwinConfigurations | Lean 4 | Nix | active (v5.3.0) |
-| HomeLab | homeConfigurations (user dotfiles) | Lean 4 | Nix | scaffold (v0.1.0) |
-| MaterialLab | 3D prints, CNC parts, laser-cut assemblies | Python | pydantic | active (v0.2.0) |
-| PlatformLab | Firmware images, board definitions | Rust | Nix | scaffold (v0.1.0) |
+| Lab | Artifact | Lean 4 Types | IO Runtime | Status |
+|-----|----------|-------------|------------|--------|
+| SystemLab | nixosConfigurations, darwinConfigurations | Yes | Nix | active (v5.3.0) |
+| HomeLab | homeConfigurations (user dotfiles) | Yes (scaffold) | Nix | scaffold (v0.1.0) |
+| MaterialLab | 3D prints, CNC parts, laser-cut assemblies | Provisional (Python) | Python | active (v0.2.0) |
+| PlatformLab | Firmware images, board definitions | Provisional (Rust) | Rust + Nix | scaffold (v0.1.0) |
+| RL-Lab | Autonomous quant RL pipeline (single-asset) | Provisional (Python) | Python | active (v0.2.0) |
 
 ## Type-Theoretic Formalism
 

@@ -35,29 +35,55 @@ See `DICTIONARY.md` for formal definitions of sheaf, section, stalk, fiber, rest
 
 ---
 
-## Doc Updates
-
-After every output, update TRACKER.md, DICTIONARY.md, TEMPLATE.md and AGENTS.md files where applicable, referencing/refreshing your context on them before every input and output.
-
-When working inside a lab, read **both** this file and the lab's own AGENTS.md.
-
----
-
 ## Architecture
 
 A **lab** is a typed artifact factory. Every lab follows the same architecture:
 
 ```
-Types/ ({Language})  ->  default.json  ->  Types/IO/ ({Language} + {Runtime})
-7-category DSL           IO boundary       IO executors
+Lean 4 (strata 1-6)  ->  default.json  ->  IO executor ({Runtime language})
+canonical types            IO boundary       effectful projection
 ```
 
-- **Types/** defines the algebraic (constructive, catamorphic) side
-- **CoTypes/** defines the coalgebraic (observational, anamorphic) dual
-- **default.json** is the serialized Hom at the IO boundary
-- **IO executors** read JSON and produce effectful output
+- **Types/** defines the algebraic (constructive, catamorphic) side -- **always in Lean 4**
+- **CoTypes/** defines the coalgebraic (observational, anamorphic) dual -- **always in Lean 4**
+- **default.json** is the serialized Hom at the IO boundary -- the **codec** between Lean and the IO layer
+- **IO executors** read JSON and produce effectful output in the lab's runtime language (Nix, Python, Rust, etc.)
 
-The language and runtime vary per lab (Lean 4 + Nix, Python + pydantic, Rust + Nix, etc.). The type-theoretic structure is invariant.
+Lean 4 is the **sole authority** for strata 1-6. The IO-layer language is confined to stratum 7. The type-theoretic structure is invariant across all labs; only the IO runtime varies.
+
+---
+
+## Lean Canonical Primacy
+
+**Lean 4 is the canonical DSL for the entire Type Universe. This is not optional.**
+
+Adherence to the type-theoretic framework and mathematical purity is an unconditional requirement. It is never compromised for convenience, speed, tooling limitations, or ad-hoc decisions. Violations indicate a flawed understanding of requirements, not a pragmatic trade-off. The formalism IS the system. Deviating from it does not produce "imperfect but working" code -- it produces an ill-typed artifact that is definitionally incorrect.
+
+**The Lean-IO boundary is a projection functor:**
+
+```
+P : Lean_Types (strata 1-6)  -->  IO_Types (stratum 7)
+
+Lean type  --toJson-->  default.json  --fromJson (IO lang)-->  IO-layer type
+  (source of truth)      (codec)                                (projection)
+```
+
+- **Lean defines.** Strata 1-6 (Identity through Monad) are defined in Lean 4 for every lab. No exceptions.
+- **JSON serializes.** `default.json` is the adjunction unit (eta): it serializes the Lean-typed Hom into a language-agnostic boundary.
+- **IO-layer reconstructs.** The IO-layer language (Python `BaseModel`, Rust `#[derive(Deserialize)]`, Nix `builtins.fromJSON`) reconstructs the type from JSON. This is the adjunction counit (epsilon).
+- **Roundtrip closure holds.** `fromJson(toJson(leanType)) ≅ leanType`. The JSON boundary is the witness.
+
+**For labs that do not yet have Lean types** (e.g., RL-Lab, MaterialLab with Python-native types): the IO-layer types are **provisional**. They are placeholders that MUST be replaced by Lean-generated projections as the Lean type core is built. Provisional types are technical debt against the formalism, not an accepted alternative.
+
+See `DICTIONARY.md` for formal definitions of Projection Functor and Codec. See `TEMPLATE.md` Section 15 for the per-stratum Lean-to-IO projection table.
+
+---
+
+## Doc Updates
+
+After every output, update TRACKER.md, DICTIONARY.md, TEMPLATE.md and AGENTS.md files where applicable, referencing/refreshing your context on them before every input and output.
+
+When working inside a lab, read **both** this file and the lab's own AGENTS.md.
 
 ---
 
@@ -301,6 +327,7 @@ These apply to **every lab** in the Universes monorepo. No exceptions.
 29. Fractal self-similarity -- if a phase needs sub-phases, apply the same 7-category structure recursively.
 30. Minimal orthogonal generating set -- at each stratum, the minimum necessary types/subdirs to span the space.
 31. Sub-projects with their own type systems are **separate labs** (or sub-universes) with own Types/CoTypes. Not sub-directories of an existing lab.
+32. Lean 4 is the canonical DSL for strata 1-6 in every lab. IO-layer languages (Python, Rust, Nix) inhabit stratum 7 only. IO-layer types are projections of Lean types via the JSON codec, not independent definitions. Labs without Lean types yet carry provisional IO-layer types -- technical debt, not an accepted alternative.
 
 ---
 
@@ -321,3 +348,5 @@ These apply to **every lab** in the Universes monorepo. No exceptions.
 | Using the word "config" | Misleading abstraction | It is a dependent type serving as the domain of a morphism |
 | Sub-project inside a phase dir | Conflates domains | Separate lab with own Types/CoTypes |
 | Speculative type additions | Violates minimal generating set | Add types only when empirically motivated |
+| IO-layer types without Lean backing | Lean is the canonical DSL; IO-layer types are projections | Define Lean types at strata 1-6 first, then project to IO-layer language |
+| Compromising formalism for convenience | Violations are ill-typed artifacts, not trade-offs | The formalism IS the system; adherence is unconditional |
