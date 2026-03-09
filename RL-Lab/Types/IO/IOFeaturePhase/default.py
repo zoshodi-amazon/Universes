@@ -196,8 +196,14 @@ def run(
             corr_matrix = df[feature_cols].corr().abs()
             np.fill_diagonal(corr_matrix.values, 0)
             meta.feature_correlation_max = float(corr_matrix.max().max())
-        except Exception:
-            pass
+        except Exception as e:
+            meta.obs.errors.append(
+                ErrorMonad(
+                    phase=PhaseId.feature,
+                    message=f"correlation computation failed: {str(e)[:64]}",
+                    severity=Severity.warn,
+                )
+            )
 
     feature_names = sorted([c for c in df.columns if c.startswith("feature_")])
 

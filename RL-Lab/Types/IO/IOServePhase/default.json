@@ -29,7 +29,8 @@
   },
   "risk": {
     "stop_loss_pct": -2.0,
-    "profit_threshold_pct": 0.5
+    "profit_threshold_pct": 0.5,
+    "max_drawdown_pct": -5.0
   },
   "serve": {
     "train_run_id": "00000000",
@@ -37,20 +38,5 @@
     "poll_interval_s": 60,
     "max_bars": 288,
     "max_model_age_min": 1440
-  },
-  "serve_input": {
-    "feature": {
-      "wavelet": "db4",
-      "level": 4,
-      "threshold_mode": "soft",
-      "adx_period": 14,
-      "supertrend_period": 10,
-      "supertrend_multiplier": 3.0,
-      "regime_threshold": 25.0
-    },
-    "ingest": {
-      "period": "60d",
-      "warmup_bars": 28
-    }
   }
 }

@@ -205,7 +205,7 @@ class StoreMonad(BaseModel):
         )
 
     def all_runs(self) -> list[ArtifactRow]:
-        """Extract: return all artifact rows ordered by created_at DESC — used by IOVisualizePhase."""
+        """Extract: return all artifact rows ordered by created_at DESC."""
         from sqlalchemy import text
 
         engine = self._engine()

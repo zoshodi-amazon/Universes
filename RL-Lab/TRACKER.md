@@ -5,6 +5,83 @@ Most recent entries first.
 
 ---
 
+## 2026-03-08d — Session 3: Type-Theoretic Purification (Parts 4-10)
+
+### What happened
+- Completed the 10-part refactor plan initiated in Session 2.
+- Dissolved non-generating Hom types (PipelineHom, ServeInputHom) from all IO executors.
+- Extracted ArtifactRow to its own file; replaced bare Literals with ADT enums.
+- Created 4 Comonad observation witness duals.
+- Purified all silent try/except blocks with typed ErrorMonad flows.
+- Fixed 3 bugs: B5 (order fill verification), B12 (reward plateau detection), D8.10 (max drawdown circuit breaker).
+
+### Changes by Part
+
+| Part | Description | Files Changed |
+|------|-------------|---------------|
+| 4/5 | IOMainPhase purification — removed PipelineHom import, Settings from 7 to 6 fields, local Hom instantiation | `Types/IO/IOMainPhase/default.py`, `default.json` |
+| 6a | Extract ArtifactRow to `Types/Monad/Artifact/default.py` | `Types/Monad/Store/default.py`, new `Types/Monad/Artifact/default.py` |
+| 6b | Create AlarmSeverity ADT enum | new `Types/Inductive/AlarmSeverity/default.py`, `Types/Monad/Alarm/default.py`, `Types/IO/IODiscoveryPhase/default.py` |
+| 6c | Create MetricKind ADT enum | new `Types/Inductive/MetricKind/default.py`, `Types/Monad/Metric/default.py` |
+| 6d | Inline _Path/_Url type aliases | `Types/Monad/Store/default.py` |
+| 6e | Add min_length=0 to TickerInfoInductive.symbol | `Types/Inductive/TickerInfo/default.py` |
+| 7 | Create 4 Comonad duals | new `CoTypes/Comonad/{Error,Metric,Alarm,Store}/default.py` |
+| 8 | Replace 6 silent try/except with ErrorMonad | `IODiscoveryPhase`, `IOMainPhase`, `IOServePhase` (3 fixes), `IOFeaturePhase` |
+| 9a | B5 fix: order.status check | `Types/IO/IOServePhase/default.py` (4 occurrences) |
+| 9b | B12 fix: reward plateau detection | `Types/IO/IOTrainPhase/default.py` |
+| 9c | D8.10: max drawdown circuit breaker | `Types/Dependent/Risk/default.py`, `Types/IO/IOServePhase/default.py`, 3 default.json files |
+| 10 | Docs update | `AGENTS.md`, `DICTIONARY.md`, `TRACKER.md`, `README.md` |
+
+### Bug Status Changes
+
+| Bug | Before | After | Fix |
+|-----|--------|-------|-----|
+| B5 | OPEN | **CLOSED** | `getattr(order, "status", None) == "filled"` replaces `hasattr(order, "filled_qty")` |
+| B12 | OPEN | **CLOSED** | Reward plateau detection via tail std < 1e-4 sets `meta.early_stopped = True` |
+| B14 | OPEN | **CLOSED** (dissolved) | IOTailPhase deleted — Tail absorbed into CoIOMainPhase |
+| B15 | OPEN | **CLOSED** (dissolved) | IOVisualizePhase deleted — Visualize absorbed into CoIOMainPhase |
+| D8.10 | OPEN | **CLOSED** | `max_drawdown_pct` field on RiskDependent; circuit breaker in IOServePhase serve loop |
+
+### New Types Created
+
+| Type | Location | Category | Fields |
+|------|----------|----------|--------|
+| ArtifactRow | `Types/Monad/Artifact/default.py` | Monad | 6 |
+| AlarmSeverity | `Types/Inductive/AlarmSeverity/default.py` | Inductive | 3 variants |
+| MetricKind | `Types/Inductive/MetricKind/default.py` | Inductive | 2 variants |
+| CoErrorComonad | `CoTypes/Comonad/Error/default.py` | Comonad | 4 |
+| CoMetricComonad | `CoTypes/Comonad/Metric/default.py` | Comonad | 4 |
+| CoAlarmComonad | `CoTypes/Comonad/Alarm/default.py` | Comonad | 4 |
+| CoStoreComonad | `CoTypes/Comonad/Store/default.py` | Comonad | 5 |
+
+### Types Dissolved
+
+| Type | Was At | Reason |
+|------|--------|--------|
+| PipelineHom | `Types/Hom/Pipeline/` | Non-generating — product of existing Hom types |
+| ServeInputHom | `Types/Hom/ServeInput/` | Non-generating — product of existing Hom types |
+
+### Directory Counts (Final)
+
+| Directory | Count | Limit | Status |
+|-----------|:-----:|:-----:|--------|
+| Types/Identity | 2 | 7 | OK |
+| Types/Inductive | **7** | 7 | At limit |
+| Types/Dependent | 5 | 7 | OK |
+| Types/Hom | **7** | 7 | At limit |
+| Types/Product | **7** | 7 | At limit |
+| Types/Monad | **6** | 7 | OK |
+| Types/IO | **7** | 7 | At limit |
+| CoTypes/CoIdentity | 2 | 7 | OK |
+| CoTypes/CoInductive | 5 | 7 | OK |
+| CoTypes/CoDependent | 5 | 7 | OK |
+| CoTypes/CoHom | **7** | 7 | At limit |
+| CoTypes/CoProduct | **7** | 7 | At limit |
+| CoTypes/Comonad | **5** | 7 | OK |
+| CoTypes/CoIO | **7** | 7 | At limit |
+
+---
+
 ## 2026-03-08b — Implementation Verification (docs <-> code reconciliation)
 
 ### What happened
@@ -35,8 +112,8 @@ Most recent entries first.
 
 | ID | Severity | Summary | Status |
 |----|----------|---------|--------|
-| B14 | COSMETIC | `CoTypes/CoIO/IOTailPhase/` uses `IO` prefix, not `CoIO` prefix | OPEN |
-| B15 | COSMETIC | `CoTypes/CoIO/IOVisualizePhase/` uses `IO` prefix, not `CoIO` prefix | OPEN |
+| B14 | COSMETIC | `CoTypes/CoIO/IOTailPhase/` uses `IO` prefix, not `CoIO` prefix | **CLOSED** (dissolved) |
+| B15 | COSMETIC | `CoTypes/CoIO/IOVisualizePhase/` uses `IO` prefix, not `CoIO` prefix | **CLOSED** (dissolved) |
 | B16 | COSMETIC | Stale `Types/IO/Validate/default.py` superseded by CoIO version | **CLOSED** |
 
 ### New Issues Found (2026-03-08c verification)
@@ -89,21 +166,21 @@ Types/ count updated from 47 to 49 (added PipelineHom, ServeInputHom).
 | B2 | BLOCKER | `CoMonad/` vs `Comonad/` casing; `CoTypes/IO/` vs `CoTypes/CoIO/` naming | **CLOSED** |
 | B3 | BUG | `_is_market_open()` compares UTC to US Eastern trade hours | **CLOSED** |
 | B4 | BUG | Eval results not persisted to StoreMonad | **CLOSED** |
-| B5 | BUG | Broker `orders_filled` incremented without fill verification | OPEN |
+| B5 | BUG | Broker `orders_filled` incremented without fill verification | **CLOSED** |
 | B6 | BUG | Short positions silently ignored by broker execution | **CLOSED** |
 | B7 | BUG | Top-level `import torch` in IOMainPhase crashes if torch missing | **CLOSED** |
 | B8 | BUG | IOEvalPhase Settings 8 fields, IOMainPhase Settings 10 fields (>7 invariant) | **CLOSED** |
 | B9 | COSMETIC | Discovery `default.json` missing `alarms` key | **CLOSED** |
 | B10 | COSMETIC | Stale `broker_mode` in Serve `default.json` | **CLOSED** |
 | B11 | GAP | `LiquidityDependent` fields declared but unused in IODiscoveryPhase | **CLOSED** |
-| B12 | GAP | `TrainProductMeta.early_stopped` never set (no early stopping callback) | OPEN |
+| B12 | GAP | `TrainProductMeta.early_stopped` never set (no early stopping callback) | **CLOSED** |
 | B13 | GAP | Data gaps detected but not handled (no forward-fill or gap-aware slicing) | **CLOSED** |
-| B14 | COSMETIC | `CoTypes/CoIO/IOTailPhase/` uses `IO` prefix, not `CoIO` prefix | OPEN |
-| B15 | COSMETIC | `CoTypes/CoIO/IOVisualizePhase/` uses `IO` prefix, not `CoIO` prefix | OPEN |
+| B14 | COSMETIC | `CoTypes/CoIO/IOTailPhase/` uses `IO` prefix, not `CoIO` prefix | **CLOSED** (dissolved) |
+| B15 | COSMETIC | `CoTypes/CoIO/IOVisualizePhase/` uses `IO` prefix, not `CoIO` prefix | **CLOSED** (dissolved) |
 | B16 | COSMETIC | Stale `Types/IO/Validate/default.py` superseded by CoIO version | **CLOSED** |
 | B17 | GAP | `CoTypes/CoProduct/{Eval,Feature,Serve,Train}/` are stubs (no Output/Meta) | OPEN |
 
-**Open: 5** (0 blocker, 1 bug, 2 gap, 2 cosmetic). **Closed: 12.**
+**Open: 1** (0 blocker, 0 bug, 1 gap, 0 cosmetic). **Closed: 16.**
 
 ---
 
@@ -159,11 +236,11 @@ All 4 tasks done: B1 closed, B2 closed, B7 closed, B8 closed.
 |---|------|-----|-----|--------|
 | T1.1 | Market hours: asset-aware timezone in `_is_market_open()` | B3 | D6.11 | **DONE** |
 | T1.2 | Persist eval results to StoreMonad | B4 | D5.9 | **DONE** |
-| T1.3 | Broker fill verification before incrementing `orders_filled` | B5 | D6.13 | OPEN |
+| T1.3 | Broker fill verification before incrementing `orders_filled` | B5 | D6.13 | **DONE** |
 | T1.4 | Short position handling in broker execution | B6 | D6.12 | **DONE** |
 | T1.5 | Gap handling: forward-fill or warn when gaps exceed 2x interval | B13 | D1.6 | **DONE** |
-| T1.6 | Max drawdown circuit breaker in IOServePhase | -- | D8.10 | OPEN |
-| T1.7 | Wire `early_stopped` callback in IOTrainPhase | B12 | -- | OPEN |
+| T1.6 | Max drawdown circuit breaker in IOServePhase | -- | D8.10 | **DONE** |
+| T1.7 | Wire `early_stopped` callback in IOTrainPhase | B12 | -- | **DONE** |
 | T1.8 | Wire `LiquidityDependent` fields in IODiscoveryPhase | B11 | -- | **DONE** |
 
 ### Tier 2 — Morphism Naming + JSON Fidelity: **COMPLETE**
@@ -179,7 +256,7 @@ Justfile renamed (T2.1 done). JSON fidelity verified clean across all 16 files (
 | T3.3 | Implement CoOHLCVInductive, CoScreenerInductive, CoAlgoInductive, CoTickerInfoInductive, CoScreenerQuoteInductive | **DONE** |
 | T3.4 | Implement CoEnvDependent, CoRiskDependent, CoLiquidityDependent, CoAlarmDependent, CoOptimizeDependent | **DONE** |
 | T3.5 | Implement per-phase CoHom duals (7 types) | **DONE** |
-| T3.6 | Implement per-phase CoProduct duals (14 types) | **PARTIAL** (Discovery, Ingest, Main, Tail, Visualize done; Eval, Feature, Serve, Train are stubs — B17) |
+| T3.6 | Implement per-phase CoProduct duals (14 types) | **PARTIAL** (Discovery, Ingest, Main done; Eval, Feature, Serve, Train are stubs — B17) |
 | T3.7 | Implement per-phase ana- observer commands (7 CoIO executors) | **DONE** |
 | T3.8 | Implement `ana-store` (list runs, artifacts, blob sizes) | OPEN |
 | T3.9 | Implement `ana-check` (full system health: store, deps, imports) | OPEN |
@@ -196,8 +273,8 @@ Justfile renamed (T2.1 done). JSON fidelity verified clean across all 16 files (
 
 | # | Task | Bug |
 |---|------|-----|
-| C1 | Rename `CoTypes/CoIO/IOTailPhase/` -> `CoIOTailPhase/` | B14 |
-| C2 | Rename `CoTypes/CoIO/IOVisualizePhase/` -> `CoIOVisualizePhase/` | B15 |
+| C1 | ~~Rename `CoTypes/CoIO/IOTailPhase/` -> `CoIOTailPhase/`~~ | ~~B14~~ **DISSOLVED** — absorbed into CoIOMainPhase |
+| C2 | ~~Rename `CoTypes/CoIO/IOVisualizePhase/` -> `CoIOVisualizePhase/`~~ | ~~B15~~ **DISSOLVED** — absorbed into CoIOMainPhase |
 | C3 | ~~Remove stale `Types/IO/Validate/default.py`~~ | ~~B16~~ **CLOSED** |
 | C4 | Populate CoProduct stubs for Eval, Feature, Serve, Train (Output + Meta) | B17 |
 
@@ -254,23 +331,18 @@ Justfile renamed (T2.1 done). JSON fidelity verified clean across all 16 files (
 | D3. Environment Design | 7 | 7 | 0 | 0 |
 | D4. Training Pipeline | 7 | 7 | 0 | 0 |
 | D5. Evaluation | 9 | 9 | 0 | 0 |
-| D6. Live Serving | 13 | 12 | 1 | 0 |
+| D6. Live Serving | 13 | 13 | 0 | 0 |
 | D7. Optimization | 5 | 5 | 0 | 0 |
-| D8. Production Safeguards | 10 | 9 | 1 | 0 |
+| D8. Production Safeguards | 10 | 10 | 0 | 0 |
 | D9. Observability | 7 | 7 | 0 | 0 |
 | D10. Type System Integrity | 15 | 15 | 0 | 0 |
-| **Totals** | **89** | **87** | **2** | **0** |
+| **Totals** | **89** | **89** | **0** | **0** |
 
-**Completion: 87/89 (98%)**
+**Completion: 89/89 (100%)**
 
 ### Remaining TODO Items
 
-| # | DoD | Requirement | Tier | Bug |
-|---|-----|-------------|------|-----|
-| 1 | D6.13 | Broker fill verification | T1 | B5 |
-| 2 | D8.10 | Max drawdown circuit breaker | T1 | -- |
-
-Plus non-DoD tasks: B12 (unwired early_stopped), B14-B15 (naming), B17 (CoProduct stubs), T3.8-T3.9 (ana-store, ana-check), T4.1/T4.3 (path closure).
+All DoD items complete. Remaining non-DoD tasks: B17 (CoProduct stubs), T3.8-T3.9 (ana-store, ana-check), T4.1/T4.3 (path closure).
 
 ---
 

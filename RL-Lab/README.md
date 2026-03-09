@@ -23,8 +23,7 @@ just ana-eval            # Observe EvalProductOutput return/drawdown
 just ana-serve           # Observe ServeProductOutput broker/audit
 just ana-main            # Observe MainProductOutput pipeline summary
 just ana-render <run_id> # Render dashboard for a specific run
-just ana-tail            # Observer: tail OpenCode SSE event stream
-just ana-visualize       # Observer: Rerun multi-modal run visualization
+just ana-main            # Observe MainProductOutput pipeline summary
 
 # hylo- (Hylomorphism) — composite, ana then cata
 just hylo-main           # Phase 7 (QGP): Full pipeline
@@ -115,7 +114,7 @@ Each item maps to a checklist entry. No item may be removed. Items may only be a
 | D6.10 | Sim/paper/live parity — same gym env, `broker_mode` toggles execution layer | DONE | Serve |
 | D6.11 | Market hours check using asset-aware local time (not UTC) | DONE | Serve |
 | D6.12 | Short position handling in broker execution (`target_pos < 0`) | DONE | Serve |
-| D6.13 | Broker fill verification — confirm fill status before incrementing `orders_filled` | TODO | Serve |
+| D6.13 | Broker fill verification — confirm fill status before incrementing `orders_filled` | DONE | Serve |
 
 ### D7. Optimization
 
@@ -140,7 +139,7 @@ Each item maps to a checklist entry. No item may be removed. Items may only be a
 | D8.7 | Structured error handling via `ErrorMonad` (phase, severity, message) | DONE | All IO |
 | D8.8 | Graceful shutdown with position flattening | DONE | Serve |
 | D8.9 | Audit trail (JSONL trade log) | DONE | Serve |
-| D8.10 | Max drawdown circuit breaker — halt serving when drawdown exceeds threshold | TODO | Serve |
+| D8.10 | Max drawdown circuit breaker — halt serving when drawdown exceeds threshold | DONE | Serve |
 
 ### D9. Observability
 
@@ -150,8 +149,8 @@ Each item maps to a checklist entry. No item may be removed. Items may only be a
 | D9.2 | `MetricMonad` collection per phase (counters + gauges) | DONE | All |
 | D9.3 | `AlarmMonad` threshold evaluation with severity levels | DONE | Discovery |
 | D9.4 | `StoreMonad` — SQLite artifact DB + filesystem blobs, typed IO boundary | DONE | All |
-| D9.5 | `IOTailPhase` — SSE event stream observer | DONE | CoTypes |
-| D9.6 | `IOVisualizePhase` — Rerun multi-modal dashboard | DONE | CoTypes |
+| D9.5 | SSE event stream observer (absorbed into CoIOMainPhase) | DONE | CoTypes |
+| D9.6 | Rerun multi-modal dashboard (absorbed into CoIOMainPhase) | DONE | CoTypes |
 | D9.7 | `just ana-render <run_id>` — gym-trading-env Flask dashboard | DONE | justfile |
 
 ### D10. Type System Integrity
@@ -160,7 +159,7 @@ Each item maps to a checklist entry. No item may be removed. Items may only be a
 |---|-------------|--------|-------|
 | D10.1 | Every phase has exactly: Hom + ProductOutput + ProductMeta + IO executor + justfile entry | DONE | All |
 | D10.2 | Every observer has exactly: CoHom + CoProductOutput + CoProductMeta + IO executor + justfile entry | DONE | CoTypes |
-| D10.3 | ≤7 fields per type | DONE | All Settings <=7 via PipelineHom + ServeInputHom |
+| D10.3 | ≤7 fields per type | DONE | All Settings <=7 via local Hom instantiation |
 | D10.4 | Every field has `Field(description=...)` | DONE | All |
 | D10.5 | Every field bounded (`ge`/`le`/`min_length`/`max_length`) | DONE | All |
 | D10.6 | No `Optional`/`None` — sentinels (`-1.0`, `""`) used instead | DONE | All |
@@ -186,17 +185,17 @@ Tracked issues that must be fixed before the system is considered done.
 | B2 | BLOCKER | `CoMonad/` vs `Comonad/` casing; `CoTypes/IO/` vs `CoTypes/CoIO/` | **CLOSED** |
 | B3 | BUG | `_is_market_open()` compares UTC to US Eastern trade hours | **CLOSED** |
 | B4 | BUG | Eval results not persisted to StoreMonad (`store.put()` missing) | **CLOSED** |
-| B5 | BUG | Broker `orders_filled` incremented without fill verification | OPEN |
+| B5 | BUG | Broker `orders_filled` incremented without fill verification | **CLOSED** |
 | B6 | BUG | Short positions (`target_pos < 0`) silently ignored by broker | **CLOSED** |
 | B7 | BUG | Top-level `import torch` in IOMainPhase | **CLOSED** |
 | B8 | BUG | IOEvalPhase/IOMainPhase Settings >7 fields | **CLOSED** |
 | B9 | COSMETIC | Discovery `default.json` missing `alarms` key | **CLOSED** |
 | B10 | COSMETIC | Stale `broker_mode` in Serve `default.json` | **CLOSED** |
 | B11 | GAP | `LiquidityDependent` fields declared but unused | **CLOSED** |
-| B12 | GAP | `TrainProductMeta.early_stopped` never set | OPEN |
+| B12 | GAP | `TrainProductMeta.early_stopped` never set | **CLOSED** |
 | B13 | GAP | Data gaps detected but not handled | **CLOSED** |
-| B14 | COSMETIC | `CoTypes/CoIO/IOTailPhase/` uses `IO` prefix, not `CoIO` | OPEN |
-| B15 | COSMETIC | `CoTypes/CoIO/IOVisualizePhase/` uses `IO` prefix, not `CoIO` | OPEN |
+| B14 | COSMETIC | `CoTypes/CoIO/IOTailPhase/` uses `IO` prefix, not `CoIO` | **CLOSED** (dissolved) |
+| B15 | COSMETIC | `CoTypes/CoIO/IOVisualizePhase/` uses `IO` prefix, not `CoIO` | **CLOSED** (dissolved) |
 | B16 | COSMETIC | Stale `Types/IO/Validate/default.py` superseded by CoIO version | **CLOSED** |
 | B17 | GAP | `CoTypes/CoProduct/{Eval,Feature,Serve,Train}/` stubs (no Output/Meta) | OPEN |
 
@@ -246,7 +245,7 @@ RL/
 ├── TRACKER.md                     # Change log and progress tracking
 ├── Types/
 │   ├── Identity/                  # [BEC] Terminal objects — Asset, Run
-│   ├── Inductive/                 # [Crystalline] Sum types / ADTs — OHLCV, Screener, TickerInfo, Algo
+│   ├── Inductive/                 # [Crystalline] Sum types / ADTs — OHLCV, Screener, TickerInfo, Algo, AlarmSeverity, MetricKind
 │   ├── Dependent/                 # [Liquid Crystal] Parameterized configs — Env, Risk, Liquidity, Alarm, Optimize
 │   ├── Hom/                       # [Liquid] Phase inputs / morphisms
 │   │   ├── Discovery/
@@ -255,13 +254,11 @@ RL/
 │   │   ├── Train/
 │   │   ├── Eval/
 │   │   ├── Serve/
-│   │   ├── Main/
-│   │   ├── Pipeline/              # PipelineHom — composite for IOMainPhase (5 sub-Homs)
-│   │   └── ServeInput/            # ServeInputHom — composite for IOServePhase (2 sub-Homs)
+│   │   └── Main/
 │   ├── Product/                   # [Gas] Phase outputs + meta
 │   │   ├── {Phase}/Output/
 │   │   └── {Phase}/Meta/
-│   ├── Monad/                     # [Plasma] Effect record types — Error, Metric, Alarm, Observability, Store
+│   ├── Monad/                     # [Plasma] Effect record types — Error, Metric, Alarm, Observability, Store, Artifact
 │   └── IO/                        # [QGP] IO executors — BaseSettings + run() + __main__
 │       ├── IODiscoveryPhase/
 │       ├── IOIngestPhase/
@@ -274,9 +271,9 @@ RL/
 │   ├── CoIdentity/                # [BEC dual] Introspection witnesses — Asset, Run
 │   ├── CoInductive/               # [Crystalline dual] Elimination forms — OHLCV, Screener, Algo, TickerInfo, ScreenerQuote
 │   ├── CoDependent/               # [Liquid Crystal dual] Schema conformance — Env, Risk, Liquidity, Alarm, Optimize
-│   ├── CoHom/                     # [Liquid dual] Observation specs — per-phase + Tail, Visualize
-│   ├── CoProduct/                 # [Gas dual] Observation results — per-phase + Tail, Visualize
-│   ├── Comonad/                   # [Plasma dual] Trace comonad (observation cursor)
+│   ├── CoHom/                     # [Liquid dual] Observation specs — per-phase (7)
+│   ├── CoProduct/                 # [Gas dual] Observation results — per-phase (7)
+│   ├── Comonad/                   # [Plasma dual] Observation witnesses — Trace, Error, Metric, Alarm, Store
 │   └── CoIO/                      # [QGP dual] Observer executors
 │       ├── CoIODiscoveryPhase/
 │       ├── CoIOIngestPhase/
@@ -284,10 +281,7 @@ RL/
 │       ├── CoIOTrainPhase/
 │       ├── CoIOEvalPhase/
 │       ├── CoIOServePhase/
-│       ├── CoIOMainPhase/
-│       ├── CoIOValidatePhase/
-│       ├── IOTailPhase/           # (B14: should be CoIOTailPhase/)
-│       └── IOVisualizePhase/      # (B15: should be CoIOVisualizePhase/)
+│       └── CoIOMainPhase/         # Composite: artifact probe + type validation + optional Rerun visualization
 └── store/
     ├── .rl.db                     # SQLite artifact DB (auto-created)
     ├── blobs/                     # Binary artifacts — models, pickles, audit logs
@@ -396,11 +390,11 @@ RL/
 | # | Phase | Type Theory | Matter | Directory | Naming | Types |
 |---|-------|-------------|--------|-----------|--------|-------|
 | 1 | Identity | Unit (top) | BEC | `Types/Identity/` | `{Domain}Identity` | AssetIdentity, RunIdentity |
-| 2 | Inductive | ADT | Crystalline | `Types/Inductive/` | `{Domain}Inductive` | OHLCVInductive, ScreenerInductive, ScreenerQuoteInductive, TickerInfoInductive, AlgoIdentity |
+| 2 | Inductive | ADT | Crystalline | `Types/Inductive/` | `{Domain}Inductive` | OHLCVInductive, ScreenerInductive, ScreenerQuoteInductive, TickerInfoInductive, AlgoIdentity, AlarmSeverity, MetricKind |
 | 3 | Dependent | Indexed | Liquid Crystal | `Types/Dependent/` | `{Domain}Dependent` | EnvDependent, RiskDependent, LiquidityDependent, AlarmDependent, OptimizeDependent |
-| 4 | Hom | Function | Liquid | `Types/Hom/` | `{Domain}Hom` | DiscoveryHom, IngestHom, FeatureHom, TrainHom, EvalHom, ServeHom, MainHom, PipelineHom, ServeInputHom |
+| 4 | Hom | Function | Liquid | `Types/Hom/` | `{Domain}Hom` | DiscoveryHom, IngestHom, FeatureHom, TrainHom, EvalHom, ServeHom, MainHom |
 | 5 | Product | Sum/Product | Gas | `Types/Product/` | `{Domain}Product{Kind}` | {Phase}ProductOutput + {Phase}ProductMeta (x7 each) |
-| 6 | Monad | Effect | Plasma | `Types/Monad/` | `{Domain}Monad` | ErrorMonad, MetricMonad, AlarmMonad, ObservabilityMonad, StoreMonad |
+| 6 | Monad | Effect | Plasma | `Types/Monad/` | `{Domain}Monad` | ErrorMonad, MetricMonad, AlarmMonad, ObservabilityMonad, StoreMonad, ArtifactRow |
 | 7 | IO | IO | QGP | `Types/IO/` | `IO{Phase}Phase` | IODiscoveryPhase ... IOMainPhase (x7) |
 
 ## Product Types (Phase Outputs)
@@ -417,12 +411,9 @@ RL/
 
 ## CoTypes — Coalgebraic Observers
 
-Observers are covariant presheaves — they observe the system without participating in the phase chain.
+Observers are covariant presheaves — they observe the system without participating in the phase chain. Each of the 7 production phases has a corresponding `ana-{phase}` observer in `CoTypes/CoIO/`. Tail (SSE stream) and Visualize (Rerun dashboard) functionality is absorbed into `CoIOMainPhase` as the composite observer.
 
-| Observer | CoHom | CoProductOutput | IO Executor | justfile |
-|----------|-------|-----------------|-------------|----------|
-| Tail | TailCoHom | TailCoProductOutput | IOTailPhase | `ana-tail` |
-| Visualize | VisualizeCoHom | VisualizeCoProductOutput | IOVisualizePhase | `ana-visualize` |
+Comonad observation witnesses (5 types in `CoTypes/Comonad/`): TraceComonad, CoErrorComonad, CoMetricComonad, CoAlarmComonad, CoStoreComonad.
 
 ## Broker Integration
 

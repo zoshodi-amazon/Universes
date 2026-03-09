@@ -60,9 +60,14 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 
 ### ArtifactRow
 - **What:** Single row returned from StoreMonad queries. Represents one stored artifact.
-- **Where:** `Types/Monad/Store/default.py`
-- **Phase:** Monad (Plasma) — supporting type for StoreMonad.
+- **Where:** `Types/Monad/Artifact/default.py`
+- **Phase:** Monad (Plasma) — extracted from StoreMonad per 1-type-per-file invariant.
 - **Fields:** run_id, phase, artifact_type, blob_path, metadata_json, created_at
+
+### AlarmSeverity
+- **What:** 3-variant enum for alarm severity levels: info, warn, critical.
+- **Where:** `Types/Inductive/AlarmSeverity/default.py`
+- **Phase:** Inductive (Crystalline) — exhaustively checkable ADT replacing bare Literal.
 
 ---
 
@@ -120,30 +125,27 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 ### CoHom
 - **What:** Coalgebraic dual of Hom. Observer input configurations — observation specifications that define what to check per phase.
 - **Where:** `CoTypes/CoHom/`
-- **Instances (observer):** TailCoHom, VisualizeCoHom
 - **Instances (per-phase):** CoDiscoveryHom, CoIngestHom, CoFeatureHom, CoTrainHom, CoEvalHom, CoServeHom, CoMainHom
 
 ### CoPhaseId
-- **What:** 2-variant enum identifying observer executors: tail, visualize. Distinct from PhaseId.
+- **What:** 7-variant enum identifying observer executors — one per canonical phase. Distinct from PhaseId.
 - **Where:** `CoTypes/Comonad/Trace/default.py`
 - **Phase:** Comonad
 
 ### CoProduct
 - **What:** Coalgebraic dual of Product. Observer outputs + meta — what an observer saw.
 - **Where:** `CoTypes/CoProduct/`
-- **Instances:** TailCoProductOutput, TailCoProductMeta, VisualizeCoProductOutput, VisualizeCoProductMeta
+- **Instances (per-phase):** CoDiscoveryProductOutput, CoIngestProductOutput, CoFeatureProductOutput, CoTrainProductOutput, CoEvalProductOutput, CoServeProductOutput, CoMainProductOutput
 
 ### Comonad
-- **What:** Coalgebraic dual of Monad. Observation cursor state — where in the stream the observer is. `extract` gives the current observation. `extend` maps over observation history.
+- **What:** Coalgebraic dual of Monad. Observation witness types. `extract` gives the current observation. `extend` maps over observation history.
 - **Where:** `CoTypes/Comonad/`
-- **Instance:** TraceComonad
+- **Instances:** TraceComonad, CoErrorComonad, CoMetricComonad, CoAlarmComonad, CoStoreComonad
 
 ### CoIO
 - **What:** Coalgebraic dual of IO. Observer executors — probes that read from the external world without modifying it.
 - **Where:** `CoTypes/CoIO/`
-- **Instances (observer):** IOTailPhase (B14: should be CoIOTailPhase), IOVisualizePhase (B15: should be CoIOVisualizePhase)
 - **Instances (per-phase):** CoIODiscoveryPhase, CoIOIngestPhase, CoIOFeaturePhase, CoIOTrainPhase, CoIOEvalPhase, CoIOServePhase, CoIOMainPhase
-- **Instance (meta):** CoIOValidatePhase
 
 ---
 
@@ -211,7 +213,7 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 ### Hom
 - **What:** Phase input type. Morphisms flowing INTO a phase. Named after Hom-sets in category theory.
 - **Where:** `Types/Hom/`
-- **Instances:** DiscoveryHom, IngestHom, FeatureHom, TrainHom, EvalHom, ServeHom, MainHom, PipelineHom, ServeInputHom
+- **Instances:** DiscoveryHom, IngestHom, FeatureHom, TrainHom, EvalHom, ServeHom, MainHom
 - **Phase:** Liquid (state 4)
 
 ### HolidayCalendar
@@ -232,7 +234,7 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 ### Inductive (type phase)
 - **What:** Sum types / ADTs. Structural validation schemas, finite enums, external data wrappers.
 - **Where:** `Types/Inductive/`
-- **Instances:** OHLCVInductive, ScreenerInductive, ScreenerQuoteInductive, TickerInfoInductive, AlgoIdentity
+- **Instances:** OHLCVInductive, ScreenerInductive, ScreenerQuoteInductive, TickerInfoInductive, AlgoIdentity, AlarmSeverity, MetricKind
 - **Matter:** Crystalline — rigid structure, validates shape.
 
 ### io_ prefix
@@ -259,6 +261,11 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 - **Phase:** Hom (Liquid)
 - **Fields:** stride_min, train_split_pct, optimize, optimize_config
 
+### MetricKind
+- **What:** 2-variant enum for metric measurement kinds: counter, gauge.
+- **Where:** `Types/Inductive/MetricKind/default.py`
+- **Phase:** Inductive (Crystalline) — exhaustively checkable ADT replacing bare Literal.
+
 ### MetricMonad
 - **What:** Single metric observation point — name, value, kind (counter or gauge).
 - **Where:** `Types/Monad/Metric/default.py`
@@ -267,7 +274,7 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 ### Monad (type phase)
 - **What:** Effect record types. What happened during execution — errors, metrics, alarms, store operations.
 - **Where:** `Types/Monad/`
-- **Instances:** ErrorMonad, MetricMonad, AlarmMonad, ObservabilityMonad, StoreMonad
+- **Instances:** ErrorMonad, MetricMonad, AlarmMonad, ObservabilityMonad, StoreMonad, ArtifactRow
 - **Matter:** Plasma — hot, effectful.
 
 ---
@@ -299,13 +306,6 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 - **Where:** `Types/Monad/Error/default.py`
 - **Phase:** Monad (Plasma) — supporting enum for ErrorMonad.
 
-### PipelineHom
-- **What:** Composite Hom type bundling per-phase inputs for IOMainPhase walk-forward orchestration.
-- **Where:** `Types/Hom/Pipeline/default.py`
-- **Phase:** Hom (Liquid)
-- **Fields:** discovery (DiscoveryHom), ingest (IngestHom), feature (FeatureHom), train (TrainHom), eval (EvalHom)
-- **Note:** Extracted to keep IOMainPhase Settings at <=7 fields. IOMainPhase destructures it during walk-forward execution. Parallel to ServeInputHom.
-
 ### Product (type phase)
 - **What:** Phase outputs + meta. Computed results expanding outward from a phase.
 - **Where:** `Types/Product/`
@@ -317,10 +317,10 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 ## R — Run and Risk Terms
 
 ### RiskDependent
-- **What:** Per-step risk gate parameters — stop-loss and take-profit thresholds.
+- **What:** Per-step risk gate parameters — stop-loss, take-profit, and max drawdown thresholds.
 - **Where:** `Types/Dependent/Risk/default.py`
 - **Phase:** Dependent (Liquid Crystal)
-- **Fields:** stop_loss_pct (negative, e.g. -2.0), profit_threshold_pct (positive, e.g. 0.5)
+- **Fields:** stop_loss_pct (negative, e.g. -2.0), profit_threshold_pct (positive, e.g. 0.5), max_drawdown_pct (negative, e.g. -5.0)
 
 ### RunIdentity
 - **What:** Terminal object defining a single pipeline run: ID, timestamp, seed, name, store, verbosity.
@@ -342,13 +342,6 @@ CoTypes (dual — 1-1 correspondence, no exceptions):
 - **Where:** `Types/Hom/Serve/default.py`
 - **Phase:** Hom (Liquid)
 - **Fields:** train_run_id, io_algo, poll_interval_s, max_bars, max_model_age_min
-
-### ServeInputHom
-- **What:** Composite Hom type bundling sub-phase inputs for IOServePhase live serving loop.
-- **Where:** `Types/Hom/ServeInput/default.py`
-- **Phase:** Hom (Liquid)
-- **Fields:** feature (FeatureHom), ingest (IngestHom)
-- **Note:** Extracted to keep IOServePhase Settings at <=7 fields. Parallel to PipelineHom.
 
 ### StoreMonad
 - **What:** Typed artifact store binding SQLite metadata to filesystem blobs. The IO boundary.

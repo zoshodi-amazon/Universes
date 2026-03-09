@@ -145,6 +145,15 @@ def run(
             meta.mean_episode_reward = float(np.mean(train_env.returns))
             meta.std_episode_reward = float(np.std(train_env.returns))
 
+            # B12: Detect reward plateau — if the last 25% of episodes have
+            # near-zero variance, the model has converged or is stuck.
+            returns = np.array(train_env.returns)
+            tail_start = max(0, len(returns) - len(returns) // 4)
+            if tail_start > 0 and len(returns[tail_start:]) >= 2:
+                tail_std = float(np.std(returns[tail_start:]))
+                if tail_std < 1e-4:
+                    meta.early_stopped = True
+
         final_reward = 0.0
         if hasattr(train_env, "returns") and len(train_env.returns) > 0:
             final_reward = float(train_env.returns[-1])

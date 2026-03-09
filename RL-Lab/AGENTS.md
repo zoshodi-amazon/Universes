@@ -56,10 +56,6 @@ Every justfile command is a classified morphism. Three prefixes, no exceptions (
 
 | Command | 6FF | What It Observes |
 |---------|-----|-----------------|
-| `ana-tail` | f* pullback | SSE event stream |
-| `ana-visualize` | f* pullback | Rerun multi-modal dashboard |
-| `ana-render` | f* pullback | gym-trading-env Flask dashboard |
-| `ana-validate` | f! shriek pullback | Type schemas + JSON roundtrip |
 | `ana-discover` | f* pullback | Last DiscoveryProductOutput from store |
 | `ana-ingest` | f* pullback | Last IngestProductOutput |
 | `ana-feature` | f* pullback | FeatureProductOutput geometry stats |
@@ -67,8 +63,6 @@ Every justfile command is a classified morphism. Three prefixes, no exceptions (
 | `ana-eval` | f* pullback | EvalProductOutput return/drawdown |
 | `ana-serve` | f* pullback | ServeProductOutput broker/audit |
 | `ana-main` | f* pullback | MainProductOutput pipeline summary |
-| `ana-store` | Hom internal | All runs, artifacts, blob sizes |
-| `ana-check` | f! shriek pullback | Full system health |
 
 ### Composite Commands (hylo-)
 
@@ -164,8 +158,10 @@ Types follow the free ⊣ forgetful adjunction, mapped to phases of matter:
 - `{Domain}Monad` — effect record type [Monad]
 - `IO{Phase}Phase` — IO executor in `Types/IO/` [IO]
 - `AlgoIdentity` lives in `Types/Inductive/Algo/` — it is a 4-variant sum type (ADT), Crystalline phase
-- `PipelineHom` bundles sub-phase Hom types for IOMainPhase (5 fields: discovery, ingest, feature, train, eval)
-- `ServeInputHom` bundles sub-phase Hom types for IOServePhase (2 fields: feature, ingest)
+- `AlarmSeverity` lives in `Types/Inductive/AlarmSeverity/` — 3-variant ADT replacing bare Literal
+- `MetricKind` lives in `Types/Inductive/MetricKind/` — 2-variant ADT replacing bare Literal
+- `ArtifactRow` lives in `Types/Monad/Artifact/` — extracted from StoreMonad per 1-type-per-file invariant
+- IOMainPhase instantiates sub-phase Hom types locally with defaults — it is a parameterized wrapper, not a config aggregator
 - Every phase has exactly: Hom + ProductOutput + ProductMeta + IO executor + justfile entry
 
 ## Type Phase Mapping
@@ -177,11 +173,11 @@ Inter-phase transitions are symmetry-breaking functors (6-functor formalism adju
 | # | Phase | Type Theory | Matter | Directory | Naming | Count |
 |---|-------|-------------|--------|-----------|--------|-------|
 | 1 | Identity | Unit (⊤) | BEC | `Types/Identity/` | `{Domain}Identity` | 2 |
-| 2 | Inductive | ADT | Crystalline | `Types/Inductive/` | `{Domain}Inductive` | 5 |
+| 2 | Inductive | ADT | Crystalline | `Types/Inductive/` | `{Domain}Inductive` | 7 |
 | 3 | Dependent | Indexed | Liquid Crystal | `Types/Dependent/` | `{Domain}Dependent` | 5 |
-| 4 | Hom | Function | Liquid | `Types/Hom/` | `{Domain}Hom` | 9 |
+| 4 | Hom | Function | Liquid | `Types/Hom/` | `{Domain}Hom` | 7 |
 | 5 | Product | Sum/Product | Gas | `Types/Product/` | `{Domain}Product{Kind}` | 14 |
-| 6 | Monad | Effect | Plasma | `Types/Monad/` | `{Domain}Monad` | 5 |
+| 6 | Monad | Effect | Plasma | `Types/Monad/` | `{Domain}Monad` | 6 |
 | 7 | IO | IO | QGP | `Types/IO/` | `IO{Phase}Phase` | 7 |
 
 ## Product Types (Outputs + Meta)
@@ -204,6 +200,7 @@ IOServePhase includes the following safeguards for live trading:
 
 - **Stop-loss check** — per-step return check, flattens position if breached
 - **Take-profit check** — exits on profit threshold
+- **Max drawdown circuit breaker** — tracks peak portfolio value, flattens if drawdown exceeds `risk.max_drawdown_pct`
 - **Model staleness check** — rejects models older than `max_model_age_min`
 - **Data freshness check** — rejects data older than 7 days
 - **Feature validation** — ensures feature columns exist
@@ -245,6 +242,11 @@ IOServePhase includes the following safeguards for live trading:
 - `null` / `""` / `-1` as sentinel without documenting intent → document in `Field(description=...)`
 - Cross-Hom import → shared type belongs in `Identity/`, `Inductive/`, or `Dependent/`
 - Placing a finite enum in `Identity/` → enums are sum types (ADTs), they belong in `Inductive/`
+- `Literal["a", "b"]` for finite variants → extract to `Inductive/` as `str, Enum` ADT
+- `except Exception: pass` or `except Exception: continue` → all errors must be typed through ErrorMonad
+- `except (KeyError, Exception)` → redundant; `Exception` is superclass of `KeyError`
+- `hasattr(order, "filled_qty")` → use `order.status` for fill verification
+- Cross-phase Hom aggregator types (`PipelineHom`, `ServeInputHom`) → each phase instantiates Hom defaults locally
 - "Exception" to a phase placement rule → there are no exceptions; move the type
 
 ## File Responsibilities
@@ -282,10 +284,10 @@ Every category in Types/ has exactly one dual in CoTypes/. 1-1 correspondence. N
 | 3 | `Dependent/` | `CoDependent/` | Fibration <-> Cofibration | Lifting property: does default.json conform to Dependent schemas? bounds respected? |
 | 4 | `Hom/` | `CoHom/` | Constructors <-> Destructors | Observation specs: what to check per phase (field-parallel with Bool/Option types) |
 | 5 | `Product/` | `CoProduct/` | Product <-> Coproduct | Observation results: what the observer actually saw per phase (Output + Meta) |
-| 6 | `Monad/` | `Comonad/` | Effects <-> Co-effects | Observation traces: extract (current) + extend (history). TraceComonad |
+| 6 | `Monad/` | `Comonad/` | Effects <-> Co-effects | Observation traces: TraceComonad + CoErrorComonad + CoMetricComonad + CoAlarmComonad + CoStoreComonad |
 | 7 | `IO/` | `CoIO/` | Executors <-> Observers | Observer executors: probe artifact state, compare against CoHom |
 
-**Current status:** All 7 categories populated. Categories 4-7 have both types and executors. Categories 1-3 have types (observation witnesses) but no dedicated CoIO executors — they are probed inline by the per-phase observers. 4 per-phase CoProduct directories (Feature, Train, Eval, Serve) are stubs (`__init__.py` only, no Output/Meta).
+**Current status:** All 7 categories populated. Categories 4-7 have both types and executors. Categories 1-3 have types (observation witnesses) but no dedicated CoIO executors — they are probed inline by the per-phase observers. Comonad/ has 5 types: Trace, Error, Metric, Alarm, Store.
 
 **Naming:** `CoTypes/CoIO/` (not `CoTypes/IO/`). `CoTypes/Comonad/` (standard math spelling, not `CoMonad/`). See root TEMPLATE.md.
 
@@ -295,14 +297,9 @@ Every observer has exactly: `CoHom` + `CoProduct{Output,Meta}` + `CoIO executor`
 
 Observer executors are covariant presheaves — they observe the system without participating in the phase chain. They do NOT appear in the frozen phase chain table.
 
-| Observer | CoHom | CoProductOutput | CoIO Executor | justfile |
-|----------|-------|-----------------|---------------|----------|
-| Tail | `TailCoHom` | `TailCoProductOutput` | `CoTypes/CoIO/IOTailPhase/` | `ana-tail` |
-| Visualize | `VisualizeCoHom` | `VisualizeCoProductOutput` | `CoTypes/CoIO/IOVisualizePhase/` | `ana-visualize` |
+### Per-Phase Observation Duals
 
-### Per-Phase Observation Duals (Target)
-
-In addition to the two standalone observers (Tail, Visualize), each of the 7 production phases needs its own observation triad: `CoHom(phase) -> CoIO observer -> CoProduct(phase)`.
+Each of the 7 production phases has its own observation triad: `CoHom(phase) -> CoIO observer -> CoProduct(phase)`. Validate and Visualize logic is absorbed into CoIOMainPhase (Phase 7 composite). Render logic is absorbed into CoIOEvalPhase.
 
 | Phase | CoHom | CoIO Observer | CoProduct | justfile | Status |
 |-------|-------|---------------|-----------|----------|--------|
@@ -314,16 +311,19 @@ In addition to the two standalone observers (Tail, Visualize), each of the 7 pro
 | Serve | `CoServeHom` | `CoTypes/CoIO/CoIOServePhase/` | `CoServeProductOutput` | `ana-serve` | CoHom+CoIO done; CoProduct stub |
 | Main | `CoMainHom` | `CoTypes/CoIO/CoIOMainPhase/` | `CoMainProductOutput` | `ana-main` | DONE |
 
-### TraceComonad
+### Comonad Types (5)
 
-`TraceComonad` in `CoTypes/Comonad/Trace/` is the dual of `ObservabilityMonad`. Fields:
-- `observer_id` — identity of observer instance
-- `cursor` — current position in observation space (SSE event id or last file path)
-- `events_seen` — monotonically increasing counter
-- `connection_ok` — liveness boolean
-- `last_seen_at` — ISO timestamp
+`CoTypes/Comonad/` contains 5 observation witness types — duals of the 5 Monad types:
 
-`CoPhaseId` enum (in same file) identifies observer executors: `tail | visualize`. Distinct from `PhaseId` in `Types/Monad/Error/` — observer errors never mix with pipeline errors.
+| Comonad Type | Dual Of | Fields | Purpose |
+|-------------|---------|--------|---------|
+| `TraceComonad` | `ObservabilityMonad` | observer_id, cursor, events_seen, connection_ok, last_seen_at | Observation cursor state |
+| `CoErrorComonad` | `ErrorMonad` | error_count, has_fatal, worst_severity, last_message | Error observation summary |
+| `CoMetricComonad` | `MetricMonad` | metric_count, has_counters, has_gauges, value_range | Metric observation summary |
+| `CoAlarmComonad` | `AlarmMonad` | alarm_count, has_critical, worst_severity, last_name | Alarm observation summary |
+| `CoStoreComonad` | `StoreMonad` | db_reachable, artifact_count, blob_dir_exists, latest_created, disk_usage_mb | Store health witness |
+
+`CoPhaseId` enum (in Trace) identifies observer executors: 7 variants matching canonical phases. Distinct from `PhaseId` in `Types/Monad/Error/`.
 
 ### Bidirectional Path Closure
 

@@ -22,7 +22,8 @@
   },
   "risk": {
     "stop_loss_pct": -2.0,
-    "profit_threshold_pct": 0.5
+    "profit_threshold_pct": 0.5,
+    "max_drawdown_pct": -5.0
   },
   "main": {
     "stride_min": 1440,

@@ -162,7 +162,7 @@ def _execute_broker(
                     )
                 )
                 meta.orders_submitted += 1
-                if order and hasattr(order, "filled_qty"):
+                if order and getattr(order, "status", None) == "filled":
                     meta.orders_filled += 1
         elif target_pos < 0.0 and ticker not in positions:
             # Short entry
@@ -177,7 +177,7 @@ def _execute_broker(
                     )
                 )
                 meta.orders_submitted += 1
-                if order and hasattr(order, "filled_qty"):
+                if order and getattr(order, "status", None) == "filled":
                     meta.orders_filled += 1
         elif target_pos > 0.0 and ticker in positions:
             # Already in a position — check if we need to flip from short to long
@@ -196,7 +196,7 @@ def _execute_broker(
                         )
                     )
                     meta.orders_submitted += 1
-                    if order and hasattr(order, "filled_qty"):
+                    if order and getattr(order, "status", None) == "filled":
                         meta.orders_filled += 1
         elif target_pos < 0.0 and ticker in positions:
             # Already in a position — check if we need to flip from long to short
@@ -215,7 +215,7 @@ def _execute_broker(
                         )
                     )
                     meta.orders_submitted += 1
-                    if order and hasattr(order, "filled_qty"):
+                    if order and getattr(order, "status", None) == "filled":
                         meta.orders_filled += 1
         elif target_pos == 0.0 and ticker in positions:
             # Flatten
@@ -333,6 +333,7 @@ def run(
     prev_pos = 0.0
     cumulative_ret = 0.0
     final_value = float(env_base.initial_value)
+    max_value_seen = float(env_base.initial_value)
     status = ServeStatus.running
 
     while not SHUTDOWN and n_bars_served < serve_specs.max_bars:
@@ -358,7 +359,14 @@ def run(
                 run_base.run_id, PhaseId.feature.value, "features"
             )
             df = pd.read_pickle(feat_row.blob_path)
-        except Exception:
+        except Exception as e:
+            meta.obs.errors.append(
+                ErrorMonad(
+                    phase=PhaseId.serve,
+                    message=f"feature reload failed: {str(e)[:64]}",
+                    severity=Severity.warn,
+                )
+            )
             time.sleep(serve_specs.poll_interval_s)
             continue
 
@@ -440,12 +448,27 @@ def run(
                 if hasattr(inner_env, "df") and inner_env.df.index.tz is not None:
                     inner_env.df.index = inner_env.df.index.tz_localize(None)
                 inner_env.save_for_render(dir=str(render_dir))
-            except Exception:
-                pass
+            except Exception as e:
+                meta.obs.errors.append(
+                    ErrorMonad(
+                        phase=PhaseId.serve,
+                        message=f"render save failed: {str(e)[:64]}",
+                        severity=Severity.warn,
+                    )
+                )
         finally:
             serve_env.close()
 
         cumulative_ret = max(-100.0, min(1000.0, bar_ret_pct))
+
+        # D8.10: Max drawdown circuit breaker — track peak value, flatten if drawdown exceeds threshold
+        max_value_seen = max(max_value_seen, final_value)
+        if max_value_seen > 0:
+            drawdown_pct = ((final_value - max_value_seen) / max_value_seen) * 100.0
+            if drawdown_pct <= risk.max_drawdown_pct:
+                pos = 0.0
+                status = ServeStatus.stopped
+                meta.shutdown_reason = "max_drawdown"
 
         age = _model_age_min(model_path)
         if age > serve_specs.max_model_age_min:

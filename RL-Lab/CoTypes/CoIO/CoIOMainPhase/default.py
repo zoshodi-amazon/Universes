@@ -169,8 +169,8 @@ def _check_field_counts() -> tuple[bool, list[str]]:
             for fname, finfo in fields.items():
                 if not finfo.description:
                     errors.append(f"{cls_name}.{fname}: missing description")
-        except Exception:
-            pass  # import errors caught by _check_imports
+        except Exception as e:  # noqa: F841 — import errors caught by _check_imports
+            pass
     return len(errors) == 0, errors
 
 
