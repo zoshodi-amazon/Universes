@@ -190,11 +190,72 @@ Every justfile command is a classified morphism. Three prefixes, no exceptions:
 
 ### Prefix Classification
 
-| Prefix | Recursion Scheme | Direction | Maps To |
-|--------|-----------------|-----------|---------|
-| `ana-` | Anamorphism (unfold) | Artifact -> Evidence | CoTypes/ |
-| `cata-` | Catamorphism (fold) | Types -> Artifact | Types/ |
-| `hylo-` | Hylomorphism (unfold+fold) | Composite | Types/ tensor CoTypes/ |
+| Prefix | Recursion Scheme | Direction | Maps To | 6FF Functors |
+|--------|-----------------|-----------|---------|--------------|
+| `ana-` | Anamorphism (unfold) | Artifact -> Evidence | CoTypes/ | f* (pullback), f! (shriek pullback), Hom (internal) |
+| `cata-` | Catamorphism (fold) | Types -> Artifact | Types/ | f* (pushforward), f! (shriek push) |
+| `hylo-` | Hylomorphism (unfold+fold) | Composite | Types/ tensor CoTypes/ | x (tensor) |
+
+### Sole Unprefixed Exception
+
+`default` is the ONLY allowed unprefixed recipe. It is the identity morphism -- lists all recipes, produces zero effect. Every other recipe MUST be prefixed with `ana-`, `cata-`, or `hylo-`. No convenience shortcuts, no aliases, no abbreviations.
+
+### 6FF Annotation Convention (Mandatory)
+
+Every recipe MUST carry a 6FF annotation comment immediately above it. Format:
+
+```
+# {6FF functor} -- {Types/ or CoTypes/ target}: {description}
+{prefix}-{name} *ARGS:
+    ...
+```
+
+Example:
+
+```
+# f* pullback -- CoProduct/Identity: observe nix settings, secrets
+ana-identity:
+    @nix eval '.#homeConfigurations.darwin.config.nix' --json | jq .
+
+# f! shriek push -- IO (Lake): build Lean type system
+cata-types-build:
+    @nix-shell -p lean4 --run "cd Types/IO && lake build"
+
+# tensor -- ana-types-validate tensor cata-switch
+hylo-main host="darwin": ana-types-validate (cata-switch host)
+```
+
+### Canonical Recipe Set (Per Lab)
+
+Every lab MUST have at minimum:
+
+| Recipe | Classification | Mandatory? |
+|--------|---------------|------------|
+| `default` | Identity (list recipes) | Yes |
+| `hylo-main` | Hylomorphism (tensor: the event loop) | Yes |
+| `cata-{phase}` | Catamorphism (one per production phase) | Yes (per phase) |
+| `ana-{phase}` | Anamorphism (one per observation phase) | Yes (dual of each cata-) |
+| `ana-check` | Anamorphism (cross-cutting validation) | Recommended |
+| `ana-types-validate` | Anamorphism (roundtrip closure check) | Recommended |
+| `cata-types-build` | Catamorphism (build Lean type system) | Recommended |
+
+The duality invariant: **every `cata-{phase}` has an `ana-{phase}` dual.** Testing IS coalgebraic observation. There is no separate "test" command -- `ana-` commands ARE the tests.
+
+### Dispatcher Pattern (Root Justfile)
+
+The root `Universes/justfile` is a **dispatcher**. It delegates to lab justfiles. It does NOT duplicate lab recipes.
+
+```
+# Dispatch to lab justfiles
+cata-system *ARGS:
+    just -f SystemLab/justfile cata-{{ARGS}}
+```
+
+Lab justfiles are self-contained. Each lab's justfile contains the complete set of typed morphisms for that lab's artifact domain.
+
+### Sub-Phase Rule
+
+Sub-phase justfiles (nested inside `Types/IO/`) follow the same 6FF convention. No exceptions. If a phase has sub-phases with their own justfile, every recipe in that justfile is prefixed and annotated.
 
 ### Command Naming Patterns
 
@@ -205,7 +266,6 @@ ana-{verb} {arg}         -- General observation
 cata-{verb} {arg}        -- General production
 cata-types-build         -- Build the type system
 hylo-main {target}       -- Full pipeline (the event loop)
-hylo-dev {shell}         -- Enter dev shell
 ```
 
 **Naming rule:** All lowercase, kebab-case. Phase names in commands are lowercase (not PascalCase). No unprefixed commands except `default`.

@@ -40,7 +40,7 @@ Lab-specific TRACKER.md files track per-type implementation state within each la
 | Projection Functor + Codec | DICTIONARY.md | Defined |
 | Anti-patterns table | AGENTS.md | Defined (13 entries) |
 | Git commit format | TEMPLATE.md | Defined |
-| Justfile command classification | TEMPLATE.md, AGENTS.md | Defined (ana-/cata-/hylo-) |
+| Justfile command classification | TEMPLATE.md Section 7, AGENTS.md | Defined (ana-/cata-/hylo-, 6FF annotation mandatory, dispatcher pattern, canonical recipe set) |
 
 ---
 
@@ -52,7 +52,7 @@ Lab-specific TRACKER.md files track per-type implementation state within each la
 | HomeLab | homeConfigurations (user dotfiles) | Yes (scaffold) | Nix | v0.1.0 | Scaffold |
 | MaterialLab | Physical material artifacts (3D prints, CNC, laser) | Provisional (Python) | Python | v0.2.0 | Active |
 | PlatformLab | Firmware images, board definitions | Provisional (Rust) | Rust + Nix | v0.1.0 | Scaffold |
-| RL-Lab | Autonomous quant RL pipeline (single-asset) | Provisional (Python) | Python | v0.2.0 | Active |
+| RL-Lab | Autonomous quant RL pipeline (single-asset) | Provisional (Python) | Python | v0.3.0 | Active |
 | IntelLab | (TBD) | -- | -- | -- | Empty |
 
 ---
@@ -67,7 +67,7 @@ Lab-specific TRACKER.md files track per-type implementation state within each la
 | Completeness checklist | Done (TEMPLATE.md Section 13) |
 | Lab-specific doc templates (AGENTS, DICT, TEMPLATE, TRACKER) | Pattern established (SystemLab, RL-Lab) |
 | Git commit format | Done (TEMPLATE.md Section 9) |
-| Justfile command naming | Done (TEMPLATE.md Section 7) |
+| Justfile command naming | Done (TEMPLATE.md Section 7: 6FF annotation, dispatcher, canonical set, sole exception) |
 
 **Verdict:** Mechanical lab instantiation is possible. Follow TEMPLATE.md Section 13.
 

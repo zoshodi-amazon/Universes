@@ -1,26 +1,65 @@
+# ===============================================================================
 # Fab Cyberdeck Lab -- justfile
-# 1:1 with Types/IO/. Each phase has own BaseSettings + default.json. CLI args override.
+# ===============================================================================
+#
+# Every command is a classified morphism (6-functor formalism):
+#
+#   ana-{cmd}   — anamorphism  — coalgebraic observation (f*, f!, Hom)
+#   cata-{cmd}  — catamorphism — algebraic production (f*, f!)
+#   hylo-{cmd}  — hylomorphism — tensor composite: ana then cata (⊗)
+#
+# Phase chain:
+#   Discovery → Ingest → Geometry → Dynamics → Synthesis → Serve → Main
+#   (Unit/⊤)    (ADT)    (Indexed)   (A→B)      (A×B)      (M A)   (IO)
+#
+# 1:1 with Types/IO/. Each phase has own BaseSettings + default.json.
+# CLI args override.
+#
+# ===============================================================================
 
-discover *ARGS:
+default:
+    @just --list
+
+# ===============================================================================
+# cata- (Catamorphism) — Algebraic productions → Types/
+# ===============================================================================
+
+# f* pushforward -- IO/Discovery: search catalogs, find designs
+cata-discover *ARGS:
     nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IODiscoveryPhase.default {{ARGS}}'
 
-ingest *ARGS:
+# f* pushforward -- IO/Ingest: import/parse CAD + material specs
+cata-ingest *ARGS:
     nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOIngestPhase.default {{ARGS}}'
 
-geometry *ARGS:
+# f* pushforward -- IO/Geometry: parametric modeling, CSG operations
+cata-geometry *ARGS:
     nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOGeometryPhase.default {{ARGS}}'
 
-dynamics *ARGS:
+# f* pushforward -- IO/Dynamics: FEA stress, thermal, topology optimization
+cata-dynamics *ARGS:
     nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IODynamicsPhase.default {{ARGS}}'
 
-synthesis *ARGS:
+# f! shriek push -- IO/Synthesis: slicing, toolpath generation, G-code
+cata-synthesis *ARGS:
     nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOSynthesisPhase.default {{ARGS}}'
 
-render *ARGS:
-    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IORenderPhase.default {{ARGS}}'
-
-serve *ARGS:
+# f! shriek push -- IO/Serve: deploy artifacts, serve dashboards
+cata-serve *ARGS:
     nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOServePhase.default {{ARGS}}'
 
-main *ARGS:
+# ===============================================================================
+# hylo- (Hylomorphism) — Tensor composites → Types/ ⊗ CoTypes/
+# ===============================================================================
+
+# ⊗ tensor -- IO/Main: full fabrication pipeline
+hylo-main *ARGS:
     nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IOMainPhase.default {{ARGS}}'
+
+# ===============================================================================
+# ana- (Anamorphism) — Coalgebraic observations → CoTypes/
+# ===============================================================================
+
+# f* pullback -- CoIO/Render: visualize fabrication results
+ana-render *ARGS:
+    nix-shell -p uv --run 'uv run python -W ignore::ResourceWarning -m Types.IO.IORenderPhase.default {{ARGS}}'

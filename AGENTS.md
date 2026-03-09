@@ -312,7 +312,7 @@ These apply to **every lab** in the Universes monorepo. No exceptions.
 14. 1-1-1 invariant: every Phase has Hom x Product(Output + Meta) x IO executor.
 15. <=7 phases per module. <=7 fields per type.
 16. default.json is committed (like a lock file). Regenerated via `ana-types-validate`.
-17. Every `just` command is a classified morphism: `ana-` (coalgebraic), `cata-` (algebraic), or `hylo-` (tensor). No unprefixed commands.
+17. Every `just` command is a classified morphism: `ana-` (coalgebraic), `cata-` (algebraic), or `hylo-` (tensor). The sole unprefixed exception is `default` (identity morphism -- lists recipes, zero effect). Every recipe carries a mandatory 6FF annotation comment. Sub-phase justfiles follow the same convention. See TEMPLATE.md Section 7.
 18. Directory placement IS typing. The path is the type annotation. No exceptions.
 19. Every filetype has a canonical category. No unclassified filetypes.
 20. Testing = coalgebraic observation. Every `cata-*` has an `ana-*` dual.
