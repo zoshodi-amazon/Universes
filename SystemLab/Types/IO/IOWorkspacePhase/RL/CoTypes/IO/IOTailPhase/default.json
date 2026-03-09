@@ -1,7 +1,0 @@
-{
-  "tail": {
-    "port": 4096,
-    "hostname": "127.0.0.1",
-    "filter_kinds": ["tool", "file", "message"]
-  }
-}
