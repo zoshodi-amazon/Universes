@@ -352,3 +352,347 @@ The type system is vendor-agnostic. The IO executors are vendor-specific.
 12. No nulls, no bare strings for enums, no upward imports in the DAG.
 13. Testing = coalgebraic observation. Every `cata-*` has an `ana-*` dual.
 14. Names are first-class citizens. Every name carries type-theoretic weight. No ad-hoc naming. No exceptions.
+
+---
+
+## 13. Sheaf Section Template: Onboarding a New Lab
+
+The Type Universe is a sheaf F over the space of artifact domains. Each lab is a local section of that sheaf. Creating a new lab is reduced to instantiating 7 sections -- one per stratum of the information gradient. This template mechanizes that process.
+
+### Step 0: Define the Base Point
+
+**Question:** What typed artifact does this lab produce?
+
+The answer defines the lab boundary (Invariant 28). One artifact type = one lab. If the answer names two independent artifact types, those are two labs.
+
+| Field | Value |
+|-------|-------|
+| Lab name | `{Name}Lab` |
+| Artifact type | (e.g., "NixOS system configurations", "3D-printed parts", "firmware images") |
+| Type language | (e.g., Lean 4, Python + pydantic, Rust + serde) |
+| IO runtime | (e.g., Nix, Python, Cargo + Nix) |
+
+### Stratum 1: Identity (BEC) -- Trivial {e}, 0 DOF
+
+**Question:** What are the frozen canonical forms that every phase references?
+
+- **Types/Identity/**: Terminal objects with one canonical inhabitant (e.g., `Package`, `Version`, `Timestamp`)
+- **CoTypes/CoIdentity/**: Introspection witnesses (present? installed? reachable?)
+- **Constraint:** Zero degrees of freedom. ALL fields must have defaults. `Inhabited` and `BEq` mandatory.
+- **Completeness:** Every shared primitive referenced by higher strata must originate here.
+
+### Stratum 2: Inductive (Crystalline) -- Space group, finite discrete DOF
+
+**Question:** What are the finite, enumerable choices in this domain?
+
+- **Types/Inductive/**: ADTs / sum types (e.g., `BootLoader`, `CadFormat`, `McuFamily`)
+- **CoTypes/CoInductive/**: Elimination forms, parsers, validators for each ADT
+- **Constraint:** Finite zero-argument constructors only. Every string-that-is-an-enum lives here. Manual ToJson/FromJson (explicit catamorphism/anamorphism).
+- **Completeness:** Every finite choice in the domain has an Inductive type. No bare strings.
+
+### Stratum 3: Dependent (Liquid Crystal) -- Partial SO(3), indexed continuous DOF
+
+**Question:** What structures are parameterized over discrete choices?
+
+- **Types/Dependent/**: Indexed families fibered over Inductive types
+- **CoTypes/CoDependent/**: Schema conformance validators (lifting property)
+- **Constraint:** Primary form is a genuine dependent family (`abbrev Config (idx : Variant) : Type`). Pragmatic fallback: structure with at least one Inductive-typed field. <=7 fields. All defaults.
+- **Completeness:** Every parameterized structure is here. No "config" objects scattered in IO.
+
+### Stratum 4: Hom (Liquid) -- SO(3), continuous DOF
+
+**Question:** What are the 7 phases, and what are their input specifications?
+
+- **Types/Hom/{Phase}/**: Phase input morphisms composing Dependent types (uncurried profunctor domain)
+- **CoTypes/CoHom/{Phase}/**: Observation specs (Bool/Option field-parallel to Hom)
+- **Constraint:** <=7 phases. <=7 fields per Hom. All defaults (`{}` for Dependent fields). Named `{Phase}Hom`.
+- **Completeness:** Every phase has a Hom type. The Hom type is the sole input to the IO executor.
+
+### Stratum 5: Product (Gas) -- E(3), expanding DOF
+
+**Question:** What does each phase produce?
+
+- **Types/Product/{Phase}/Output/**: Phase output type (`{Phase}Output`)
+- **Types/Product/{Phase}/Meta/**: Phase metadata type (`{Phase}Meta`, always includes `timestamp`)
+- **CoTypes/CoProduct/{Phase}/**: Observation results (what the observer saw)
+- **Constraint:** Every phase has Output + Meta. The categorical product is the codomain of the profunctor.
+- **Completeness:** Every phase has both Output and Meta. No phase without a typed result.
+
+### Stratum 6: Monad (Plasma) -- Gauge, charged DOF
+
+**Question:** What can go wrong (or right) during IO execution?
+
+- **Types/Monad/**: Effect types using Lean's native monad machinery (`ExceptT`, `MonadExcept`, monad transformer stacks, custom `Monad` instances)
+- **CoTypes/Comonad/**: Observation traces (extract current + extend over history)
+- **Constraint:** Error effects use `ExceptT`/`Except`. Custom result ADTs carry proper `Monad` instances. No plain `structure` with a `success : Bool` field.
+- **Completeness:** Every failure mode and effect type in the domain is captured as a monad.
+
+### Stratum 7: IO (QGP) -- Deconfined, maximal DOF
+
+**Question:** What IO executors produce the artifacts?
+
+- **Types/IO/IO{Phase}Phase/**: Executor (`default.{ext}`) + serialized Hom (`default.json`)
+- **CoTypes/CoIO/CoIO{Phase}Phase/**: Observer executor (probes, does not modify)
+- **Constraint:** Lean stops at stratum 6. IO is `default.json` + `default.{ext}`. No Lean types at this stratum -- only serialized boundaries and runtime executors.
+- **Completeness:** Every phase has an IO executor + default.json. Every executor reads `cfg = merge(base, local)`.
+
+### Completeness Checklist
+
+- [ ] Lab name follows `{Name}Lab` convention
+- [ ] 7 Types/ directories created (Identity, Inductive, Dependent, Hom, Product, Monad, IO)
+- [ ] 7 CoTypes/ directories created (CoIdentity, CoInductive, CoDependent, CoHom, CoProduct, Comonad, CoIO)
+- [ ] 7 phases named (PascalCase) and mapped to universal categories
+- [ ] Each phase has the profunctor triad: Hom + IO executor + Product(Output + Meta)
+- [ ] Each phase has the observation triad: CoHom + CoIO observer + CoProduct
+- [ ] All `default.json` files committed with bounded defaults
+- [ ] `local.json` pattern established (`.gitignore`'d)
+- [ ] Justfile created with `ana-`/`cata-`/`hylo-` prefixed commands
+- [ ] Lab-specific AGENTS.md, DICTIONARY.md, TEMPLATE.md, TRACKER.md created (extending Universes/ root)
+
+---
+
+## 14. Per-Stratum Lean Type Templates
+
+Each stratum has a canonical Lean 4 syntactic form that encodes the stratum's symmetry group as precisely as Lean's type system allows. These are not style guidelines -- they are structural enforcement at the language level. Each Lean construct is chosen because it IS the category-theoretic object at that stratum, not because it approximates it.
+
+### Stratum 1: Identity (BEC) -- Terminal Object
+
+The terminal object has exactly one canonical inhabitant. Two sub-patterns:
+
+**Pattern 1a: True Terminal Object** (zero fields, one constructor)
+
+```lean
+-- Types/Identity/{Name}/Default.lean
+-- The terminal object: exactly one inhabitant, zero degrees of freedom.
+inductive {Name} where
+  | mk
+  deriving Repr, BEq, Inhabited
+```
+
+**Invariant:** One nullary constructor. `Inhabited` witnesses the canonical form. `BEq` witnesses decidable equality (trivial -- all inhabitants are equal because there is only one). This IS the terminal object in the category of types.
+
+**Pattern 1b: Shared Primitive** (canonical reference data)
+
+```lean
+-- Types/Identity/{Name}/Default.lean
+-- Shared primitive: one canonical form per data node. All fields defaulted.
+structure {Name} where
+  field1 : Type1 := default1
+  field2 : Type2 := default2
+  deriving Repr, BEq, Inhabited, Lean.ToJson, Lean.FromJson
+```
+
+**Invariant:** ALL fields have defaults. `Inhabited` is mandatory (witnesses the existence of a canonical form). `BEq` is mandatory (decidable equality -- the trivial symmetry group). Use this when the terminal object carries identifying data (e.g., `Package` with `name` and `storePath`).
+
+**When to use which:** 1a for pure witnesses (unit types, sentinel values). 1b for shared reference types that higher strata depend on.
+
+### Stratum 2: Inductive (Crystalline) -- Free Algebra
+
+The free algebra over a finite set of generators. The `inductive` keyword IS the type-theoretic construct.
+
+```lean
+-- Types/Inductive/{Name}/Default.lean
+-- Free algebra: finite constructors, zero-argument. The space group is the
+-- permutation group on constructors.
+inductive {Name} where
+  | variant1
+  | variant2
+  | variant3
+  deriving Repr, BEq, Inhabited
+
+-- Catamorphism (fold): elimination map to JSON serialization
+instance : Lean.ToJson {Name} where
+  toJson
+    | .variant1 => "variant1"
+    | .variant2 => "variant2"
+    | .variant3 => "variant3"
+
+-- Anamorphism (unfold): introduction map from JSON deserialization
+instance : Lean.FromJson {Name} where
+  fromJson? j := do
+    let s <- j.getStr?
+    match s with
+    | "variant1" => pure .variant1
+    | "variant2" => pure .variant2
+    | "variant3" => pure .variant3
+    | other => throw s!"unknown {Name}: {other}"
+```
+
+**Invariant:** Finite, zero-argument constructors only. No payload -- if a constructor needs data, the data lives in Dependent/ (stratum 3), indexed over this Inductive. Manual `ToJson`/`FromJson` instances are NOT a workaround -- they ARE the explicit catamorphism (fold to JSON) and anamorphism (unfold from JSON), the universal property of the free algebra. Pattern match exhaustiveness in `FromJson` is the **exhaustiveness witness**.
+
+### Stratum 3: Dependent (Liquid Crystal) -- Fibration
+
+A type that genuinely depends on a value from a lower stratum. The fibration: given an Inductive index, the fiber is a different type. Lean 4 is a dependently typed language -- use this.
+
+**Primary Pattern: Genuine Dependent Family**
+
+```lean
+-- Types/Dependent/{Name}/Default.lean
+-- Fibration: the type varies over the Inductive index.
+-- Each fiber is a distinct structure inhabiting the total space.
+
+structure {Name}ForVariant1 where
+  param1 : Type1 := default1
+  param2 : Type2 := default2
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+structure {Name}ForVariant2 where
+  paramA : TypeA := defaultA
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+-- The dependent family: index -> Type
+-- abbrev ensures transparent reduction during elaboration.
+abbrev {Name} (idx : SomeInductive) : Type :=
+  match idx with
+  | .variant1 => {Name}ForVariant1
+  | .variant2 => {Name}ForVariant2
+```
+
+**Invariant:** `abbrev` (not `def`) -- ensures Lean's elaborator can reduce `{Name} .variant1` to `{Name}ForVariant1` transparently. This is a genuine Pi type: `(idx : SomeInductive) -> Type`. The fiber over each index value is a structurally distinct type. This is the **section of the fibration**.
+
+**Pragmatic Fallback: Soft Fibration**
+
+```lean
+-- Types/Dependent/{Name}/Default.lean
+-- Soft fibration: at least one field references an Inductive type.
+-- The structure is parameterized but not type-level indexed.
+structure {Name} where
+  index   : SomeInductive := SomeInductive.defaultVariant
+  param1  : Type1 := default1
+  param2  : Type2 := default2
+  deriving Repr, Lean.ToJson, Lean.FromJson
+```
+
+**When to use which:** Genuine dependent family when fibers are structurally different (different fields per variant). Soft fibration when all variants share the same field layout but are parameterized by an Inductive choice.
+
+### Stratum 4: Hom (Liquid) -- Morphism Domain (Profunctor)
+
+The domain of the profunctor `Hom(phase) --IO--> Product(phase)`. A Hom type is the uncurried input to a morphism -- the product of all Dependent types needed by a phase.
+
+```lean
+-- Types/Hom/{Phase}/Default.lean
+-- Profunctor domain: the uncurried input to the phase morphism.
+-- Hom(A,B) ~ A -> B by currying; this is the uncurried form.
+structure {Phase}Hom where
+  dep1 : DependentType1 := {}
+  dep2 : DependentType2 := {}
+  ind1 : InductiveType1 := default
+  deriving Repr, Lean.ToJson, Lean.FromJson
+```
+
+**Invariant:** Composes Dependent and Inductive types from lower strata. <=7 fields. All defaults (`:= {}` for Dependent structures, `:= default` for Inductive types via `Inhabited`). Named `{Phase}Hom` -- the name declares it as the Hom-set for that phase. This IS the domain of the profunctor arrow.
+
+### Stratum 5: Product (Gas) -- Categorical Product
+
+The codomain of the profunctor. The categorical product A x B of Output and Meta. Lean's `structure` IS the product type (named fields are projections).
+
+```lean
+-- Types/Product/{Phase}/Output/Default.lean
+-- Product projection 1: what the phase produced.
+structure {Phase}Output where
+  result1 : Type1 := default1
+  result2 : Type2 := default2
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+-- Types/Product/{Phase}/Meta/Default.lean
+-- Product projection 2: provenance metadata.
+structure {Phase}Meta where
+  timestamp : String := ""
+  duration  : Nat := 0
+  deriving Repr, Lean.ToJson, Lean.FromJson
+```
+
+**Invariant:** Always paired: Output + Meta. This is the categorical product -- fields are projections (`output.result1`, `meta.timestamp`). Meta always includes `timestamp` (the observation timestamp is the minimal provenance witness). The Product stratum expands -- outputs proliferate as the phase chain progresses (E(3) symmetry: translations + rotations in output space).
+
+### Stratum 6: Monad (Plasma) -- Effect Type
+
+Effects carry side-channel information -- the "charge" of the Plasma stratum. Use Lean's native monad infrastructure: `Except`, `ExceptT`, `MonadExcept`, monad transformer stacks, and custom `Monad` instances. No plain structures pretending to be effects.
+
+**Pattern 6a: Error Effect (ExceptT / Except)**
+
+```lean
+-- Types/Monad/{Phase}Error/Default.lean
+-- The error payload: what goes wrong in this phase.
+structure {Phase}Error where
+  phase     : String
+  message   : String
+  timestamp : String := ""
+  deriving Repr, Lean.ToJson, Lean.FromJson
+
+-- Types/Monad/{Phase}M/Default.lean
+-- The phase monad: ExceptT over IO. Composes error handling with IO effects.
+-- This IS the monad transformer stack for the phase.
+abbrev {Phase}M (α : Type) := ExceptT {Phase}Error IO α
+```
+
+**Invariant:** `ExceptT` is the canonical error monad transformer. The phase monad `{Phase}M` composes `{Phase}Error` with `IO` via `ExceptT`. `do`-notation, `throw`, `try`/`catch` all work natively. `MonadExcept {Phase}Error {Phase}M` is derived automatically.
+
+**Pattern 6b: Custom Result ADT with Monad Instance**
+
+```lean
+-- Types/Monad/{Name}/Default.lean
+-- Custom result type: a proper monad with explicit bind semantics.
+inductive {Name} (α : Type) where
+  | ok    : α → {Name} α
+  | error : String → {Name} α
+  deriving Repr
+
+-- The Monad instance gives us do-notation, >>=, pure.
+-- Functor and Applicative are auto-derived from pure + bind.
+instance : Monad {Name} where
+  pure := {Name}.ok
+  bind ma f := match ma with
+    | .ok a    => f a
+    | .error e => .error e
+```
+
+**Invariant:** The `Monad` instance is mandatory -- this is what makes it a monad, not just a data container. `Functor` and `Applicative` are auto-derived from `pure` + `bind`. Use this when the error type needs to be parametric or when you need monad laws to hold structurally.
+
+**Pattern 6c: Composite Monad Stack (Multiple Effects)**
+
+```lean
+-- Types/Monad/{Name}/Default.lean
+-- Composite effect: error + state + reader, stacked over IO.
+abbrev {Name} (α : Type) :=
+  ReaderT {Phase}Env (StateT {Phase}State (ExceptT {Phase}Error IO)) α
+```
+
+**Invariant:** Use monad transformer stacks (`ReaderT`, `StateT`, `ExceptT`) for composite effects. Each transformer adds one "charge" (one degree of freedom) to the effect. The gauge symmetry of the Plasma stratum is the monad transformer composition law: order of stacking matters (gauge choice).
+
+### Stratum 7: IO (QGP) -- Deconfined
+
+Lean's jurisdiction ends at stratum 6. Stratum 7 is the IO boundary: serialized types + runtime executors. No Lean type declarations here.
+
+```
+-- Types/IO/IO{Phase}Phase/default.json    (serialized Hom, committed)
+-- Types/IO/IO{Phase}Phase/default.{ext}   (IO executor, runtime language)
+-- Types/IO/IO{Phase}Phase/local.json      (site fiber, .gitignore'd)
+```
+
+**Invariant:** `default.json` is the serialized Hom at the IO boundary (the adjunction unit eta: `toJson`). The IO executor reads it (the adjunction counit epsilon: `fromJson`) and produces artifact state. Lean functions at this stratum use `IO α` directly or the phase monad from stratum 6:
+
+```lean
+-- Types/IO/Default.lean
+-- The entry point uses IO directly, or the phase monad stack.
+def validatePhase (name : String) (path : System.FilePath)
+    (α : Type) [Lean.FromJson α] : IO Bool := do
+  ...
+
+-- Or with the phase monad:
+def runPhase (hom : {Phase}Hom) : {Phase}M {Phase}Output := do
+  ...
+```
+
+### CoTypes Dual Templates
+
+The coalgebraic dual of each stratum, using the most precise Lean construct available:
+
+| Stratum | Types/ Construct | CoTypes/ Dual Construct |
+|---------|-----------------|------------------------|
+| 1 Identity | `inductive \| mk` or `structure` (Inhabited + BEq) | `structure Co{Name}` with `Bool` fields (`{field}Present : Bool`, `{field}Valid : Bool`) -- coterminal observation witnesses |
+| 2 Inductive | `inductive` + manual ToJson/FromJson | Validation functions `{Name} → Bool` (exhaustiveness witness) + `String → Option {Name}` (parsing eliminator) |
+| 3 Dependent | `abbrev {Name} (idx) : Type` (genuine fibration) | `abbrev Co{Name} (idx) : Type` (cofibration) with `Bool`/`Option` conformance fields per fiber |
+| 4 Hom | `structure {Phase}Hom` (profunctor domain) | `structure Co{Phase}Hom` with `Bool`/`Option` observation fields (field-parallel destructors) |
+| 5 Product | `structure {Phase}Output` + `{Phase}Meta` | `structure Co{Phase}Output` + `CoObservationMeta` (what was seen vs. what was expected) |
+| 6 Monad | `ExceptT`/`Monad` instance/transformer stack | `structure` with `extract : W A → A` + `extend : (W A → B) → W A → W B` (comonad: trace observation) |
+| 7 IO | `default.json` + `default.{ext}` (executor) | `default.json` (expected) + `default.{ext}` (observer: probe artifact, compare against CoHom) |

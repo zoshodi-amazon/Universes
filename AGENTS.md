@@ -18,6 +18,23 @@ This is a **solo-researcher system** -- one human operator building typed artifa
 
 ---
 
+## Sheaf-Theoretic Frame
+
+The Type Universe has the structure of a **sheaf** F over the space of artifact domains:
+
+- **Each lab is a section** of F -- a local instantiation of the 7-stratum type system for a specific artifact domain.
+- **The 7 strata are the fiber** at each point -- Identity through IO, with strictly increasing degrees of freedom.
+- **The universal invariants** (31 items below) are the **restriction maps** -- constraints that every section must satisfy.
+- **The 6-functor formalism** provides the canonical allowed morphisms between fibers and between sections.
+- **Lean 4 types the total space.** The compile-time verification of Lean types is the proof that local sections are well-formed. IO-layer languages (Nix, Python, Rust) inhabit the stalks -- they execute within a single fiber but do not define the sheaf structure.
+- **External libraries and packages are function calls at the IO boundary**, typed and bounded by the Lean-verified sheaf structure. They do not extend the type theory; they are invoked by it.
+- **Creating a new lab** = choosing a base point (artifact domain) and instantiating 7 sections (see TEMPLATE.md Section 13).
+- **The gluing condition** ensures labs sharing types (e.g., shared Identity types) must agree on definitions. The monorepo is globally consistent, not just locally.
+
+See `DICTIONARY.md` for formal definitions of sheaf, section, stalk, fiber, restriction map, gluing, and descent.
+
+---
+
 ## Doc Updates
 
 After every output, update TRACKER.md, DICTIONARY.md, TEMPLATE.md and AGENTS.md files where applicable, referencing/refreshing your context on them before every input and output.

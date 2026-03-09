@@ -32,6 +32,8 @@ Each stratum has strictly more degrees of freedom than the one below. This is an
 
 **Every CS concept has a type-theoretic grounding.** A/B testing, feature flags, caching, microservices, CI/CD, observability -- these are not ad-hoc engineering patterns. They are instances of well-defined category-theoretic structures (coproduct injections, dependent types over boolean fibers, idempotent endofunctors, products of profunctors, hylomorphisms, coalgebraic observation). See `DICTIONARY.md` for the comprehensive mapping. If a concept cannot be grounded type-theoretically, it is not understood yet.
 
+**The Type Universe is a sheaf.** Each lab is a local section of a sheaf over the space of artifact domains. The universal invariants are the restriction maps. Creating a new lab is reduced to instantiating 7 fibers (one per stratum) -- see `TEMPLATE.md` Section 13. See `DICTIONARY.md` for the full sheaf-theoretic vocabulary.
+
 ---
 
 ## Architecture

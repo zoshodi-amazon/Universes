@@ -1,8 +1,43 @@
 # TRACKER.md
 
-Cross-lab implementation dashboard for the Universes monorepo. Single source of truth for lab inventory, inter-lab dependencies, and universal invariant compliance.
+Formalism tracker for the Universes monorepo. Tracks the formal structures defined at the universal level, doc completeness, and template readiness for mechanical lab instantiation.
 
-Lab-specific TRACKER.md files extend this document with per-type implementation state.
+Lab-specific TRACKER.md files track per-type implementation state within each lab. This file tracks the meta-level: is the formalism complete?
+
+---
+
+## Universal Docs Status
+
+| Doc | Lines | Status | Last Updated |
+|-----|-------|--------|-------------|
+| README.md | ~130 | Complete | v7.1.0 |
+| AGENTS.md | ~325 | Complete | v7.1.0 |
+| DICTIONARY.md | ~460 | Complete | v7.1.0 |
+| TEMPLATE.md | ~570 | Complete | v7.1.0 |
+| TRACKER.md | (this file) | Complete | v7.1.0 |
+
+---
+
+## Formal Structures Defined
+
+| Structure | Where | Status |
+|-----------|-------|--------|
+| 7 type-theoretic categories | AGENTS.md, TEMPLATE.md | Defined, FROZEN |
+| 7 coalgebraic duals (1-1) | AGENTS.md, TEMPLATE.md | Defined, FROZEN |
+| Stratified information gradient | DICTIONARY.md | Defined (BEC -> QGP) |
+| CS/DevOps Rosetta stone (~50 mappings) | DICTIONARY.md | Defined (8 domains) |
+| 6-Functor Formalism | AGENTS.md | Defined (f*, f!, x, Hom, f*, f!) |
+| Profunctor pattern (per phase) | AGENTS.md, TEMPLATE.md | Defined + checklist |
+| Observation pipeline (path a/b) | AGENTS.md | Defined |
+| Bidirectional path closure | AGENTS.md, DICTIONARY.md | Defined |
+| Sheaf-theoretic frame | AGENTS.md, DICTIONARY.md | Defined (8 entries) |
+| Per-stratum Lean type templates | TEMPLATE.md Section 14 | Defined (strata 1-7 + CoTypes duals) |
+| Sheaf section template (new lab) | TEMPLATE.md Section 13 | Defined (7-step + checklist) |
+| Import DAG | AGENTS.md | Defined (strict layering) |
+| 31 universal invariants | AGENTS.md | Defined |
+| Anti-patterns table | AGENTS.md | Defined (13 entries) |
+| Git commit format | TEMPLATE.md | Defined |
+| Justfile command classification | TEMPLATE.md, AGENTS.md | Defined (ana-/cata-/hylo-) |
 
 ---
 
@@ -19,19 +54,19 @@ Lab-specific TRACKER.md files extend this document with per-type implementation 
 
 ---
 
-## Phase Chains (per lab)
+## Template Readiness (Can a new lab be mechanically instantiated?)
 
-Each lab defines 7 domain-specific phases mapping to the universal type-theoretic categories:
+| Requirement | Status |
+|-------------|--------|
+| Sheaf section template (7 strata questionnaire) | Done (TEMPLATE.md Section 13) |
+| Per-stratum Lean type templates | Done (TEMPLATE.md Section 14) |
+| Profunctor triad checklist | Done (TEMPLATE.md Section 10) |
+| Completeness checklist | Done (TEMPLATE.md Section 13) |
+| Lab-specific doc templates (AGENTS, DICT, TEMPLATE, TRACKER) | Pattern established (SystemLab, RL-Lab) |
+| Git commit format | Done (TEMPLATE.md Section 9) |
+| Justfile command naming | Done (TEMPLATE.md Section 7) |
 
-| # | Category | SystemLab | HomeLab | MaterialLab | PlatformLab | RL-Lab |
-|---|----------|-----------|---------|-------------|-------------|--------|
-| 1 | Unit (top) | Identity | Identity | Discovery | Identity | Discovery |
-| 2 | ADT / Sum | Platform | Credentials | Ingest | Schematic | Ingest |
-| 3 | Indexed | Network | Shell | Geometry | Firmware | Feature |
-| 4 | Hom (A->B) | Services | Terminal | Simulation | Toolchain | Train |
-| 5 | Product (AxB) | User | Editor | Fabrication | Simulate | Eval |
-| 6 | Monad (M A) | Workspace | Comms | Verify | Validate | Serve |
-| 7 | IO | Deploy | Packages | Main | Deploy | Main |
+**Verdict:** Mechanical lab instantiation is possible. Follow TEMPLATE.md Section 13.
 
 ---
 
@@ -56,31 +91,3 @@ Types/Dependent/           ------->  Types/Dependent/
   (material properties                 (thermal/mechanical
    constrain schematics)                constraints)
 ```
-
----
-
-## Universal Invariant Compliance
-
-| Invariant | SystemLab | HomeLab | MaterialLab | PlatformLab | RL-Lab |
-|-----------|-----------|---------|-------------|-------------|--------|
-| Types/ + CoTypes/ only | Yes | Yes | Yes | Yes | Yes |
-| 7 categories (1-1 dual) | Yes | Yes (scaffold) | Yes (scaffold) | Yes (scaffold) | Partial (4/7 CoTypes) |
-| 1 type per file | Yes | Scaffold | Yes | Scaffold | Yes |
-| IO/ capped at 7 | Yes (7) | Yes (7) | Yes (7) | Yes (7) | Yes (7+Validate) |
-| default.json committed | Yes | Yes | Yes | Scaffold | Yes (all 9) |
-| local.json pattern | Yes | Yes | Not yet | Not yet | Not yet |
-| Justfile classified | Yes | Not yet | Not yet | Not yet | Not yet (bare names) |
-| ana-/cata- duals | Partial | Not yet | Not yet | Not yet | Partial (2 observers) |
-| CoIO observers | Not started | Not started | Not started | Not started | Done (Tail + Visualize) |
-
----
-
-## Canonical Docs Status
-
-| Doc | Universes/ | SystemLab/ | HomeLab/ | MaterialLab/ | PlatformLab/ | RL-Lab/ |
-|-----|-----------|------------|----------|-------------|-------------|---------|
-| README.md | Done | Done | Done | Done | Done | Done |
-| AGENTS.md | Done | Done | Done | Done | Done | Done |
-| DICTIONARY.md | Done | Done | Done | Done | Not yet | Done |
-| TEMPLATE.md | Done | Done | Not yet | Done | Not yet | Not yet |
-| TRACKER.md | Done (this file) | Done | Done | Done | Not yet | Done |

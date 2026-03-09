@@ -145,6 +145,62 @@ Every infrastructure, DevOps, and computer science pattern has a category-theore
 
 ---
 
+## Sheaf-Theoretic Foundations
+
+The Type Universe has the structure of a sheaf over the space of artifact domains. This section defines the sheaf-theoretic vocabulary used to describe the relationship between the universal type system and its lab-specific instantiations.
+
+---
+
+### Sheaf
+
+**Formal:** A presheaf F : Open(X)^op -> Set satisfying the gluing axiom: if local sections agree on overlaps, they glue to a unique global section.
+
+**Domain:** The Type Universe F assigns to each artifact domain (open set U) its 7-stratum type system. Each lab is a local section s in F(U). The gluing axiom says: labs sharing Identity types (e.g., `Package`, `Version`) must assign them identical definitions. The universal invariants (AGENTS.md) are the restriction maps that all sections must satisfy.
+
+### Section
+
+**Formal:** An element s in F(U) -- a local assignment of data to an open set U, consistent with the sheaf structure.
+
+**Domain:** A lab is a section of the Type Universe sheaf. Concretely, a lab is a 7-tuple (one type assignment per stratum) over a specific artifact domain, satisfying all universal invariants. Creating a new lab = choosing a domain U and specifying s in F(U).
+
+### Stalk
+
+**Formal:** F_x = colim_{U containing x} F(U) -- the colimit of all sections over open sets containing a point x.
+
+**Domain:** The stalk at a specific domain x is all 7 strata instantiated for that domain. For SystemLab, the stalk is the complete set of types: Identity (Package, MachineConfig, ...) through IO (7 phase executors). The stalk is the "total type content" at a single domain point.
+
+### Fiber
+
+**Formal:** pi^{-1}(x) -- the preimage of a point x under a projection pi.
+
+**Domain:** The fiber at a specific stratum for a specific lab. E.g., the fiber of SystemLab at stratum 2 (Inductive) is the set {BootLoader, Desktop, Gpu, ...}. Each stratum of each lab is one fiber of the total space.
+
+### Restriction Map
+
+**Formal:** rho_{V,U} : F(U) -> F(V) for V subset U -- the map that restricts a section from a larger open set to a smaller one.
+
+**Domain:** The universal invariants (AGENTS.md, invariants 1-31) are the restriction maps. They constrain what a section can look like at any domain. Any lab section must satisfy all 31 invariants. The restriction maps are what make this a sheaf rather than a presheaf.
+
+### Gluing Condition
+
+**Formal:** If local sections s_i in F(U_i) agree on overlaps (s_i|_{U_i cap U_j} = s_j|_{U_i cap U_j}), they glue to a unique global section s in F(union U_i).
+
+**Domain:** Labs sharing Identity types must agree. If SystemLab and HomeLab both reference `Package`, the definition must be identical (or factored into a shared sub-universe). The gluing condition ensures the monorepo is globally consistent, not just locally consistent per lab.
+
+### Local-to-Global Principle
+
+**Formal:** A sheaf is fully determined by its local data + gluing. Understanding the global object reduces to understanding each local section + how they agree on overlaps.
+
+**Domain:** Understanding the Universes monorepo = understanding each lab's 7 sections + the universal invariants. There is no separate "global architecture" beyond the sheaf structure itself. The AGENTS.md invariants + each lab's AGENTS.md = the complete specification.
+
+### Descent
+
+**Formal:** A descent datum is a collection of local data + cocycle conditions that guarantee gluing to a global object. Effective descent = the glued object exists and is unique.
+
+**Domain:** A well-formed lab (all 7 strata populated, all 31 invariants satisfied, all profunctor triads complete) is an effective descent datum. It "descends" to a valid section of the Type Universe sheaf. The completeness checklist in TEMPLATE.md Section 13 is the descent condition.
+
+---
+
 ## Type-Theoretic Foundations
 
 The formal definitions below ground every term used in the system. Each entry provides the category-theoretic definition, its domain application in the Universes system, and the directory where its instances live.
