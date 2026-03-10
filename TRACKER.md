@@ -15,6 +15,7 @@ Lab-specific TRACKER.md files track per-type implementation state within each la
 | DICTIONARY.md | Complete | v7.2.0 |
 | TEMPLATE.md | Complete | v7.2.0 |
 | TRACKER.md | Complete | v7.2.0 |
+| PROMPTS.md | Complete | v7.2.0 |
 
 ---
 
@@ -35,12 +36,15 @@ Lab-specific TRACKER.md files track per-type implementation state within each la
 | Lean-to-IO projection table | TEMPLATE.md Section 15 | Defined (Python, Rust, Nix) |
 | Sheaf section template (new lab) | TEMPLATE.md Section 13 | Defined (7-step + checklist) |
 | Import DAG | AGENTS.md | Defined (strict layering) |
-| 31 universal invariants | AGENTS.md | Defined |
+| 34 universal invariants | AGENTS.md | Defined |
 | Lean Canonical Primacy | AGENTS.md | Defined (Invariant 32) |
 | Projection Functor + Codec | DICTIONARY.md | Defined |
-| Anti-patterns table | AGENTS.md | Defined (13 entries) |
+| Anti-patterns table | AGENTS.md | Defined (15 entries) |
+| Naming Normalization Protocol | TEMPLATE.md Section 16 | Defined (7 subsections) |
+| dry-python/returns monadic surface | AGENTS.md Invariant 34 | Defined (Python IO labs) |
 | Git commit format | TEMPLATE.md | Defined |
 | Justfile command classification | TEMPLATE.md Section 7, AGENTS.md | Defined (ana-/cata-/hylo-, 6FF annotation mandatory, dispatcher pattern, canonical recipe set) |
+| Canonical prompt library | PROMPTS.md | Defined (7 categories: audit, review, impl, docs, verify, dispatch, git) |
 
 ---
 
@@ -52,7 +56,7 @@ Lab-specific TRACKER.md files track per-type implementation state within each la
 | HomeLab | homeConfigurations (user dotfiles) | Yes (scaffold) | Nix | v0.1.0 | Scaffold |
 | MaterialLab | Physical material artifacts (3D prints, CNC, laser) | Provisional (Python) | Python | v0.2.0 | Active |
 | PlatformLab | Firmware images, board definitions | Provisional (Rust) | Rust + Nix | v0.1.0 | Scaffold |
-| RL-Lab | Autonomous quant RL pipeline (single-asset) | Provisional (Python) | Python | v0.3.0 | Active |
+| RL-Lab | Autonomous quant RL pipeline (single-asset) | Provisional (Python) | Python | v0.4.0 | Active |
 | IntelLab | (TBD) | -- | -- | -- | Empty |
 
 ---

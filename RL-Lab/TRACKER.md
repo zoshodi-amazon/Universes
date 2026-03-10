@@ -10,8 +10,24 @@ Most recent entries first.
 ### What happened
 - Explored full codebase: 93 source files, ~150 `__init__.py`, 14 JSON configs, justfile, pyproject.toml
 - Confirmed all Session 5 documentation is in place (AGENTS.md, DICTIONARY.md, TEMPLATE.md, README.md, 14 per-stratum READMEs)
-- Confirmed code still uses old (domain jargon) names — docs and code are out of sync
-- Produced the stratum-by-stratum implementation plan below for the next coding session
+- Produced the stratum-by-stratum implementation plan below
+- **Audit finding:** A prior session already executed the MAJORITY of the code rename:
+  - All 55 directory renames: DONE
+  - All class renames (type names in files): DONE
+  - Justfile command renames: DONE
+  - pyproject.toml version bump + `returns>=0.23` dependency: DONE
+  - Most Hom/Product/IO field renames: DONE
+- **Remaining gaps** (field/method renames not yet executed):
+  - `FrameInductive`: `from_dataframe`→`from_io_frame`, `to_dataframe`→`to_io_frame` (+ 5 call sites in IO executors)
+  - `CatalogInductive`: `from_response`→`from_io_response`, `get_tickers`→`indices` (+ 2 call sites)
+  - `SessionIdentity`: `name`→`label`
+  - `ExecutionDependent`: `positions`→`position_space`
+  - `FilterDependent`: 6 old field names (`min_volume_percentile`→`volume_quantile`, etc.)
+  - `ThresholdDependent`: 2 old field names (`min_qualifying_tickers`→`min_qualifying_indices`, `max_api_failures`→`max_io_failures`)
+  - `SearchDependent`: `n_trials`→`budget`, `n_parallel`→`parallelism`
+  - All `default.json` configs referencing these fields
+  - `dry-python/returns` integration (T6.9): dependency added, but wrapping not yet done
+- Created `PROMPTS.md` (Universes/ + RL-Lab/) — canonical spec-driven prompt library for subagent dispatch
 
 ### Implementation Plan (T6 — Code Rename)
 
@@ -268,16 +284,17 @@ Inside each executor/observer: update all import paths, class references, string
 
 | # | Task | Status |
 |---|------|--------|
-| T6.1 | Stratum 1 (Identity): dir + class + field renames | DEFERRED to coding session |
-| T6.2 | Stratum 2 (Inductive): dir + class + field + method renames | DEFERRED to coding session |
-| T6.3 | Stratum 3 (Dependent): dir + class + field renames | DEFERRED to coding session |
-| T6.4 | Stratum 4 (Hom): dir + class + field renames | DEFERRED to coding session |
-| T6.5 | Stratum 5 (Product): dir + class + status enum renames | DEFERRED to coding session |
-| T6.6 | Stratum 6 (Monad): dir + class + PhaseId variant renames | DEFERRED to coding session |
-| T6.7 | Stratum 7 (IO/CoIO): dir renames + internal ref updates | DEFERRED to coding session |
-| T6.8 | Cross-cutting: __init__.py, JSON, justfile, pyproject | DEFERRED to coding session |
-| T6.9 | dry-python/returns integration | DEFERRED to coding session |
-| T6.10 | Verification sweep (rg, ruff, pyright, ana-check) | DEFERRED to coding session |
+| T6.1 | Stratum 1 (Identity): dir + class renames | **DONE** (field `name`→`label` remains) |
+| T6.2 | Stratum 2 (Inductive): dir + class renames | **DONE** (method renames `from_dataframe`→`from_io_frame` etc. remain) |
+| T6.3 | Stratum 3 (Dependent): dir + class renames | **DONE** (field renames in Filter, Threshold, Search, Execution remain) |
+| T6.4 | Stratum 4 (Hom): dir + class + field renames | **DONE** |
+| T6.5 | Stratum 5 (Product): dir + class + status enum renames | **DONE** |
+| T6.6 | Stratum 6 (Monad): dir + class + PhaseId variant renames | **DONE** |
+| T6.7 | Stratum 7 (IO/CoIO): dir renames + internal ref updates | **DONE** |
+| T6.8 | Cross-cutting: justfile, pyproject | **DONE** |
+| T6.8b | Cross-cutting: remaining field/method renames + JSON configs | OPEN |
+| T6.9 | dry-python/returns integration (dep added; wrapping not done) | OPEN |
+| T6.10 | Verification sweep (rg, ruff, pyright, ana-check) | OPEN |
 
 ---
 

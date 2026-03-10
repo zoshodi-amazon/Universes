@@ -24,7 +24,7 @@ The Type Universe has the structure of a **sheaf** F over the space of artifact 
 
 - **Each lab is a section** of F -- a local instantiation of the 7-stratum type system for a specific artifact domain.
 - **The 7 strata are the fiber** at each point -- Identity through IO, with strictly increasing degrees of freedom.
-- **The universal invariants** (31 items below) are the **restriction maps** -- constraints that every section must satisfy.
+- **The universal invariants** (34 items below) are the **restriction maps** -- constraints that every section must satisfy.
 - **The 6-functor formalism** provides the canonical allowed morphisms between fibers and between sections.
 - **Lean 4 types the total space.** The compile-time verification of Lean types is the proof that local sections are well-formed. IO-layer languages (Nix, Python, Rust) inhabit the stalks -- they execute within a single fiber but do not define the sheaf structure.
 - **External libraries and packages are function calls at the IO boundary**, typed and bounded by the Lean-verified sheaf structure. They do not extend the type theory; they are invoked by it.
@@ -81,7 +81,7 @@ See `DICTIONARY.md` for formal definitions of Projection Functor and Codec. See 
 
 ## Doc Updates
 
-After every output, update TRACKER.md, DICTIONARY.md, TEMPLATE.md and AGENTS.md files where applicable, referencing/refreshing your context on them before every input and output.
+After every output, update TRACKER.md, DICTIONARY.md, TEMPLATE.md, PROMPTS.md and AGENTS.md files where applicable, referencing/refreshing your context on them before every input and output.
 
 When working inside a lab, read **both** this file and the lab's own AGENTS.md.
 
@@ -328,6 +328,8 @@ These apply to **every lab** in the Universes monorepo. No exceptions.
 30. Minimal orthogonal generating set -- at each stratum, the minimum necessary types/subdirs to span the space.
 31. Sub-projects with their own type systems are **separate labs** (or sub-universes) with own Types/CoTypes. Not sub-directories of an existing lab.
 32. Lean 4 is the canonical DSL for strata 1-6 in every lab. IO-layer languages (Python, Rust, Nix) inhabit stratum 7 only. IO-layer types are projections of Lean types via the JSON codec, not independent definitions. Labs without Lean types yet carry provisional IO-layer types -- technical debt, not an accepted alternative.
+33. Type names, phase names, and field names use category-theoretic vocabulary exclusively. Domain jargon is confined to Inductive variant constructors, IO-boundary fields (prefixed `io_`), and IO executor internals. A name that uses domain jargon where a category-theoretic name exists is an ill-typed name. See TEMPLATE.md Section 16 for the Naming Normalization Protocol.
+34. When a lab's IO runtime is Python, `dry-python/returns` provides the monadic surface for stratum 7. Every IO executor returns `IOResult[T, ErrorMonad]`. Pure fallible computations return `Result[T, ErrorMonad]`. Store lookups return `Maybe[T]`. `@safe` / `@impure_safe` decorators replace bare `try`/`except`. `flow()` / `pipe()` compose phase pipelines. This is the projection of monadic purity from the Lean type core to the Python IO layer.
 
 ---
 
@@ -350,3 +352,5 @@ These apply to **every lab** in the Universes monorepo. No exceptions.
 | Speculative type additions | Violates minimal generating set | Add types only when empirically motivated |
 | IO-layer types without Lean backing | Lean is the canonical DSL; IO-layer types are projections | Define Lean types at strata 1-6 first, then project to IO-layer language |
 | Compromising formalism for convenience | Violations are ill-typed artifacts, not trade-offs | The formalism IS the system; adherence is unconditional |
+| Domain jargon in type/phase/field names | Names ARE types; domain jargon is an ill-typed name | Use category-theoretic vocabulary; confine domain jargon to Inductive constructors, `io_` fields, and IO internals |
+| Bare `try`/`except` in Python IO executors | Untyped exception handling breaks monadic purity | Use `dry-python/returns`: `@safe`/`@impure_safe`, `Result`, `IOResult`, `Maybe` |
