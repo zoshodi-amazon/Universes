@@ -12,14 +12,14 @@ Blob layout on disk:
     {blob_dir}/{session_id}/{phase}_{artifact_type}.{ext}
 
 Monad operations (bind/return pattern over IO effects):
-    put(artifact_type, blob_path, metadata) -> inserts/replaces DB row
-    get(session_id, phase, artifact_type)       -> ArtifactRow (raises if not found)
-    latest(phase, artifact_type)            -> most recent row across all session_ids
+    put(artifact_type, blob_path, metadata) -> IOResult[None, Exception]
+    get(session_id, phase, artifact_type)   -> Maybe[ArtifactRow]
+    latest(phase, artifact_type)            -> Maybe[ArtifactRow]
 
 Fields satisfy Independence, Completeness, Locality:
 - db_url:     where the DB lives — independent of blob storage location
 - blob_dir:   root for binary blobs — independent of DB URL
-- session_id:     scopes put() writes — independent of connection config
+- session_id: scopes put() writes — independent of connection config
 - phase:      scopes put() writes — independent of session_id
 - docs_dir:   subdirectory for docs/tracker logs — independent of artifact blobs
 
@@ -32,9 +32,24 @@ from pathlib import Path
 from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints
+from returns.maybe import Maybe, Some, Nothing
+from returns.io import IOResult, IOSuccess, IOFailure
+from returns.unsafe import unsafe_perform_io
 
 from Types.Monad.Error.default import PhaseId
 from Types.Monad.Artifact.default import ArtifactRow
+
+
+def _row_to_artifact(row: tuple) -> ArtifactRow:
+    """Convert a DB row tuple to ArtifactRow."""
+    return ArtifactRow(
+        session_id=row[0],
+        phase=row[1],
+        artifact_type=row[2],
+        blob_path=row[3],
+        metadata_json=row[4],
+        created_at=row[5],
+    )
 
 
 class StoreMonad(BaseModel):
@@ -117,40 +132,48 @@ class StoreMonad(BaseModel):
         root.mkdir(parents=True, exist_ok=True)
         return root / f"{self.phase.value}_{artifact_type}.{ext}"
 
-    def put(self, artifact_type: str, metadata: BaseModel, blob_path: str = "") -> None:
-        """Bind: write artifact metadata row to DB (and optionally record blob path).
+    def put(
+        self, artifact_type: str, metadata: BaseModel, blob_path: str = ""
+    ) -> IOResult[None, Exception]:
+        """Bind: write artifact metadata row to DB. Returns IOResult instead of raising.
 
         INSERT OR REPLACE so re-runs of the same (session_id, phase, artifact_type)
         update in place rather than accumulating stale rows.
         """
-        from sqlalchemy import text
+        try:
+            from sqlalchemy import text
 
-        engine = self._engine()
-        now = datetime.now(timezone.utc).isoformat()
-        meta_json = metadata.model_dump_json()
-        with engine.connect() as conn:
-            conn.execute(
-                text("""
-                INSERT INTO artifacts(session_id, phase, artifact_type, blob_path, metadata_json, created_at)
-                VALUES (:session_id, :phase, :artifact_type, :blob_path, :metadata_json, :created_at)
-                ON CONFLICT(session_id, phase, artifact_type) DO UPDATE SET
-                    blob_path     = excluded.blob_path,
-                    metadata_json = excluded.metadata_json,
-                    created_at    = excluded.created_at
-            """),
-                {
-                    "session_id": self.session_id,
-                    "phase": self.phase.value,
-                    "artifact_type": artifact_type,
-                    "blob_path": blob_path,
-                    "metadata_json": meta_json,
-                    "created_at": now,
-                },
-            )
-            conn.commit()
+            engine = self._engine()
+            now = datetime.now(timezone.utc).isoformat()
+            meta_json = metadata.model_dump_json()
+            with engine.connect() as conn:
+                conn.execute(
+                    text("""
+                    INSERT INTO artifacts(session_id, phase, artifact_type, blob_path, metadata_json, created_at)
+                    VALUES (:session_id, :phase, :artifact_type, :blob_path, :metadata_json, :created_at)
+                    ON CONFLICT(session_id, phase, artifact_type) DO UPDATE SET
+                        blob_path     = excluded.blob_path,
+                        metadata_json = excluded.metadata_json,
+                        created_at    = excluded.created_at
+                """),
+                    {
+                        "session_id": self.session_id,
+                        "phase": self.phase.value,
+                        "artifact_type": artifact_type,
+                        "blob_path": blob_path,
+                        "metadata_json": meta_json,
+                        "created_at": now,
+                    },
+                )
+                conn.commit()
+            return IOSuccess(None)
+        except Exception as exc:
+            return IOFailure(exc)
 
-    def get(self, session_id: str, phase: str, artifact_type: str) -> ArtifactRow:
-        """Extract: retrieve artifact row by (session_id, phase, artifact_type). Raises if not found."""
+    def get(
+        self, session_id: str, phase: str, artifact_type: str
+    ) -> Maybe[ArtifactRow]:
+        """Extract: retrieve artifact row by (session_id, phase, artifact_type). Returns Maybe instead of raising."""
         from sqlalchemy import text
 
         engine = self._engine()
@@ -161,23 +184,18 @@ class StoreMonad(BaseModel):
                 FROM artifacts
                 WHERE session_id = :session_id AND phase = :phase AND artifact_type = :artifact_type
             """),
-                {"session_id": session_id, "phase": phase, "artifact_type": artifact_type},
+                {
+                    "session_id": session_id,
+                    "phase": phase,
+                    "artifact_type": artifact_type,
+                },
             ).fetchone()
         if row is None:
-            raise KeyError(
-                f"StoreMonad.get: no artifact ({session_id}, {phase}, {artifact_type}) in {self.db_url}"
-            )
-        return ArtifactRow(
-            session_id=row[0],
-            phase=row[1],
-            artifact_type=row[2],
-            blob_path=row[3],
-            metadata_json=row[4],
-            created_at=row[5],
-        )
+            return Nothing
+        return Some(_row_to_artifact(row))
 
-    def latest(self, phase: str, artifact_type: str) -> ArtifactRow:
-        """Extract: retrieve most recently written artifact for (phase, artifact_type) across all runs."""
+    def latest(self, phase: str, artifact_type: str) -> Maybe[ArtifactRow]:
+        """Extract: retrieve most recently written artifact for (phase, artifact_type). Returns Maybe instead of raising."""
         from sqlalchemy import text
 
         engine = self._engine()
@@ -192,17 +210,8 @@ class StoreMonad(BaseModel):
                 {"phase": phase, "artifact_type": artifact_type},
             ).fetchone()
         if row is None:
-            raise KeyError(
-                f"StoreMonad.latest: no artifact ({phase}, {artifact_type}) in {self.db_url}"
-            )
-        return ArtifactRow(
-            session_id=row[0],
-            phase=row[1],
-            artifact_type=row[2],
-            blob_path=row[3],
-            metadata_json=row[4],
-            created_at=row[5],
-        )
+            return Nothing
+        return Some(_row_to_artifact(row))
 
     def all_runs(self) -> list[ArtifactRow]:
         """Extract: return all artifact rows ordered by created_at DESC."""
@@ -217,14 +226,4 @@ class StoreMonad(BaseModel):
                 ORDER BY created_at DESC
             """)
             ).fetchall()
-        return [
-            ArtifactRow(
-                session_id=r[0],
-                phase=r[1],
-                artifact_type=r[2],
-                blob_path=r[3],
-                metadata_json=r[4],
-                created_at=r[5],
-            )
-            for r in rows
-        ]
+        return [_row_to_artifact(r) for r in rows]

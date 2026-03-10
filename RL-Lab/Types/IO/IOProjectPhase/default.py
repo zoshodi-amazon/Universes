@@ -35,6 +35,8 @@ from Types.Identity.Index.default import IndexIdentity
 from Types.Identity.Session.default import SessionIdentity
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Store.default import StoreMonad
+from returns.io import IOFailure
+from returns.maybe import Some
 from Types.Product.Project.Meta.default import ProjectProductMeta
 from Types.Product.Project.Output.default import ProjectProductOutput, ProjectStatus
 from Types.Inductive.Frame.default import FrameInductive
@@ -116,7 +118,10 @@ def _is_market_open(asset: IndexIdentity) -> bool:
 
 
 def _execute_broker(
-    ticker: str, target_pos: float, env_base: ExecutionDependent, meta: ProjectProductMeta
+    ticker: str,
+    target_pos: float,
+    env_base: ExecutionDependent,
+    meta: ProjectProductMeta,
 ) -> None:
     """Execute broker order with typed error handling. Loads credentials from .env."""
     if env_base.execution_mode == ExecutionMode.sim:
@@ -257,7 +262,9 @@ def run(
         update={"session_id": project_specs.solve_session_id, "phase": PhaseId.solve}
     )
     try:
-        model_row = store.get(project_specs.solve_session_id, PhaseId.solve.value, "model")
+        model_row = store.get(
+            project_specs.solve_session_id, PhaseId.solve.value, "model"
+        )
         normalize_row = store.get(
             project_specs.solve_session_id, PhaseId.solve.value, "normalize"
         )
@@ -303,7 +310,9 @@ def run(
         update={"session_id": run_base.session_id, "phase": PhaseId.transform}
     )
     try:
-        feat_row = feat_store.get(run_base.session_id, PhaseId.transform.value, "features")
+        feat_row = feat_store.get(
+            run_base.session_id, PhaseId.transform.value, "features"
+        )
         df = pd.read_pickle(feat_row.blob_path)
     except Exception as e:
         meta.obs.errors.append(
@@ -355,9 +364,12 @@ def run(
         ingest_record = ingest(ingest_cfg, asset, run_base, store_base)
         feature_record = feature(ingest_record, feature_cfg, run_base, store_base)
         try:
-            feat_row = feat_store.get(
+            maybe_feat2 = feat_store.get(
                 run_base.session_id, PhaseId.transform.value, "features"
             )
+            if not isinstance(maybe_feat2, Some):
+                raise ValueError("feature reload: not found in store")
+            feat_row = maybe_feat2.unwrap()
             df = pd.read_pickle(feat_row.blob_path)
         except Exception as e:
             meta.obs.errors.append(
@@ -566,13 +578,12 @@ def run(
     serve_store = store_base.model_copy(
         update={"session_id": run_base.session_id, "phase": PhaseId.project}
     )
-    try:
-        serve_store.put("project", record)
-    except Exception as e:
+    result = serve_store.put("project", record)
+    if isinstance(result, IOFailure):
         meta.obs.errors.append(
             ErrorMonad(
                 phase=PhaseId.project,
-                message=f"store.put failed: {str(e)[:128]}",
+                message=f"store.put failed: {str(result.failure())[:128]}",
                 severity=Severity.error,
             )
         )

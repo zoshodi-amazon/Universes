@@ -22,6 +22,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from returns.maybe import Some
+
 from CoTypes.CoHom.Compose.default import CoComposeHom
 from CoTypes.CoProduct.Compose.Output.default import CoComposeProductOutput
 from CoTypes.CoProduct.Compose.Meta.default import CoComposeProductMeta
@@ -271,15 +273,12 @@ def run(cfg: CoComposeHom, store: StoreMonad) -> CoComposeProductOutput:
     visualize_logged = False
 
     # ── (a) Probe StoreMonad for the latest main artifact ──────────
-    try:
-        row = store.latest(PhaseId.compose.value, "main")
+    maybe_row = store.latest(PhaseId.compose.value, "main")
+    if isinstance(maybe_row, Some):
+        row = maybe_row.unwrap()
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
-    except KeyError:
-        meta.artifact_found = False
-
-    if meta.artifact_found:
         pipeline_completed = True
         result_persisted = True
         try:
@@ -356,7 +355,7 @@ class Settings(BaseSettings):
         json_file="CoTypes/CoIO/CoIOComposePhase/default.json",
         json_file_encoding="utf-8",
         cli_parse_args=True,
-        cli_prog_name="ana-main",
+        cli_prog_name="ana-compose",
     )
     compose: CoComposeHom = Field(
         default_factory=CoComposeHom,
@@ -389,5 +388,5 @@ class Settings(BaseSettings):
 
 if __name__ == "__main__":
     s = Settings()
-    result = run(s.main, s.store)
+    result = run(s.compose, s.store)
     print(result.model_dump_json(indent=2))

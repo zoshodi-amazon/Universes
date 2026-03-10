@@ -26,6 +26,8 @@ from Types.Identity.Index.default import IndexIdentity
 from Types.Identity.Session.default import SessionIdentity
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Store.default import StoreMonad
+from returns.io import IOFailure
+from returns.maybe import Some
 from Types.Product.Eval.Meta.default import EvalProductMeta
 from Types.Product.Eval.Output.default import EvalProductOutput
 from Types.Product.Solve.Output.default import SolveProductOutput
@@ -64,19 +66,35 @@ def run(
         update={"session_id": train_record.session_id, "phase": PhaseId.solve}
     )
     try:
-        model_row = store.get(train_record.session_id, PhaseId.solve.value, "model")
-        normalize_row = store.get(train_record.session_id, PhaseId.solve.value, "normalize")
+        maybe_model = store.get(train_record.session_id, PhaseId.solve.value, "model")
+        maybe_norm = store.get(
+            train_record.session_id, PhaseId.solve.value, "normalize"
+        )
+        if not isinstance(maybe_model, Some) or not isinstance(maybe_norm, Some):
+            missing = "model" if not isinstance(maybe_model, Some) else "normalize"
+            meta.obs.errors.append(
+                ErrorMonad(
+                    phase=PhaseId.eval,
+                    message=f"artifact not found in store: {missing}",
+                    severity=Severity.error,
+                )
+            )
+            raise ValueError(f"artifact not found in store: {missing}")
+        model_row = maybe_model.unwrap()
+        normalize_row = maybe_norm.unwrap()
         model_path = model_row.blob_path
         normalize_path = normalize_row.blob_path
-    except KeyError as e:
+    except ValueError:
+        raise
+    except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
                 phase=PhaseId.eval,
-                message=f"artifact not found in store: {e}",
+                message=f"artifact lookup failed: {str(e)[:128]}",
                 severity=Severity.error,
             )
         )
-        raise ValueError(f"artifact not found in store: {e}")
+        raise ValueError(f"artifact lookup failed: {str(e)[:128]}")
 
     if not Path(model_path).exists():
         meta.obs.errors.append(
@@ -246,13 +264,12 @@ def run(
     eval_store = store_base.model_copy(
         update={"session_id": run_base.session_id, "phase": PhaseId.eval}
     )
-    try:
-        eval_store.put("eval", record)
-    except Exception as e:
+    result = eval_store.put("eval", record)
+    if isinstance(result, IOFailure):
         meta.obs.errors.append(
             ErrorMonad(
                 phase=PhaseId.eval,
-                message=f"store.put failed: {str(e)[:128]}",
+                message=f"store.put failed: {str(result.failure())[:128]}",
                 severity=Severity.error,
             )
         )

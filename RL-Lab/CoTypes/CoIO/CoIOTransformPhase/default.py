@@ -16,6 +16,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from returns.maybe import Some
+
 from CoTypes.CoHom.Transform.default import CoTransformHom
 from CoTypes.CoProduct.Transform.Output.default import CoTransformProductOutput
 from CoTypes.CoProduct.Transform.Meta.default import CoTransformProductMeta
@@ -45,16 +47,13 @@ def run(cfg: CoTransformHom, store: StoreMonad) -> CoTransformProductOutput:
     prefix_enforced = False
 
     # Probe StoreMonad for the latest feature artifact
-    try:
-        row = store.latest(PhaseId.transform.value, "features")
+    maybe_row = store.latest(PhaseId.transform.value, "features")
+    if isinstance(maybe_row, Some):
+        row = maybe_row.unwrap()
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
-    except KeyError:
-        meta.artifact_found = False
 
-    # Populate observation checks
-    if meta.artifact_found:
         # Check blob presence on disk
         if row.blob_path and Path(row.blob_path).exists():
             features_present = True

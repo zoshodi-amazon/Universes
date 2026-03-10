@@ -25,6 +25,8 @@ from Types.Identity.Session.default import SessionIdentity
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Product.Transform.Meta.default import TransformProductMeta
 from Types.Monad.Store.default import StoreMonad
+from returns.io import IOFailure
+from returns.maybe import Some
 from Types.IO.IOIngestPhase.default import run as ingest
 
 N_DYNAMIC_FEATURES = 2
@@ -64,10 +66,8 @@ def run(
     )
 
     # Retrieve ingest blob path from store
-    try:
-        ingest_row = store.get(run_base.session_id, PhaseId.ingest.value, "ingest")
-        blob_path = ingest_row.blob_path
-    except KeyError:
+    maybe_row = store.get(run_base.session_id, PhaseId.ingest.value, "ingest")
+    if not isinstance(maybe_row, Some):
         meta.obs.errors.append(
             ErrorMonad(
                 phase=PhaseId.transform,
@@ -78,6 +78,8 @@ def run(
         raise ValueError(
             f"ingest artifact not found in store for session_id={run_base.session_id}"
         )
+    ingest_row = maybe_row.unwrap()
+    blob_path = ingest_row.blob_path
 
     if not Path(blob_path).exists():
         meta.obs.errors.append(
@@ -234,13 +236,12 @@ def run(
         meta=meta,
     )
 
-    try:
-        store.put("features", record, blob_path=str(out_blob))
-    except Exception as e:
+    result = store.put("features", record, blob_path=str(out_blob))
+    if isinstance(result, IOFailure):
         meta.obs.errors.append(
             ErrorMonad(
                 phase=PhaseId.transform,
-                message=f"store.put failed: {str(e)[:128]}",
+                message=f"store.put failed: {str(result.failure())[:128]}",
                 severity=Severity.error,
             )
         )

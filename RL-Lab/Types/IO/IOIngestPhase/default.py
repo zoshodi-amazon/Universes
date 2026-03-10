@@ -23,6 +23,7 @@ from Types.Product.Ingest.Meta.default import IngestProductMeta
 from Types.Product.Ingest.Output.default import IngestProductOutput
 from Types.Inductive.Frame.default import FrameInductive
 from Types.Monad.Store.default import StoreMonad
+from returns.io import IOFailure
 
 INTERVAL_MAP = {1: "1m", 5: "5m", 15: "15m", 30: "30m", 60: "1h", 1440: "1d"}
 PERIOD_MULTIPLIER = {"stock": 7 / 5, "forex": 7 / 5, "crypto": 1.0}
@@ -165,13 +166,12 @@ def run(
         meta=meta,
     )
 
-    try:
-        store.put("ingest", record, blob_path=str(blob_path))
-    except Exception as e:
+    result = store.put("ingest", record, blob_path=str(blob_path))
+    if isinstance(result, IOFailure):
         meta.obs.errors.append(
             ErrorMonad(
                 phase=PhaseId.ingest,
-                message=f"store.put failed: {str(e)[:128]}",
+                message=f"store.put failed: {str(result.failure())[:128]}",
                 severity=Severity.error,
             )
         )

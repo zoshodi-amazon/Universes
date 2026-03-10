@@ -56,7 +56,7 @@ Types/Product/{Phase}/Meta/Default.lean             -- phase metadata
 Types/Product/User/{SubPhase}/Output/Default.lean   -- user sub-phase output
 Types/Product/User/{SubPhase}/Meta/Default.lean     -- user sub-phase meta
 Types/Monad/{Effect}/Default.lean                   -- effect types
-Types/IO/                                           -- Lake project root
+Types/IO/                                           -- IO executors
 Types/IO/IO{Phase}Phase/default.nix                 -- phase IO executor
 Types/IO/IO{Phase}Phase/default.json                -- serialized Hom at boundary
 Types/IO/IOUserPhase/Monads/IO{SubPhase}Phase/default.nix -- user sub-phase executor
@@ -91,7 +91,7 @@ CoTypes/CoIO/CoIO{Phase}Phase/default.nix            -- phase observer executor
 
 ## 3. Lean Module Paths
 
-With `srcDir := "../.."` (lab root), Lean module paths mirror the filesystem:
+With `srcDir := "."` (lab root), Lean module paths mirror the filesystem:
 
 ```
 import Types.Inductive.Default          -- Types/Inductive/Default.lean

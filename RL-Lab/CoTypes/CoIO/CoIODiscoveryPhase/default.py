@@ -16,6 +16,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from returns.maybe import Some
+
 from CoTypes.CoHom.Discovery.default import CoDiscoveryHom
 from CoTypes.CoProduct.Discovery.Output.default import CoDiscoveryProductOutput
 from CoTypes.CoProduct.Discovery.Meta.default import CoDiscoveryProductMeta
@@ -45,16 +47,14 @@ def run(cfg: CoDiscoveryHom, store: StoreMonad) -> CoDiscoveryProductOutput:
     qualifying_found = False
 
     # Probe StoreMonad for the latest discovery artifact
-    try:
-        row = store.latest(PhaseId.discovery.value, "discovery")
+    maybe_row = store.latest(PhaseId.discovery.value, "discovery")
+    if isinstance(maybe_row, Some):
+        row = maybe_row.unwrap()
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
-    except KeyError:
-        meta.artifact_found = False
 
-    # Populate observation checks from metadata
-    if meta.artifact_found:
+        # Populate observation checks from metadata
         try:
             md = json.loads(row.metadata_json)
             meta.schema_valid = True

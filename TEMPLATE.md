@@ -81,7 +81,7 @@ Types/Hom/{Phase}/                       -- Category 4: phase input morphisms
 Types/Product/{Phase}/Output/            -- Category 5: phase output
 Types/Product/{Phase}/Meta/              -- Category 5: phase metadata
 Types/Monad/                             -- Category 6: effect types
-Types/IO/                                -- Category 7: build project root
+Types/IO/                                -- Category 7: IO executors
 Types/IO/IO{Phase}Phase/                 -- Category 7: phase IO executor
 ```
 
@@ -219,7 +219,7 @@ ana-identity:
 
 # f! shriek push -- IO (Lake): build Lean type system
 cata-types-build:
-    @nix-shell -p lean4 --run "cd Types/IO && lake build"
+    @nix-shell -p lean4 --run "lake build"
 
 # tensor -- ana-types-validate tensor cata-switch
 hylo-main host="darwin": ana-types-validate (cata-switch host)
@@ -280,6 +280,9 @@ Every file at the lab root has a type-theoretic classification:
 |------|--------------|-----------|
 | `flake.nix` / `pyproject.toml` / `Cargo.toml` | Hom (A -> B) or Dependent | Top-level morphism or build parameterization |
 | `flake.lock` / `uv.lock` / `Cargo.lock` | Identity (top) | Terminal object: one canonical inhabitant |
+| `lakefile.lean` / `Cargo.toml` (workspace) | Dependent | Build system parameterization (indexed over types) |
+| `lean-toolchain` / `rust-toolchain.toml` | Identity (top) | Terminal object: one canonical toolchain version |
+| `lake-manifest.json` | Identity (top) | Terminal object: one canonical dependency snapshot |
 | `justfile` | IO / CoIO | Dispatcher: each recipe is a classified morphism |
 | `AGENTS.md` | CoIO | Observation of the system (agent instructions) |
 | `README.md` | CoIO | Observation of the system (human documentation) |
@@ -734,7 +737,7 @@ Lean's jurisdiction ends at stratum 6. Stratum 7 is the IO boundary: serialized 
 **Invariant:** `default.json` is the serialized Hom at the IO boundary (the adjunction unit eta: `toJson`). The IO executor reads it (the adjunction counit epsilon: `fromJson`) and produces artifact state. Lean functions at this stratum use `IO α` directly or the phase monad from stratum 6:
 
 ```lean
--- Types/IO/Default.lean
+-- Default.lean (lab root)
 -- The entry point uses IO directly, or the phase monad stack.
 def validatePhase (name : String) (path : System.FilePath)
     (α : Type) [Lean.FromJson α] : IO Bool := do
@@ -801,3 +804,109 @@ Labs that currently define types only in an IO-layer language (e.g., RL-Lab in P
 - They MUST be replaced by Lean-generated projections as the Lean type core is built
 - They do NOT extend the type theory -- they are temporary inhabitants of strata they do not own
 - The migration path is: define Lean types -> generate `default.json` -> validate IO-layer types agree
+
+---
+
+## 16. Naming Normalization Protocol
+
+Type names, phase names, and field names use **category-theoretic vocabulary exclusively**. Domain-specific jargon is confined to precisely three locations: Inductive variant constructors, IO-boundary fields (prefixed `io_`), and IO executor implementation internals. This is not a style preference -- it is a type-theoretic invariant. A name that uses domain jargon where a category-theoretic name exists is an ill-typed name.
+
+### 16.1 Principle: Names ARE Types
+
+Every name in the system carries type-theoretic weight. The name declares what the thing IS categorically, not what domain it comes from. When a category-theoretic name exists for a concept, it MUST be used. Domain-specific names are permitted only where they serve as opaque identifiers at the IO boundary (external API symbols, vendor protocol names, instrument identifiers).
+
+### 16.2 Phase Name Normalization
+
+Phase names are **type-theoretic verbs** describing the categorical operation performed, not domain-specific activities. The universal phase vocabulary:
+
+| # | Type Theory | Canonical Verb | Anti-Pattern Verbs |
+|---|-------------|---------------|-------------------|
+| 1 | Unit (top) | Discovery | -- |
+| 2 | Inductive (ADT) | Ingest | Download, Fetch, Load |
+| 3 | Dependent (Indexed) | Transform | Feature, Engineer, Preprocess |
+| 4 | Hom (A -> B) | Solve | Train, Learn, Fit |
+| 5 | Product (A x B) | Eval | Test, Validate, Backtest |
+| 6 | Monad (M A) | Project | Serve, Deploy, Execute |
+| 7 | IO | Compose | Main, Pipeline, Orchestrate |
+
+Labs may use domain-specific phase names ONLY when no category-theoretic verb applies. The burden of proof is on the domain name.
+
+### 16.3 Type Name Normalization Rules
+
+| Stratum | Naming Rule | Pattern | Anti-Pattern |
+|---------|------------|---------|-------------|
+| 1 Identity | Name what the terminal object indexes | `IndexIdentity`, `SessionIdentity` | `AssetIdentity`, `RunIdentity` |
+| 2 Inductive | Name the categorical structure, not the domain format | `FrameInductive`, `CatalogInductive`, `SolverInductive` | `OHLCVInductive`, `ScreenerInductive`, `AlgoIdentity` |
+| 3 Dependent | Name the type-theoretic role of the fiber | `ExecutionDependent`, `ConstraintDependent`, `FilterDependent` | `EnvDependent`, `RiskDependent`, `LiquidityDependent` |
+| 4 Hom | `{Phase}Hom` using normalized phase name | `TransformHom`, `SolveHom`, `ProjectHom` | `FeatureHom`, `TrainHom`, `ServeHom` |
+| 5 Product | `{Phase}ProductOutput` / `{Phase}ProductMeta` | `SolveProductOutput` | `TrainProductOutput` |
+| 6 Monad | Name the effect category | `EffectMonad`, `SignalMonad`, `MeasureMonad` | `ObservabilityMonad`, `AlarmMonad`, `MetricMonad` |
+| 7 IO | `IO{Phase}Phase` using normalized phase name | `IOTransformPhase`, `IOSolvePhase` | `IOFeaturePhase`, `IOTrainPhase` |
+
+### 16.4 Field Name Normalization
+
+| Domain Jargon | Category-Theoretic Name | Rationale |
+|--------------|------------------------|-----------|
+| `run_id` | `session_id` | A run is a session -- a bounded execution context with identity |
+| `run_ts` | `session_ts` | Temporal coordinate of the session |
+| `asset_type` | `index_class` | The asset is an index; its type is a class (variant of IndexClass) |
+| `algo` | `solver` | An algorithm is a solver -- an optimization procedure |
+| `n_envs` | `n_parallel` | Parallel instances, not "environments" |
+| `total_timesteps` | `budget` | The training budget -- a bounded resource allocation |
+| `episode_duration_min` | `horizon_min` | The planning horizon in minutes |
+| `normalize_obs` | `normalize_input` | Input normalization, not "observation" normalization |
+| `normalize_reward` | `normalize_signal` | Signal normalization, not "reward" normalization |
+| `train_run_id` | `solve_session_id` | References which solve session to project |
+| `optimize` | `search` | Hyperparameter search, not "optimization" |
+| `optimize_config` | `search_fiber` | The dependent fiber parameterizing the search |
+| `broker_mode` | `execution_mode` | Execution mode (sim/paper/live), not "broker mode" |
+| `io_broker_key` | `io_execution_key` | IO-boundary key for the execution backend |
+| `wavelet` | `basis` | A wavelet is a basis function family |
+| `supertrend_period` | `envelope_period` | SuperTrend computes a price envelope |
+| `supertrend_multiplier` | `envelope_multiplier` | Envelope width multiplier |
+| `adx_period` | `trend_period` | ADX measures trend strength |
+| `io_universe` | `io_indices` | A universe of assets is a collection of indices |
+| `screener` | `catalog_source` | A screener produces a catalog |
+
+### 16.5 Enum / Nested ADT Normalization
+
+| Domain Jargon | Category-Theoretic Name | Location |
+|--------------|------------------------|----------|
+| `AssetType` | `IndexClass` | Identity (nested) |
+| `HolidayCalendar` | `TemporalMask` | Identity (nested) |
+| `BrokerMode` | `ExecutionMode` | Dependent (nested) |
+| `ObjectiveMetric` | `ObjectiveInductive` | Dependent (nested) |
+| `WaveletName` | `BasisInductive` | Hom (nested) |
+| `ThresholdMode` | `ThresholdMode` | Hom (nested, already correct) |
+| `MainStatus` | `ComposeStatus` | Product (nested) |
+| `ServeStatus` | `ProjectStatus` | Product (nested) |
+| `AlarmSeverity` | `SeverityInductive` | Inductive |
+| `MetricKind` | `MeasureInductive` | Inductive |
+
+### 16.6 Monadic Python Surface (`dry-python/returns`)
+
+When a lab's IO runtime is Python, the `dry-python/returns` library provides the monadic surface that bridges Lean-verified types (strata 1-6) and Python IO executors (stratum 7). This is not optional for Python-runtime labs -- it is the projection of monadic purity from the Lean type core to the IO layer.
+
+| `returns` Container | Maps To | Usage |
+|----|------|------|
+| `Result[T, E]` | Pure fallible computation | Parsing, validation, schema checks |
+| `IOResult[T, E]` | Impure fallible computation | Every IO executor return type |
+| `IO[T]` | Impure infallible computation | Timestamps, random seeds, file reads |
+| `Maybe[T]` | Optional value (no None) | Store lookups, optional artifact retrieval |
+| `RequiresContext[T, Deps]` | Dependency injection | Settings/config threading through call stacks |
+| `flow()` / `pipe()` | Sequential composition | Pipeline phase chaining |
+| `@safe` / `@impure_safe` | Exception capture | Auto-wraps exceptions into `Failure` |
+
+### 16.7 Where Domain Names ARE Permitted
+
+Domain-specific terms are not eliminated -- they are **precisely placed**:
+
+| Location | What Lives There | Example |
+|----------|-----------------|---------|
+| Inductive variant constructors | Vendor/protocol/format names | `PPO`, `SAC`, `DQN`, `A2C` (solver variants) |
+| IO-boundary fields (`io_` prefix) | External identifiers | `io_ticker`, `io_indices`, `io_execution_key` |
+| IO executor internals | Library calls, API names | `yf.download()`, `alpaca.submit_order()` |
+| `default.json` values | Concrete runtime values | `"PPO"`, `"AAPL"`, `"paper"` |
+| Documentation (DICTIONARY.md) | Domain term definitions | "ADX measures trend strength on a 0-100 scale" |
+
+The type system is domain-agnostic. The IO layer is domain-specific. The boundary between them is `default.json`.

@@ -16,6 +16,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from returns.maybe import Some
+
 from CoTypes.CoHom.Project.default import CoProjectHom
 from CoTypes.CoProduct.Project.Output.default import CoProjectProductOutput
 from CoTypes.CoProduct.Project.Meta.default import CoProjectProductMeta
@@ -45,16 +47,13 @@ def run(cfg: CoProjectHom, store: StoreMonad) -> CoProjectProductOutput:
     shutdown_clean = False
 
     # Probe StoreMonad for the latest serve artifact
-    try:
-        row = store.latest(PhaseId.project.value, "project")
+    maybe_row = store.latest(PhaseId.project.value, "project")
+    if isinstance(maybe_row, Some):
+        row = maybe_row.unwrap()
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
-    except KeyError:
-        meta.artifact_found = False
 
-    # Populate observation checks
-    if meta.artifact_found:
         # Check audit directory for JSONL files
         try:
             audit_dir = Path(store.blob_dir) / store.session_id

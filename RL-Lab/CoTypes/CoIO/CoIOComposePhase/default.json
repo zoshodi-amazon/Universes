@@ -1,5 +1,5 @@
 {
-  "main": {},
+  "compose": {},
   "store": {
     "db_url": "sqlite:///store/.rl.db",
     "blob_dir": "store/blobs",

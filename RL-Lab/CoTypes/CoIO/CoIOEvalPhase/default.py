@@ -17,6 +17,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from returns.maybe import Some
+
 from CoTypes.CoHom.Eval.default import CoEvalHom
 from CoTypes.CoProduct.Eval.Output.default import CoEvalProductOutput
 from CoTypes.CoProduct.Eval.Meta.default import CoEvalProductMeta
@@ -46,16 +48,12 @@ def run(cfg: CoEvalHom, store: StoreMonad) -> CoEvalProductOutput:
     render_logs_present = False
 
     # Probe StoreMonad for the latest eval artifact
-    try:
-        row = store.latest(PhaseId.eval.value, "eval")
+    maybe_row = store.latest(PhaseId.eval.value, "eval")
+    if isinstance(maybe_row, Some):
+        row = maybe_row.unwrap()
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
-    except KeyError:
-        meta.artifact_found = False
-
-    # Populate observation checks
-    if meta.artifact_found:
         eval_completed = True
 
         # Check return was recorded in metadata

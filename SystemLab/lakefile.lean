@@ -3,7 +3,7 @@ open Lake DSL
 
 package «types» where
   leanOptions := #[⟨`autoImplicit, false⟩]
-  srcDir := "../.."
+  srcDir := "."
 
 -- ============================================================================
 -- Types/ — Algebraic (production, catamorphic)
@@ -499,7 +499,7 @@ lean_lib «CoIOObservationSummary» where
 lean_lib «CoIO» where
   roots := #[`CoTypes.CoIO.Default]
 
--- Category 7: IO (QGP) — validation entry point
+-- Validation entry point (lab root Default.lean)
 @[default_target]
 lean_exe «validate» where
-  root := `Types.IO.Default
+  root := `Default

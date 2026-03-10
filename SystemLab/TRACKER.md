@@ -76,9 +76,9 @@ Pattern Version: v5.3.0 | Type: CoIO (observation of progress)
 
 | Component | Status |
 |-----------|--------|
-| `Types/IO/lakefile.lean` | Done (48 lean_lib Types + 7 lean_lib CoTypes + 1 lean_exe, srcDir=repo root) |
-| `Types/IO/lean-toolchain` | Done (v4.16.0, runtime uses nix-provided 4.28.0) |
-| `Types/IO/Default.lean` | Done (validates 5/7 phases -- imports all 7 Hom types) |
+| `lakefile.lean` | Done (48 lean_lib Types + 7 lean_lib CoTypes + 1 lean_exe, srcDir=".") |
+| `lean-toolchain` | Done (v4.16.0, runtime uses nix-provided 4.28.0) |
+| `Default.lean` | Done (validates 5/7 phases -- imports all 7 Hom types) |
 
 | Phase | default.nix | default.json | local.json |
 |-------|-------------|-------------|------------|

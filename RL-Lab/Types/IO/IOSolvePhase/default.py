@@ -29,6 +29,7 @@ from Types.Dependent.Execution.default import ExecutionDependent, ExecutionMode
 from Types.Hom.Solve.default import SolveHom
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Store.default import StoreMonad
+from returns.io import IOFailure
 from Types.Product.Solve.Meta.default import SolveProductMeta
 from Types.Product.Solve.Output.default import SolveProductOutput
 from Types.Product.Transform.Output.default import TransformProductOutput
@@ -93,7 +94,9 @@ def run(
         _make_env(df_slice, env_base, episode_bars, run_base.verbose)
         for _ in range(train_specs.n_parallel)
     ]
-    use_subproc = train_specs.n_parallel > 1 and env_base.execution_mode == ExecutionMode.sim
+    use_subproc = (
+        train_specs.n_parallel > 1 and env_base.execution_mode == ExecutionMode.sim
+    )
     vec_cls = SubprocVecEnv if use_subproc else DummyVecEnv
 
     try:
@@ -195,8 +198,17 @@ def run(
 
     try:
         # model blob: SB3 writes {path}.zip
-        store.put("model", record, blob_path=str(model_blob))
-        store.put("normalize", record, blob_path=str(normalize_blob))
+        r1 = store.put("model", record, blob_path=str(model_blob))
+        r2 = store.put("normalize", record, blob_path=str(normalize_blob))
+        for r in (r1, r2):
+            if isinstance(r, IOFailure):
+                meta.obs.errors.append(
+                    ErrorMonad(
+                        phase=PhaseId.solve,
+                        message=f"store.put failed: {str(r.failure())[:128]}",
+                        severity=Severity.error,
+                    )
+                )
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(

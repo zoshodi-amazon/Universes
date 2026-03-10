@@ -17,6 +17,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from returns.maybe import Some
+
 from CoTypes.CoHom.Solve.default import CoSolveHom
 from CoTypes.CoProduct.Solve.Output.default import CoSolveProductOutput
 from CoTypes.CoProduct.Solve.Meta.default import CoSolveProductMeta
@@ -46,27 +48,23 @@ def run(cfg: CoSolveHom, store: StoreMonad) -> CoSolveProductOutput:
     reward_finite = False
 
     # Probe StoreMonad for the latest train (model) artifact
-    try:
-        row = store.latest(PhaseId.solve.value, "model")
+    maybe_row = store.latest(PhaseId.solve.value, "model")
+    if isinstance(maybe_row, Some):
+        row = maybe_row.unwrap()
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
-    except KeyError:
-        meta.artifact_found = False
 
-    # Populate observation checks
-    if meta.artifact_found:
         # Check model blob presence on disk
         if row.blob_path and Path(row.blob_path).exists():
             model_present = True
 
         # Check normalize artifact
-        try:
-            norm_row = store.latest(PhaseId.solve.value, "normalize")
+        maybe_norm = store.latest(PhaseId.solve.value, "normalize")
+        if isinstance(maybe_norm, Some):
+            norm_row = maybe_norm.unwrap()
             if norm_row.blob_path and Path(norm_row.blob_path).exists():
                 normalize_present = True
-        except KeyError:
-            normalize_present = False
 
         # Check reward finiteness from metadata
         try:

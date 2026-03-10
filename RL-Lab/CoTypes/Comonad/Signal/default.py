@@ -18,7 +18,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints
 
-from Types.Inductive.SeverityInductive.default import SeverityInductive
+from Types.Inductive.Severity.default import SeverityInductive
 
 
 class CoAlarmComonad(BaseModel):

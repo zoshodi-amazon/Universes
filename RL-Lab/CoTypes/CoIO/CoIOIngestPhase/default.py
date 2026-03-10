@@ -16,6 +16,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from returns.maybe import Some
+
 from CoTypes.CoHom.Ingest.default import CoIngestHom
 from CoTypes.CoProduct.Ingest.Output.default import CoIngestProductOutput
 from CoTypes.CoProduct.Ingest.Meta.default import CoIngestProductMeta
@@ -45,16 +47,13 @@ def run(cfg: CoIngestHom, store: StoreMonad) -> CoIngestProductOutput:
     bars_sufficient = False
 
     # Probe StoreMonad for the latest ingest artifact
-    try:
-        row = store.latest(PhaseId.ingest.value, "ingest")
+    maybe_row = store.latest(PhaseId.ingest.value, "ingest")
+    if isinstance(maybe_row, Some):
+        row = maybe_row.unwrap()
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
-    except KeyError:
-        meta.artifact_found = False
 
-    # Populate observation checks
-    if meta.artifact_found:
         # Check blob presence on disk
         if row.blob_path and Path(row.blob_path).exists():
             data_present = True

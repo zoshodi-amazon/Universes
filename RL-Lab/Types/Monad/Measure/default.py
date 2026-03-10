@@ -7,7 +7,7 @@ MetricName alias dissolved — constraint inlined on field.
 from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 
-from Types.Inductive.MeasureInductive.default import MeasureInductive
+from Types.Inductive.Measure.default import MeasureInductive
 
 
 class MeasureMonad(BaseModel):

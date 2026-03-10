@@ -121,7 +121,7 @@ The project is domain-complete when every row is producible and observable:
 
 These extend the universal invariants in `Universes/AGENTS.md`:
 
-1. One Lake project for all Lean types under Types/IO/ (`lakefile.lean`, `srcDir := "../.."`).
+1. One Lake project at the lab root (`lakefile.lean`, `lean-toolchain`, `lake-manifest.json` alongside `flake.nix`). `srcDir := "."`.
 2. nixpkgs pinned to stable release (nixos-25.11). NO unstable.
 3. User phase is shallow -- tool selections only. Heavy tool configs are separate flakes consumed as Identity types.
 4. Workspace phase is shallow -- base toolchains only. Per-project envs live in project repos.

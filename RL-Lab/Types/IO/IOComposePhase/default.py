@@ -25,6 +25,8 @@ from Types.Dependent.Execution.default import ExecutionDependent
 from Types.Dependent.Constraint.default import ConstraintDependent
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Store.default import StoreMonad
+from returns.io import IOFailure
+from returns.maybe import Some
 from Types.Product.Compose.Meta.default import ComposeProductMeta
 from Types.Monad.Measure.default import MeasureMonad
 from Types.Hom.Compose.default import ComposeHom
@@ -182,9 +184,27 @@ def _run_pipeline(
             meta=meta,
         )
 
-    feat_row = settings.store.model_copy(
+    maybe_feat = settings.store.model_copy(
         update={"session_id": settings.run.session_id, "phase": "transform"}
     ).get(settings.run.session_id, "transform", "features")
+    if not isinstance(maybe_feat, Some):
+        meta.obs.errors.append(
+            ErrorMonad(
+                phase=PhaseId.compose,
+                message="feature artifact not found in store",
+                severity=Severity.error,
+            )
+        )
+        meta.obs.completed_at = datetime.now(timezone.utc).isoformat()
+        return ComposeProductOutput(
+            session_id=settings.run.session_id,
+            n_windows=0,
+            win_rate_pct=0.0,
+            duration_s=0.0,
+            status=ComposeStatus.failed,
+            meta=meta,
+        )
+    feat_row = maybe_feat.unwrap()
     df = pd.read_pickle(feat_row.blob_path)
     train_bars = train_cfg.horizon_min // asset.interval_min
     eval_bars = eval_cfg.horizon_min // asset.interval_min
@@ -365,7 +385,15 @@ def _run_search(settings: Settings) -> ComposeProductOutput:
 
     # Store journal blob in StoreMonad — IO paths belong in the DB, not Product types
     try:
-        store.put("study_log", meta, blob_path=str(journal_path))
+        result = store.put("study_log", meta, blob_path=str(journal_path))
+        if isinstance(result, IOFailure):
+            meta.obs.errors.append(
+                ErrorMonad(
+                    phase=PhaseId.compose,
+                    message=f"study journal store.put failed: {str(result.failure())[:128]}",
+                    severity=Severity.warn,
+                )
+            )
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
@@ -412,7 +440,8 @@ def _write(
     )
     blob_path = store.blob_path_for(f"main_{run_base.session_ts}", "json")
     blob_path.write_text(record.model_dump_json(indent=2))
-    store.put("main", record, str(blob_path))
+    result = store.put("main", record, str(blob_path))
+    # IOResult checked by caller if needed; _write is a fire-and-forget persist
 
 
 if __name__ == "__main__":

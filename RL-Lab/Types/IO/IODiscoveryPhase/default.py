@@ -25,7 +25,7 @@ from Types.Identity.Session.default import SessionIdentity
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Measure.default import MeasureMonad
 from Types.Monad.Signal.default import SignalMonad
-from Types.Inductive.SeverityInductive.default import SeverityInductive
+from Types.Inductive.Severity.default import SeverityInductive
 from Types.Monad.Effect.default import EffectMonad
 from Types.Product.Discovery.Output.default import DiscoveryProductOutput
 from Types.Product.Discovery.Meta.default import DiscoveryProductMeta
@@ -33,6 +33,7 @@ from Types.Inductive.Catalog.default import CatalogInductive
 from Types.Inductive.IndexMeta.default import IndexMetaInductive
 from Types.Inductive.Frame.default import FrameInductive
 from Types.Monad.Store.default import StoreMonad
+from returns.io import IOFailure
 
 INTERVAL_MAP: dict[int, str] = {
     1: "1m",
@@ -102,7 +103,7 @@ def _route_by_asset_class(tickers: list[str], index_class: IndexClass) -> list[s
 def _fetch_universe(catalog_source: str, meta: DiscoveryProductMeta) -> list[str]:
     """Fetch ticker universe from yfinance screener with Inductive validation."""
     try:
-        resp = yf.screen(screener)
+        resp = yf.screen(catalog_source)
         validated = CatalogInductive.from_response(resp)
         tickers = validated.get_tickers()
         meta.catalog_source_result_count = len(tickers)
@@ -337,7 +338,8 @@ def run(
     meta.obs.metrics.extend(
         [
             MeasureMonad(
-                name="screener_result_count", value=float(meta.catalog_source_result_count)
+                name="screener_result_count",
+                value=float(meta.catalog_source_result_count),
             ),
             MeasureMonad(
                 name="asset_class_filtered",
@@ -367,13 +369,12 @@ def run(
         meta=meta,
     )
 
-    try:
-        store.put("discovery", record)
-    except Exception as e:
+    result = store.put("discovery", record)
+    if isinstance(result, IOFailure):
         meta.obs.errors.append(
             ErrorMonad(
                 phase=PhaseId.discovery,
-                message=f"store.put failed: {str(e)[:128]}",
+                message=f"store.put failed: {str(result.failure())[:128]}",
                 severity=Severity.error,
             )
         )

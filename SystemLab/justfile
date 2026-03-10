@@ -13,6 +13,7 @@
 #   (Unit/⊤)   (ADT)      (Indexed)  (A → B)    (A×B)  (M A)       (IO)
 #
 # Types/ (Lean 4) → default.json → Types/IO/ (Nix IO executors)
+# lakefile.lean, lean-toolchain, lake-manifest.json live at lab root (alongside flake.nix)
 # See AGENTS.md for full 6FF mapping.
 #
 # ===============================================================================
@@ -49,7 +50,7 @@ ana-keys path:
 # f! shriek pullback — CoHom: validate default.json against Lean schemas
 ana-types-validate:
     @gum style --border normal --padding "0 1" "Validating $(gum style --foreground 212 'phase types')"
-    @nix-shell -p lean4 --run "cd Types/IO && lake build validate && .lake/build/bin/validate ."
+    @nix-shell -p lean4 --run "lake build validate && .lake/build/bin/validate Types/IO"
     @gum style --foreground 82 "All phases valid"
 
 # --- Phase observations (f* pullback — CoProduct/{Phase}) ---
@@ -156,7 +157,7 @@ ana-repl:
 # f! shriek push — IO (Lake): build Lean type system
 cata-types-build:
     @gum style --border normal --padding "0 1" "Building $(gum style --foreground 212 'Types')"
-    @nix-shell -p lean4 --run "cd Types/IO && lake build"
+    @nix-shell -p lean4 --run "lake build"
     @gum style --foreground 82 "Types built"
 
 # f! shriek push — Product/Deploy: build machine image
@@ -223,7 +224,7 @@ cata-vm machine:
 
 # f* pushforward — IO: refresh AWS credentials
 cata-ada:
-    ada credentials update --account=043309350576 --provider=conduit --role=IibsAdminAccess-DO-NOT-DELETE 
+    ada credentials update --account=043309350576 --provider=conduit --role=IibsAdminAccess-DO-NOT-DELETE  --profile=dev-local
 
 cata-ada-once:
     ada credentials update --account=043309350576 --provider=conduit --role=IibsAdminAccess-DO-NOT-DELETE --once 

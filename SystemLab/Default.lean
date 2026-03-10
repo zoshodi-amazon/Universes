@@ -1,8 +1,7 @@
--- Types/IO/Default.lean
+-- Default.lean (lab root)
 -- [QGP] IO — Entry point and validation runner.
--- This is the Lake project root. lakefile.lean and lean-toolchain live here.
+-- Lake project root: lakefile.lean, lean-toolchain, lake-manifest.json live here.
 -- Terminal in the import DAG: may reference all lower layers.
--- Migrated from: Modules/Types/Default.lean
 
 import Lean.Data.Json
 import Types.Hom.Identity.Default
@@ -25,7 +24,7 @@ def validateJson (name : String) (path : System.FilePath) (α : Type) [FromJson 
     | .ok _ => IO.println s!"[ OK ] {name}"; return true
 
 def main (args : List String) : IO UInt32 := do
-  let dir := args.head? |>.getD "."
+  let dir := args.head? |>.getD "Types/IO"
   IO.println s!"Validating phase configs in {dir}"
   let mut ok := true
   ok := (← validateJson "Identity"  s!"{dir}/IOIdentityPhase/default.json"  IdentityHom) && ok
