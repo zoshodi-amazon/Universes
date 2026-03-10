@@ -1,13 +1,13 @@
-"""CoRiskDependent [CoDependent] — Risk schema conformance witness (2 fields). All bounded.
+"""CoConstraintDependent [CoDependent] — Risk schema conformance witness (2 fields). All bounded.
 
-Liquid Crystal-dual — validates that RiskDependent thresholds are consistent.
+Liquid Crystal-dual — validates that ConstraintDependent thresholds are consistent.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoRiskDependent(BaseModel):
-    """CoRiskDependent [CoDependent] — Risk threshold consistency witness (2 fields)."""
+class CoConstraintDependent(BaseModel):
+    """CoConstraintDependent [CoDependent] — Risk threshold consistency witness (2 fields)."""
 
     stop_loss_negative: bool = Field(
         default=False,

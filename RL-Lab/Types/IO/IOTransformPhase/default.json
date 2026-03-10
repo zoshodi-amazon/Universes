@@ -1,6 +1,6 @@
 {
   "asset": {
-    "asset_type": "stock",
+    "index_class": "stock",
     "io_ticker": "AAPL",
     "interval_min": 5,
     "trade_start_min": 570,
@@ -9,27 +9,23 @@
   },
   "run": {
     "seed": 42,
-    "name": "feature",
+    "name": "transform",
     "verbose": 0
   },
   "store": {
     "db_url": "sqlite:///store/.rl.db",
     "blob_dir": "store/blobs",
-    "run_id": "00000000",
-    "phase": "feature",
+    "session_id": "00000000",
+    "phase": "transform",
     "docs_dir": "store/docs"
   },
-  "ingest": {
-    "period": "60d",
-    "warmup_bars": 28
-  },
-  "feature": {
+  "transform": {
     "wavelet": "db4",
     "level": 4,
     "threshold_mode": "soft",
-    "adx_period": 14,
-    "supertrend_period": 10,
-    "supertrend_multiplier": 3.0,
+    "trend_period": 14,
+    "envelope_period": 10,
+    "envelope_multiplier": 3.0,
     "regime_threshold": 25.0
   }
 }

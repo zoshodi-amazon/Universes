@@ -1,4 +1,4 @@
-"""LiquidityDependent [Dependent] — Relative liquidity filters for asset-agnostic discovery.
+"""FilterDependent [Dependent] — Relative liquidity filters for asset-agnostic discovery.
 
 All filters are percentile/ratio-based, not absolute values.
 This ensures the same config works across stocks, crypto, and forex.
@@ -6,8 +6,8 @@ This ensures the same config works across stocks, crypto, and forex.
 from pydantic import BaseModel, Field
 
 
-class LiquidityDependent(BaseModel):
-    """LiquidityDependent [Dependent] — Relative liquidity filters for asset-agnostic discovery (7 fields)."""
+class FilterDependent(BaseModel):
+    """FilterDependent [Dependent] — Relative liquidity filters for asset-agnostic discovery (7 fields)."""
     min_volume_percentile: float = Field(default=30.0, ge=0.0, le=100.0,
         description="Ticker must be in top N% of peers by avg volume")
     min_price_percentile: float = Field(default=5.0, ge=0.0, le=100.0,

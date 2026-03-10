@@ -1,6 +1,6 @@
 {
   "asset": {
-    "asset_type": "stock",
+    "index_class": "stock",
     "io_ticker": "AAPL",
     "interval_min": 5,
     "trade_start_min": 570,
@@ -9,14 +9,14 @@
   },
   "run": {
     "seed": 42,
-    "name": "serve",
+    "name": "project",
     "verbose": 0
   },
   "store": {
     "db_url": "sqlite:///store/.rl.db",
     "blob_dir": "store/blobs",
-    "run_id": "00000000",
-    "phase": "serve",
+    "session_id": "00000000",
+    "phase": "project",
     "docs_dir": "store/docs"
   },
   "env": {
@@ -24,19 +24,19 @@
     "fees_pct": 0.1,
     "borrow_rate_pct": 0.0,
     "positions": [-1.0, 0.0, 1.0],
-    "broker_mode": "sim",
-    "io_broker_key": "sim"
+    "execution_mode": "sim",
+    "io_execution_key": "sim"
   },
   "risk": {
     "stop_loss_pct": -2.0,
     "profit_threshold_pct": 0.5,
     "max_drawdown_pct": -5.0
   },
-  "serve": {
-    "train_run_id": "00000000",
-    "io_algo": "PPO",
-    "poll_interval_s": 60,
-    "max_bars": 288,
-    "max_model_age_min": 1440
+  "project": {
+    "solve_session_id": "00000000",
+    "io_solver": "PPO",
+    "sample_interval_s": 60,
+    "max_frames": 288,
+    "max_artifact_age_min": 1440
   }
 }

@@ -1,6 +1,6 @@
-"""MainProductMeta [Product] — Phase output meta extension for Main (pipeline).
+"""ComposeProductMeta [Product] — Phase output meta extension for Main (pipeline).
 
-Bound to Main/pipeline phase. Contains ObservabilityMonad + optimization results.
+Bound to Main/pipeline phase. Contains EffectMonad + optimization results.
 Sentinel values indicate non-optimized runs:
 - best_lr = -1.0 means not optimized
 - best_timesteps = -1 means not optimized
@@ -14,14 +14,14 @@ that types record what was computed, not where things are stored.
 """
 from pydantic import BaseModel, Field
 
-from Types.Monad.Observability.default import ObservabilityMonad
+from Types.Monad.Effect.default import EffectMonad
 from Types.Monad.Error.default import PhaseId
 
 
-class MainProductMeta(BaseModel):
-    """MainProductMeta [Product] — Phase output meta extension for Main (5 fields)."""
-    obs: ObservabilityMonad = Field(
-        default_factory=lambda: ObservabilityMonad(phase=PhaseId.pipeline),
+class ComposeProductMeta(BaseModel):
+    """ComposeProductMeta [Product] — Phase output meta extension for Main (5 fields)."""
+    obs: EffectMonad = Field(
+        default_factory=lambda: EffectMonad(phase=PhaseId.compose),
         description="Observability data — errors, metrics, alarms, timing")
     best_lr: float = Field(default=-1.0, ge=-1.0, le=1.0,
         description="Learning rate of best trial (-1.0 if not optimized)")

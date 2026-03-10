@@ -1,4 +1,4 @@
-"""OHLCVInductive [Inductive] — Structural validation for OHLCV DataFrames (5 fields).
+"""FrameInductive [Inductive] — Structural validation for OHLCV DataFrames (5 fields).
 
 Crystalline phase — validates yfinance DataFrame has required columns and types.
 """
@@ -9,8 +9,8 @@ import pandas as pd
 REQUIRED_COLUMNS = {"open", "high", "low", "close", "volume"}
 
 
-class OHLCVInductive(BaseModel):
-    """OHLCVInductive [Inductive] — Validated OHLCV data structure."""
+class FrameInductive(BaseModel):
+    """FrameInductive [Inductive] — Validated OHLCV data structure."""
     open: list[float] = Field(..., min_length=1, max_length=10_000_000, description="Opening prices")
     high: list[float] = Field(..., min_length=1, max_length=10_000_000, description="High prices")
     low: list[float] = Field(..., min_length=1, max_length=10_000_000, description="Low prices")
@@ -18,8 +18,8 @@ class OHLCVInductive(BaseModel):
     volume: list[float] = Field(..., min_length=1, max_length=10_000_000, description="Volume")
 
     @classmethod
-    def from_dataframe(cls, df: pd.DataFrame | None) -> "OHLCVInductive":
-        """Validate and convert DataFrame to OHLCVInductive."""
+    def from_dataframe(cls, df: pd.DataFrame | None) -> "FrameInductive":
+        """Validate and convert DataFrame to FrameInductive."""
         if df is None or len(df) == 0:
             raise ValueError("DataFrame is empty or None")
         if isinstance(df.columns, pd.MultiIndex):

@@ -20,7 +20,7 @@ structure Co{Name}Identity where
 
 **Dual of:** Stratum 1 (Identity, terminal objects).
 
-Where `AssetIdentity` declares "this asset exists with these properties," `CoAssetIdentity` asks "is this asset actually reachable? valid? identified?" — the coterminal dual that witnesses whether the Identity's referent is live in the world.
+Where `IndexIdentity` declares "this index exists with these properties," `CoIndexIdentity` asks "is this index actually reachable? valid? identified?" — the coterminal dual that witnesses whether the Identity's referent is live in the world.
 
 **Pattern:** All fields are `Bool`, defaulting to `False`. The CoIO observer flips them to `True` as it successfully probes each aspect. A fully-`True` CoIdentity witness means the Identity type's referent is fully reachable.
 
@@ -28,19 +28,19 @@ Where `AssetIdentity` declares "this asset exists with these properties," `CoAss
 
 | Type | Fields | Dual Of | File |
 |------|:------:|---------|------|
-| `CoAssetIdentity` | 3 | `AssetIdentity` | `CoTypes/CoIdentity/Asset/default.py` |
-| `CoRunIdentity` | 3 | `RunIdentity` | `CoTypes/CoIdentity/Run/default.py` |
+| `CoIndexIdentity` | 3 | `IndexIdentity` | `CoTypes/CoIdentity/Index/default.py` |
+| `CoSessionIdentity` | 3 | `SessionIdentity` | `CoTypes/CoIdentity/Session/default.py` |
 
 ```lean
-structure CoAssetIdentity where
-  tickerValid       : Bool := false   -- IO probe: does the ticker resolve at the data vendor?
-  dataReachable     : Bool := false   -- IO probe: can we download bars for this ticker?
+structure CoIndexIdentity where
+  symbolValid       : Bool := false   -- IO probe: does the symbol resolve at the data vendor?
+  dataReachable     : Bool := false   -- IO probe: can we download bars for this symbol?
   exchangeIdentified: Bool := false   -- IO probe: do we know which exchange this trades on?
   deriving Repr, Lean.ToJson, Lean.FromJson
 
-structure CoRunIdentity where
-  blobExists   : Bool := false   -- IO probe: is the run's blob directory on disk?
-  dbRowExists  : Bool := false   -- IO probe: is there a StoreMonad row for this run?
+structure CoSessionIdentity where
+  blobExists   : Bool := false   -- IO probe: is the session's blob directory on disk?
+  dbRowExists  : Bool := false   -- IO probe: is there a StoreMonad row for this session?
   storeReachable: Bool := false  -- IO probe: can we connect to the SQLite DB?
   deriving Repr, Lean.ToJson, Lean.FromJson
 ```

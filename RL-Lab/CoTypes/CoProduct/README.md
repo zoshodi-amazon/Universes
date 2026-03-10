@@ -26,7 +26,7 @@ structure Co{Phase}ProductMeta where
 
 **Dual of:** Stratum 5 (Product, phase outputs).
 
-Where `DiscoveryProductOutput` records what the Discovery phase produced (qualifying tickers, universe size), `CoDiscoveryProductOutput` records what the observer **actually saw** when it probed the artifact. This is the coproduct dual — the observation projection.
+Where `DiscoveryProductOutput` records what the Discovery phase produced (qualifying symbols, universe size), `CoDiscoveryProductOutput` records what the observer **actually saw** when it probed the artifact. This is the coproduct dual — the observation projection.
 
 **Pattern:** Mix of `Bool` fields (pass/fail checks) and typed fields (observed values). CoProduct Output mirrors the structure of Product Output but with observation semantics. CoProduct Meta tracks artifact presence and schema validity.
 
@@ -36,17 +36,17 @@ Where `DiscoveryProductOutput` records what the Discovery phase produced (qualif
 |-------|----------|:--------------:|--------|:------------:|
 | Discovery | `CoDiscoveryProductOutput` | 5 | `CoDiscoveryProductMeta` | 3 |
 | Ingest | `CoIngestProductOutput` | 5 | `CoIngestProductMeta` | 3 |
-| Feature | `CoFeatureProductOutput` | 5 | `CoFeatureProductMeta` | 3 |
-| Train | `CoTrainProductOutput` | 5 | `CoTrainProductMeta` | 3 |
+| Transform | `CoTransformProductOutput` | 5 | `CoTransformProductMeta` | 3 |
+| Solve | `CoSolveProductOutput` | 5 | `CoSolveProductMeta` | 3 |
 | Eval | `CoEvalProductOutput` | 5 | `CoEvalProductMeta` | 3 |
-| Serve | `CoServeProductOutput` | 5 | `CoServeProductMeta` | 3 |
-| Main | `CoMainProductOutput` | 7 | `CoMainProductMeta` | 7 |
+| Project | `CoProjectProductOutput` | 5 | `CoProjectProductMeta` | 3 |
+| Compose | `CoComposeProductOutput` | 7 | `CoComposeProductMeta` | 7 |
 
 ```lean
 structure CoDiscoveryProductOutput where
   observerId        : String := ""
   universeResolved  : Bool   := false
-  screenerResponded : Bool   := false
+  catalogResponded  : Bool   := false
   qualifyingFound   : Bool   := false
   meta              : CoDiscoveryProductMeta
   deriving Repr, Lean.ToJson, Lean.FromJson

@@ -1,6 +1,6 @@
-"""OptimizeDependent [Dependent] — Optuna hyperparameter search configuration (7 fields). All bounded.
+"""SearchDependent [Dependent] — Optuna hyperparameter search configuration (7 fields). All bounded.
 
-Shared across IOMainPhase optimize mode. Defines search space bounds for learning rate and timesteps.
+Shared across IOComposePhase optimize mode. Defines search space bounds for learning rate and timesteps.
 Cross-field validators enforce lr_min < lr_max and timesteps_min < timesteps_max.
 
 Fields satisfy Independence, Completeness, Locality:
@@ -20,8 +20,8 @@ class ObjectiveMetric(str, Enum):
     avg_return_pct = "avg_return_pct"
 
 
-class OptimizeDependent(BaseModel):
-    """OptimizeDependent [Dependent] — Optuna search parameters for hyperparameter optimization."""
+class SearchDependent(BaseModel):
+    """SearchDependent [Dependent] — Optuna search parameters for hyperparameter optimization."""
     n_trials: int = Field(default=20, ge=1, le=10_000,
         description="Number of Optuna optimization trials to run")
     n_parallel: int = Field(default=1, ge=1, le=16,
@@ -38,7 +38,7 @@ class OptimizeDependent(BaseModel):
         description="Upper bound of total training timesteps search range")
 
     @model_validator(mode="after")
-    def _validate_ranges(self) -> "OptimizeDependent":
+    def _validate_ranges(self) -> "SearchDependent":
         if self.search_space_lr_min >= self.search_space_lr_max:
             raise ValueError(
                 f"search_space_lr_min ({self.search_space_lr_min}) must be < "

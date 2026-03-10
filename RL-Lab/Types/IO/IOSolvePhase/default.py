@@ -1,7 +1,7 @@
-"""IOTrainPhase [QGP] — FeatureProductOutput + TrainHom -> TrainProductOutput.
+"""IOSolvePhase [QGP] — TransformProductOutput + SolveHom -> SolveProductOutput.
 
-SubprocVecEnv when n_envs > 1 and sim mode. DummyVecEnv otherwise.
-VecNormalize for obs/reward. MlpPolicy hardcoded. SB3 logs to store/blobs/{run_id}/logs/.
+SubprocVecEnv when n_parallel > 1 and sim mode. DummyVecEnv otherwise.
+VecNormalize for obs/reward. MlpPolicy hardcoded. SB3 logs to store/blobs/{session_id}/logs/.
 Reads feature blob from store via StoreMonad.get(). Writes model + normalize blobs via store.put().
 """
 
@@ -22,24 +22,24 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from Types.Inductive.Algo.default import AlgoIdentity
-from Types.Identity.Asset.default import AssetIdentity
-from Types.Identity.Run.default import RunIdentity
-from Types.Dependent.Env.default import EnvDependent, BrokerMode
-from Types.Hom.Train.default import TrainHom
+from Types.Inductive.Solver.default import SolverInductive
+from Types.Identity.Index.default import IndexIdentity
+from Types.Identity.Session.default import SessionIdentity
+from Types.Dependent.Execution.default import ExecutionDependent, ExecutionMode
+from Types.Hom.Solve.default import SolveHom
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Store.default import StoreMonad
-from Types.Product.Train.Meta.default import TrainProductMeta
-from Types.Product.Train.Output.default import TrainProductOutput
-from Types.Product.Feature.Output.default import FeatureProductOutput
+from Types.Product.Solve.Meta.default import SolveProductMeta
+from Types.Product.Solve.Output.default import SolveProductOutput
+from Types.Product.Transform.Output.default import TransformProductOutput
 from Types.IO.IOIngestPhase.default import run as ingest
-from Types.IO.IOFeaturePhase.default import run as feature
+from Types.IO.IOTransformPhase.default import run as feature
 
 ALGOS = {"PPO": PPO, "SAC": SAC, "DQN": DQN, "A2C": A2C}
 
 
 def _make_env(
-    df: pd.DataFrame, env_base: EnvDependent, episode_bars: int, verbose: int
+    df: pd.DataFrame, env_base: ExecutionDependent, episode_bars: int, verbose: int
 ) -> Callable[[], gym.Env]:
     def _init() -> gym.Env:
         return gym.make(
@@ -52,7 +52,7 @@ def _make_env(
             borrow_interest_rate=env_base.borrow_rate_pct / 100.0,
             windows=None,
             max_episode_duration=episode_bars,
-            name=env_base.broker_mode.value,
+            name=env_base.execution_mode.value,
             verbose=verbose,
             render_mode=None,
         )
@@ -61,23 +61,23 @@ def _make_env(
 
 
 def run(
-    feature_record: FeatureProductOutput,
-    train_specs: TrainHom,
-    env_base: EnvDependent,
-    asset: AssetIdentity,
-    run_base: RunIdentity,
+    feature_record: TransformProductOutput,
+    train_specs: SolveHom,
+    env_base: ExecutionDependent,
+    asset: IndexIdentity,
+    run_base: SessionIdentity,
     df_slice: pd.DataFrame,
     store_base: StoreMonad,
-) -> TrainProductOutput:
+) -> SolveProductOutput:
     started = datetime.now(timezone.utc).isoformat()
-    meta = TrainProductMeta()
+    meta = SolveProductMeta()
     meta.obs.started_at = started
-    meta.obs.phase = PhaseId.train
+    meta.obs.phase = PhaseId.solve
 
     if len(df_slice) == 0:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.train,
+                phase=PhaseId.solve,
                 message="empty DataFrame for training",
                 severity=Severity.error,
             )
@@ -85,28 +85,28 @@ def run(
         raise ValueError("empty DataFrame for training")
 
     store = store_base.model_copy(
-        update={"run_id": run_base.run_id, "phase": PhaseId.train}
+        update={"session_id": run_base.session_id, "phase": PhaseId.solve}
     )
-    episode_bars = train_specs.episode_duration_min // asset.interval_min
+    episode_bars = train_specs.horizon_min // asset.interval_min
 
     env_fns = [
         _make_env(df_slice, env_base, episode_bars, run_base.verbose)
-        for _ in range(train_specs.n_envs)
+        for _ in range(train_specs.n_parallel)
     ]
-    use_subproc = train_specs.n_envs > 1 and env_base.broker_mode == BrokerMode.sim
+    use_subproc = train_specs.n_parallel > 1 and env_base.execution_mode == ExecutionMode.sim
     vec_cls = SubprocVecEnv if use_subproc else DummyVecEnv
 
     try:
         train_env = vec_cls(env_fns)
         train_env = VecNormalize(
             train_env,
-            norm_obs=train_specs.normalize_obs,
-            norm_reward=train_specs.normalize_reward,
+            norm_obs=train_specs.normalize_input,
+            norm_reward=train_specs.normalize_signal,
         )
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.train,
+                phase=PhaseId.solve,
                 message=f"env creation failed: {str(e)[:128]}",
                 severity=Severity.error,
             )
@@ -114,10 +114,10 @@ def run(
         raise
 
     try:
-        log_dir = Path(store.blob_dir) / run_base.run_id / "logs"
+        log_dir = Path(store.blob_dir) / run_base.session_id / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
 
-        algo_cls = ALGOS[train_specs.algo.value]
+        algo_cls = ALGOS[train_specs.solver.value]
 
         import torch
 
@@ -131,11 +131,11 @@ def run(
             verbose=run_base.verbose,
         )
         logger = configure(
-            str(log_dir / f"{run_base.run_ts}_{run_base.run_id}"), ["csv"]
+            str(log_dir / f"{run_base.session_ts}_{run_base.session_id}"), ["csv"]
         )
         model.set_logger(logger)
 
-        model.learn(total_timesteps=train_specs.total_timesteps)
+        model.learn(budget=train_specs.budget)
 
         for fmt in logger.output_formats:
             fmt.close()
@@ -170,7 +170,7 @@ def run(
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.train,
+                phase=PhaseId.solve,
                 message=f"training failed: {str(e)[:128]}",
                 severity=Severity.error,
             )
@@ -185,10 +185,10 @@ def run(
         completed - datetime.fromisoformat(started.replace("Z", "+00:00"))
     ).total_seconds()
 
-    record = TrainProductOutput(
-        run_id=run_base.run_id,
-        algo=train_specs.algo,
-        total_timesteps=train_specs.total_timesteps,
+    record = SolveProductOutput(
+        session_id=run_base.session_id,
+        algo=train_specs.solver,
+        budget=train_specs.budget,
         final_reward=final_reward,
         meta=meta,
     )
@@ -200,7 +200,7 @@ def run(
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.train,
+                phase=PhaseId.solve,
                 message=f"store.put failed: {str(e)[:128]}",
                 severity=Severity.error,
             )
@@ -210,26 +210,26 @@ def run(
 
 
 class Settings(BaseSettings):
-    """IOTrainPhase Settings [Plasma] — Standalone entrypoint for RL training (5 fields)."""
+    """IOSolvePhase Settings [Plasma] — Standalone entrypoint for RL training (5 fields)."""
 
     model_config = SettingsConfigDict(
-        json_file="Types/IO/IOTrainPhase/default.json",
+        json_file="Types/IO/IOSolvePhase/default.json",
         json_file_encoding="utf-8",
         cli_parse_args=True,
-        cli_prog_name="cata-train",
+        cli_prog_name="cata-solve",
     )
-    asset: AssetIdentity = Field(
+    asset: IndexIdentity = Field(
         ..., description="Asset index — ticker, interval, trade hours, holidays"
     )
-    run: RunIdentity = Field(
-        default=RunIdentity(), description="Run context — ID, seed, store"
+    run: SessionIdentity = Field(
+        default=SessionIdentity(), description="Run context — ID, seed, store"
     )
-    env: EnvDependent = Field(
-        default=EnvDependent(),
+    env: ExecutionDependent = Field(
+        default=ExecutionDependent(),
         description="Trading environment — fees, positions, stop-loss, broker mode",
     )
-    train: TrainHom = Field(
-        default=TrainHom(),
+    solve: SolveHom = Field(
+        default=SolveHom(),
         description="Train config — algorithm, timesteps, learning rate, envs",
     )
     store: StoreMonad = Field(
@@ -247,26 +247,29 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         from pydantic_settings import JsonConfigSettingsSource, CliSettingsSource
+        from pathlib import Path as _P
 
-        return (
-            CliSettingsSource(settings_cls, cli_parse_args=True),
-            JsonConfigSettingsSource(settings_cls),
-        )
+        sources = [CliSettingsSource(settings_cls, cli_parse_args=True)]
+        _local = _P(__file__).parent / "local.json"
+        if _local.exists():
+            sources.append(JsonConfigSettingsSource(settings_cls, json_file=_local))
+        sources.append(JsonConfigSettingsSource(settings_cls))
+        return tuple(sources)
 
 
 if __name__ == "__main__":
     from Types.Hom.Ingest.default import IngestHom
-    from Types.Hom.Feature.default import FeatureHom
+    from Types.Hom.Transform.default import TransformHom
 
     s = Settings()
     ingest_record = ingest(IngestHom(), s.asset, s.run, s.store)
-    feature_record = feature(ingest_record, FeatureHom(), s.run, s.store)
+    feature_record = feature(ingest_record, TransformHom(), s.run, s.store)
     # Load feature blob from store
     store = s.store.model_copy(
-        update={"run_id": s.run.run_id, "phase": PhaseId.feature}
+        update={"session_id": s.run.session_id, "phase": PhaseId.transform}
     )
-    feat_row = store.get(s.run.run_id, PhaseId.feature.value, "features")
+    feat_row = store.get(s.run.session_id, PhaseId.transform.value, "features")
     df = pd.read_pickle(feat_row.blob_path)
-    episode_bars = s.train.episode_duration_min // s.asset.interval_min
+    episode_bars = s.train.horizon_min // s.asset.interval_min
     df_slice = df.iloc[: episode_bars + 1].copy()
     run(feature_record, s.train, s.env, s.asset, s.run, df_slice, s.store)

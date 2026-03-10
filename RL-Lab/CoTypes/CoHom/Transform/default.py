@@ -1,13 +1,13 @@
-"""CoFeatureHom [CoHom] — Feature phase observation spec (4 fields). All bounded.
+"""CoTransformHom [CoHom] — Feature phase observation spec (4 fields). All bounded.
 
-Liquid-dual — observation specification parallel to FeatureHom.
+Liquid-dual — observation specification parallel to TransformHom.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoFeatureHom(BaseModel):
-    """CoFeatureHom [CoHom] — What to verify about a feature run (4 fields)."""
+class CoTransformHom(BaseModel):
+    """CoTransformHom [CoHom] — What to verify about a feature run (4 fields)."""
 
     wavelet_applied: bool = Field(
         default=True,

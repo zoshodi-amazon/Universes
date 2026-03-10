@@ -1,4 +1,4 @@
-"""CoMainProductOutput [CoProduct] — Main observation result (7 fields). All bounded.
+"""CoComposeProductOutput [CoProduct] — Main observation result (7 fields). All bounded.
 
 Main is the composite phase (QGP). Its observation result includes:
 - Pipeline artifact observation booleans (original)
@@ -9,11 +9,11 @@ Main is the composite phase (QGP). Its observation result includes:
 from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 import uuid
-from CoTypes.CoProduct.Main.Meta.default import CoMainProductMeta
+from CoTypes.CoProduct.Compose.Meta.default import CoComposeProductMeta
 
 
-class CoMainProductOutput(BaseModel):
-    """CoMainProductOutput [CoProduct] — What was observed about a main run (7 fields)."""
+class CoComposeProductOutput(BaseModel):
+    """CoComposeProductOutput [CoProduct] — What was observed about a main run (7 fields)."""
 
     observer_id: Annotated[str, StringConstraints(min_length=1, max_length=64)] = Field(
         default_factory=lambda: uuid.uuid4().hex[:8],
@@ -27,7 +27,7 @@ class CoMainProductOutput(BaseModel):
     )
     result_persisted: bool = Field(
         default=False,
-        description="Whether MainProductOutput was persisted to StoreMonad",
+        description="Whether ComposeProductOutput was persisted to StoreMonad",
     )
     validate_passed: bool = Field(
         default=False,
@@ -37,7 +37,7 @@ class CoMainProductOutput(BaseModel):
         default=False,
         description="Whether cross-phase Rerun visualization was logged",
     )
-    meta: CoMainProductMeta = Field(
-        default_factory=CoMainProductMeta,
+    meta: CoComposeProductMeta = Field(
+        default_factory=CoComposeProductMeta,
         description="Observation metadata — trace cursor + validation detail",
     )

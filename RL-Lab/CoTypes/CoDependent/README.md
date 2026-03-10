@@ -18,7 +18,7 @@ structure Co{Name}Dependent where
 
 **Dual of:** Stratum 3 (Dependent, indexed type families).
 
-Where `RiskDependent` defines bounded parameters with cross-field constraints (the fiber over the base space), `CoRiskDependent` validates that a deserialized instance actually satisfies those constraints. This is the **lifting property** — given a point in the base space, does the serialized data lift to a valid fiber element?
+Where `ConstraintDependent` defines bounded parameters with cross-field constraints (the fiber over the base space), `CoConstraintDependent` validates that a deserialized instance actually satisfies those constraints. This is the **lifting property** — given a point in the base space, does the serialized data lift to a valid fiber element?
 
 **Pattern:** All fields are `Bool`, defaulting to `False`. Each field witnesses one constraint satisfaction.
 
@@ -26,20 +26,20 @@ Where `RiskDependent` defines bounded parameters with cross-field constraints (t
 
 | Type | Fields | Dual Of | File |
 |------|:------:|---------|------|
-| `CoRiskDependent` | 2 | `RiskDependent` | `CoTypes/CoDependent/Risk/default.py` |
-| `CoEnvDependent` | 3 | `EnvDependent` | `CoTypes/CoDependent/Env/default.py` |
-| `CoLiquidityDependent` | 2 | `LiquidityDependent` | `CoTypes/CoDependent/Liquidity/default.py` |
-| `CoAlarmDependent` | 2 | `AlarmDependent` | `CoTypes/CoDependent/Alarm/default.py` |
-| `CoOptimizeDependent` | 3 | `OptimizeDependent` | `CoTypes/CoDependent/Optimize/default.py` |
+| `CoConstraintDependent` | 2 | `ConstraintDependent` | `CoTypes/CoDependent/Constraint/default.py` |
+| `CoExecutionDependent` | 3 | `ExecutionDependent` | `CoTypes/CoDependent/Execution/default.py` |
+| `CoFilterDependent` | 2 | `FilterDependent` | `CoTypes/CoDependent/Filter/default.py` |
+| `CoThresholdDependent` | 2 | `ThresholdDependent` | `CoTypes/CoDependent/Threshold/default.py` |
+| `CoSearchDependent` | 3 | `SearchDependent` | `CoTypes/CoDependent/Search/default.py` |
 
 ```lean
-structure CoRiskDependent where
+structure CoConstraintDependent where
   stopLossNegative : Bool := false   -- stop_loss_pct < 0
   profitPositive   : Bool := false   -- profit_threshold_pct > 0
   -- MISSING: stopLossAboveDrawdown (stop_loss_pct > max_drawdown_pct)
   deriving Repr, Lean.ToJson, Lean.FromJson
 
-structure CoOptimizeDependent where
+structure CoSearchDependent where
   lrRangeValid        : Bool := false   -- lr_min < lr_max
   timestepsRangeValid : Bool := false   -- timesteps_min < timesteps_max
   trialsPositive      : Bool := false   -- n_trials >= 1
@@ -47,8 +47,8 @@ structure CoOptimizeDependent where
 ```
 
 **Refactor items:**
-- [ ] Add `stop_loss_above_drawdown` field to `CoRiskDependent` (mirrors the Stratum 3 cross-field constraint)
-- [ ] Add `flat_position_available` field to `CoEnvDependent` (mirrors `0.0 in positions` constraint)
+- [ ] Add `stop_loss_above_drawdown` field to `CoConstraintDependent` (mirrors the Stratum 3 cross-field constraint)
+- [ ] Add `flat_position_available` field to `CoExecutionDependent` (mirrors `0.0 in positions` constraint)
 
 ## Validation Checklist
 

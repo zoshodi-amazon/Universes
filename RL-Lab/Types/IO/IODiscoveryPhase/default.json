@@ -1,6 +1,6 @@
 {
   "asset": {
-    "asset_type": "stock",
+    "index_class": "stock",
     "io_ticker": "AAPL",
     "interval_min": 5,
     "trade_start_min": 570,
@@ -15,16 +15,16 @@
   "store": {
     "db_url": "sqlite:///store/.rl.db",
     "blob_dir": "store/blobs",
-    "run_id": "00000000",
+    "session_id": "00000000",
     "phase": "discovery",
     "docs_dir": "store/docs"
   },
   "discovery": {
-    "io_universe": [],
-    "screener": "most_actives",
-    "min_adx": 20.0,
-    "min_bars": 360,
-    "adx_lookback_period": "60d",
+    "io_indices": [],
+    "catalog_source": "most_actives",
+    "min_trend_score": 20.0,
+    "min_frame_length": 360,
+    "trend_lookback": "60d",
     "liquidity": {
       "min_volume_percentile": 30.0,
       "min_price_percentile": 5.0,

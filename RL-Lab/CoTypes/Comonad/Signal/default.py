@@ -1,7 +1,7 @@
-"""CoAlarmComonad [Comonad] — Observation witness for AlarmMonad (4 fields).
+"""CoAlarmComonad [Comonad] — Observation witness for SignalMonad (4 fields).
 
-Plasma-dual phase — the coalgebraic dual of AlarmMonad.
-Where AlarmMonad records threshold-based alerts during production,
+Plasma-dual phase — the coalgebraic dual of SignalMonad.
+Where SignalMonad records threshold-based alerts during production,
 CoAlarmComonad witnesses what alarms were observed after the fact.
 
 extract(CoAlarmComonad) -> alarm_count (current observation summary)
@@ -18,7 +18,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints
 
-from Types.Inductive.AlarmSeverity.default import AlarmSeverity
+from Types.Inductive.SeverityInductive.default import SeverityInductive
 
 
 class CoAlarmComonad(BaseModel):
@@ -33,8 +33,8 @@ class CoAlarmComonad(BaseModel):
     has_critical: bool = Field(
         default=False, description="Whether any critical-severity alarm was observed"
     )
-    worst_severity: AlarmSeverity = Field(
-        default=AlarmSeverity.info,
+    worst_severity: SeverityInductive = Field(
+        default=SeverityInductive.info,
         description="Highest alarm severity level observed across all alarms",
     )
     last_name: Annotated[str, StringConstraints(max_length=64)] = Field(

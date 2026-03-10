@@ -1,4 +1,4 @@
-"""ObservabilityMonad [Monad] — Free observability structure composable into any phase (7 fields).
+"""EffectMonad [Monad] — Free observability structure composable into any phase (7 fields).
 
 Plasma phase — effectful composition of errors, metrics, and alarms.
 Composed into {Phase}ProductMeta types.
@@ -8,17 +8,17 @@ from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 
 from Types.Monad.Error.default import ErrorMonad, PhaseId
-from Types.Monad.Metric.default import MetricMonad
-from Types.Monad.Alarm.default import AlarmMonad
+from Types.Monad.Measure.default import MeasureMonad
+from Types.Monad.Signal.default import SignalMonad
 
 
-class ObservabilityMonad(BaseModel):
-    """ObservabilityMonad [Monad] — Free observability structure composable into any phase (7 fields)."""
+class EffectMonad(BaseModel):
+    """EffectMonad [Monad] — Free observability structure composable into any phase (7 fields)."""
     errors: list[ErrorMonad] = Field(default_factory=list, max_length=100,
         description="Typed error collection from phase execution")
-    metrics: list[MetricMonad] = Field(default_factory=list, max_length=50,
+    metrics: list[MeasureMonad] = Field(default_factory=list, max_length=50,
         description="Phase metrics — counters and gauges")
-    alarms: list[AlarmMonad] = Field(default_factory=list, max_length=20,
+    alarms: list[SignalMonad] = Field(default_factory=list, max_length=20,
         description="Triggered alarms based on threshold breaches")
     phase: PhaseId = Field(...,
         description="Phase that produced this observability data")

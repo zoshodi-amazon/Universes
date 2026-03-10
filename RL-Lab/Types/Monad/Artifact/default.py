@@ -4,7 +4,7 @@ Plasma phase — typed witness for a stored artifact's metadata.
 Separated from StoreMonad to satisfy 1-type-per-file invariant.
 
 Fields satisfy Independence, Completeness, Locality:
-- run_id:        identifies which run produced this artifact
+- session_id:        identifies which run produced this artifact
 - phase:         identifies which phase produced it
 - artifact_type: kind discriminator (e.g. 'model', 'features', 'normalize')
 - blob_path:     filesystem location of the binary blob
@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field, StringConstraints
 class ArtifactRow(BaseModel):
     """ArtifactRow [Monad] — Single row returned from StoreMonad.get() / .latest() (6 fields)."""
 
-    run_id: Annotated[str, StringConstraints(min_length=1, max_length=64)] = Field(
+    session_id: Annotated[str, StringConstraints(min_length=1, max_length=64)] = Field(
         description="Run identifier that produced this artifact"
     )
     phase: Annotated[str, StringConstraints(min_length=1, max_length=32)] = Field(

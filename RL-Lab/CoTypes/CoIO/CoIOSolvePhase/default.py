@@ -1,7 +1,7 @@
-"""CoIOTrainPhase [CoIO] — Train phase observation executor.
+"""CoIOSolvePhase [CoIO] — Train phase observation executor.
 
 Coalgebraic observer: probes the last train artifact from StoreMonad,
-checks it against CoTrainHom specification, populates CoTrainProductOutput.
+checks it against CoSolveHom specification, populates CoSolveProductOutput.
 """
 
 import json
@@ -17,19 +17,19 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from CoTypes.CoHom.Train.default import CoTrainHom
-from CoTypes.CoProduct.Train.Output.default import CoTrainProductOutput
-from CoTypes.CoProduct.Train.Meta.default import CoTrainProductMeta
+from CoTypes.CoHom.Solve.default import CoSolveHom
+from CoTypes.CoProduct.Solve.Output.default import CoSolveProductOutput
+from CoTypes.CoProduct.Solve.Meta.default import CoSolveProductMeta
 from CoTypes.Comonad.Trace.default import TraceComonad, CoPhaseId
 from Types.Monad.Store.default import StoreMonad
 from Types.Monad.Error.default import PhaseId
 
 
-def run(cfg: CoTrainHom, store: StoreMonad) -> CoTrainProductOutput:
+def run(cfg: CoSolveHom, store: StoreMonad) -> CoSolveProductOutput:
     """Observe the last train artifact and populate observation result."""
     observer_id = uuid.uuid4().hex[:8]
     now = datetime.now(timezone.utc).isoformat()
-    meta = CoTrainProductMeta(
+    meta = CoSolveProductMeta(
         trace=TraceComonad(
             observer_id=observer_id,
             cursor="",
@@ -47,7 +47,7 @@ def run(cfg: CoTrainHom, store: StoreMonad) -> CoTrainProductOutput:
 
     # Probe StoreMonad for the latest train (model) artifact
     try:
-        row = store.latest(PhaseId.train.value, "model")
+        row = store.latest(PhaseId.solve.value, "model")
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
@@ -62,7 +62,7 @@ def run(cfg: CoTrainHom, store: StoreMonad) -> CoTrainProductOutput:
 
         # Check normalize artifact
         try:
-            norm_row = store.latest(PhaseId.train.value, "normalize")
+            norm_row = store.latest(PhaseId.solve.value, "normalize")
             if norm_row.blob_path and Path(norm_row.blob_path).exists():
                 normalize_present = True
         except KeyError:
@@ -78,7 +78,7 @@ def run(cfg: CoTrainHom, store: StoreMonad) -> CoTrainProductOutput:
         except (json.JSONDecodeError, TypeError):
             meta.schema_valid = False
 
-    return CoTrainProductOutput(
+    return CoSolveProductOutput(
         observer_id=observer_id,
         model_present=model_present,
         normalize_present=normalize_present,
@@ -88,16 +88,16 @@ def run(cfg: CoTrainHom, store: StoreMonad) -> CoTrainProductOutput:
 
 
 class Settings(BaseSettings):
-    """CoIOTrainPhase Settings — Train observer entrypoint."""
+    """CoIOSolvePhase Settings — Train observer entrypoint."""
 
     model_config = SettingsConfigDict(
-        json_file="CoTypes/CoIO/CoIOTrainPhase/default.json",
+        json_file="CoTypes/CoIO/CoIOSolvePhase/default.json",
         json_file_encoding="utf-8",
         cli_parse_args=True,
-        cli_prog_name="ana-train",
+        cli_prog_name="ana-solve",
     )
-    train: CoTrainHom = Field(
-        default_factory=CoTrainHom,
+    solve: CoSolveHom = Field(
+        default_factory=CoSolveHom,
         description="Train observer config",
     )
     store: StoreMonad = Field(
@@ -115,14 +115,17 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         from pydantic_settings import JsonConfigSettingsSource, CliSettingsSource
+        from pathlib import Path as _P
 
-        return (
-            CliSettingsSource(settings_cls, cli_parse_args=True),
-            JsonConfigSettingsSource(settings_cls),
-        )
+        sources = [CliSettingsSource(settings_cls, cli_parse_args=True)]
+        _local = _P(__file__).parent / "local.json"
+        if _local.exists():
+            sources.append(JsonConfigSettingsSource(settings_cls, json_file=_local))
+        sources.append(JsonConfigSettingsSource(settings_cls))
+        return tuple(sources)
 
 
 if __name__ == "__main__":
     s = Settings()
-    result = run(s.train, s.store)
+    result = run(s.solve, s.store)
     print(result.model_dump_json(indent=2))

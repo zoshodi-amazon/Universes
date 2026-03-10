@@ -68,14 +68,14 @@ def run(cfg: CoEvalHom, store: StoreMonad) -> CoEvalProductOutput:
             meta.schema_valid = False
 
         # Check render logs path
-        render_dir = Path(store.blob_dir) / store.run_id / "render_logs"
+        render_dir = Path(store.blob_dir) / store.session_id / "render_logs"
         try:
             if render_dir.exists():
                 log_files = list(render_dir.glob("*"))
                 render_logs_present = len(log_files) > 0
             else:
                 # Also check for eval_render* pattern in run dir
-                run_dir = Path(store.blob_dir) / store.run_id
+                run_dir = Path(store.blob_dir) / store.session_id
                 if run_dir.exists():
                     log_files = list(run_dir.glob("eval_render*"))
                     render_logs_present = len(log_files) > 0
@@ -84,7 +84,7 @@ def run(cfg: CoEvalHom, store: StoreMonad) -> CoEvalProductOutput:
 
     # Launch Flask render dashboard if requested and logs are present
     if cfg.launch_renderer and render_logs_present:
-        render_dir = Path(store.blob_dir) / store.run_id / "render_logs"
+        render_dir = Path(store.blob_dir) / store.session_id / "render_logs"
         if render_dir.exists():
             from gym_trading_env.renderer import Renderer
 
@@ -128,11 +128,14 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         from pydantic_settings import JsonConfigSettingsSource, CliSettingsSource
+        from pathlib import Path as _P
 
-        return (
-            CliSettingsSource(settings_cls, cli_parse_args=True),
-            JsonConfigSettingsSource(settings_cls),
-        )
+        sources = [CliSettingsSource(settings_cls, cli_parse_args=True)]
+        _local = _P(__file__).parent / "local.json"
+        if _local.exists():
+            sources.append(JsonConfigSettingsSource(settings_cls, json_file=_local))
+        sources.append(JsonConfigSettingsSource(settings_cls))
+        return tuple(sources)
 
 
 if __name__ == "__main__":

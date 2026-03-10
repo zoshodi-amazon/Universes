@@ -1,7 +1,7 @@
-"""CoMetricComonad [Comonad] — Observation witness for MetricMonad (4 fields).
+"""CoMetricComonad [Comonad] — Observation witness for MeasureMonad (4 fields).
 
-Plasma-dual phase — the coalgebraic dual of MetricMonad.
-Where MetricMonad records counters and gauges during production,
+Plasma-dual phase — the coalgebraic dual of MeasureMonad.
+Where MeasureMonad records counters and gauges during production,
 CoMetricComonad witnesses what metrics were observed after the fact.
 
 extract(CoMetricComonad) -> metric_count (current observation summary)

@@ -1,7 +1,7 @@
 """TraceComonad [Comonad] — Coalgebraic observation cursor (5 fields). All bounded.
 
-Plasma-dual phase — the dual of ObservabilityMonad.
-Where ObservabilityMonad records effects that happened (errors, metrics, alarms),
+Plasma-dual phase — the dual of EffectMonad.
+Where EffectMonad records effects that happened (errors, metrics, alarms),
 TraceComonad records the observation cursor state: where in the stream/artifact
 space the observer currently is.
 
@@ -34,10 +34,10 @@ class CoPhaseId(str, Enum):
 
     discovery = "discovery"
     ingest = "ingest"
-    feature = "feature"
-    train = "train"
+    feature = "transform"
+    train = "solve"
     eval = "eval"
-    serve = "serve"
+    serve = "project"
     main = "main"
 
 

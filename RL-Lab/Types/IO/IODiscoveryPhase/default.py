@@ -1,7 +1,7 @@
 """IODiscoveryPhase [QGP] — Phase 1 (BEC): screener + ADX + liquidity filtering.
 
 Own BaseSettings + default.json. No cross-phase imports for settings.
-Automatic asset class routing based on AssetIdentity.asset_type.
+Automatic asset class routing based on IndexIdentity.index_class.
 All effectful calls wrapped with typed error handling.
 Inductive validation on all yfinance IO boundaries.
 """
@@ -20,18 +20,18 @@ from pydantic_settings import (
 )
 
 from Types.Hom.Discovery.default import DiscoveryHom
-from Types.Identity.Asset.default import AssetIdentity, AssetType
-from Types.Identity.Run.default import RunIdentity
+from Types.Identity.Index.default import IndexIdentity, IndexClass
+from Types.Identity.Session.default import SessionIdentity
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
-from Types.Monad.Metric.default import MetricMonad
-from Types.Monad.Alarm.default import AlarmMonad
-from Types.Inductive.AlarmSeverity.default import AlarmSeverity
-from Types.Monad.Observability.default import ObservabilityMonad
+from Types.Monad.Measure.default import MeasureMonad
+from Types.Monad.Signal.default import SignalMonad
+from Types.Inductive.SeverityInductive.default import SeverityInductive
+from Types.Monad.Effect.default import EffectMonad
 from Types.Product.Discovery.Output.default import DiscoveryProductOutput
 from Types.Product.Discovery.Meta.default import DiscoveryProductMeta
-from Types.Inductive.Screener.default import ScreenerInductive
-from Types.Inductive.TickerInfo.default import TickerInfoInductive
-from Types.Inductive.OHLCV.default import OHLCVInductive
+from Types.Inductive.Catalog.default import CatalogInductive
+from Types.Inductive.IndexMeta.default import IndexMetaInductive
+from Types.Inductive.Frame.default import FrameInductive
 from Types.Monad.Store.default import StoreMonad
 
 INTERVAL_MAP: dict[int, str] = {
@@ -53,17 +53,17 @@ class Settings(BaseSettings):
         cli_parse_args=True,
         cli_prog_name="cata-discover",
     )
-    asset: AssetIdentity = Field(
+    asset: IndexIdentity = Field(
         ..., description="Asset index — ticker, interval, trade hours, holidays"
     )
-    run: RunIdentity = Field(
-        default_factory=RunIdentity, description="Run context — ID, seed, store"
+    run: SessionIdentity = Field(
+        default_factory=SessionIdentity, description="Run context — ID, seed, store"
     )
     store: StoreMonad = Field(
         default_factory=StoreMonad, description="Artifact store — DB + blob dir"
     )
     discovery: DiscoveryHom = Field(
-        default_factory=lambda: DiscoveryHom(io_universe=[]),
+        default_factory=lambda: DiscoveryHom(io_indices=[]),
         description="Discovery config — screener, ADX threshold, universe",
     )
 
@@ -77,18 +77,21 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         from pydantic_settings import JsonConfigSettingsSource, CliSettingsSource
+        from pathlib import Path as _P
 
-        return (
-            CliSettingsSource(settings_cls, cli_parse_args=True),
-            JsonConfigSettingsSource(settings_cls),
-        )
+        sources = [CliSettingsSource(settings_cls, cli_parse_args=True)]
+        _local = _P(__file__).parent / "local.json"
+        if _local.exists():
+            sources.append(JsonConfigSettingsSource(settings_cls, json_file=_local))
+        sources.append(JsonConfigSettingsSource(settings_cls))
+        return tuple(sources)
 
 
-def _route_by_asset_class(tickers: list[str], asset_type: AssetType) -> list[str]:
+def _route_by_asset_class(tickers: list[str], index_class: IndexClass) -> list[str]:
     """Filter tickers by asset class. Automatic routing."""
-    if asset_type == AssetType.crypto:
+    if index_class == IndexClass.crypto:
         return [t for t in tickers if "-USD" in t or "-USDT" in t or "-USDC" in t]
-    elif asset_type == AssetType.forex:
+    elif index_class == IndexClass.forex:
         return [t for t in tickers if "=X" in t]
     else:  # stock
         return [
@@ -96,13 +99,13 @@ def _route_by_asset_class(tickers: list[str], asset_type: AssetType) -> list[str
         ]
 
 
-def _fetch_universe(screener: str, meta: DiscoveryProductMeta) -> list[str]:
+def _fetch_universe(catalog_source: str, meta: DiscoveryProductMeta) -> list[str]:
     """Fetch ticker universe from yfinance screener with Inductive validation."""
     try:
         resp = yf.screen(screener)
-        validated = ScreenerInductive.from_response(resp)
+        validated = CatalogInductive.from_response(resp)
         tickers = validated.get_tickers()
-        meta.screener_result_count = len(tickers)
+        meta.catalog_source_result_count = len(tickers)
         return tickers
     except Exception as e:
         meta.obs.errors.append(
@@ -133,7 +136,7 @@ def _filter_by_liquidity(
     for ticker in tickers:
         try:
             raw_info = yf.Ticker(ticker).info
-            info = TickerInfoInductive.from_info(raw_info, symbol=ticker)
+            info = IndexMetaInductive.from_info(raw_info, symbol=ticker)
             avg_vol: float = info.average_volume if info.average_volume >= 0 else 0.0
             price: float = (
                 info.regular_market_price if info.regular_market_price >= 0 else 0.0
@@ -206,11 +209,11 @@ def _evaluate_alarms(
 
     if n_qualifying < specs.alarms.min_qualifying_tickers:
         meta.obs.alarms.append(
-            AlarmMonad(
+            SignalMonad(
                 name="discovery_low_qualifying",
-                severity=AlarmSeverity.warn
+                severity=SeverityInductive.warn
                 if n_qualifying > 0
-                else AlarmSeverity.critical,
+                else SeverityInductive.critical,
                 message=f"Only {n_qualifying} tickers qualified (min: {specs.alarms.min_qualifying_tickers})",
                 threshold=float(specs.alarms.min_qualifying_tickers),
                 actual=float(n_qualifying),
@@ -222,9 +225,9 @@ def _evaluate_alarms(
     )
     if api_failures > specs.alarms.max_api_failures:
         meta.obs.alarms.append(
-            AlarmMonad(
+            SignalMonad(
                 name="discovery_api_failures",
-                severity=AlarmSeverity.critical,
+                severity=SeverityInductive.critical,
                 message=f"{api_failures} API failures exceeded threshold",
                 threshold=float(specs.alarms.max_api_failures),
                 actual=float(api_failures),
@@ -234,8 +237,8 @@ def _evaluate_alarms(
 
 def run(
     specs: DiscoveryHom,
-    asset: AssetIdentity,
-    run_base: RunIdentity,
+    asset: IndexIdentity,
+    run_base: SessionIdentity,
     store_base: StoreMonad,
 ) -> DiscoveryProductOutput:
     """IODiscoveryPhase entry point with full observability."""
@@ -246,22 +249,22 @@ def run(
 
     # Cache dir lives under store blobs
     store = store_base.model_copy(
-        update={"run_id": run_base.run_id, "phase": PhaseId.discovery}
+        update={"session_id": run_base.session_id, "phase": PhaseId.discovery}
     )
     cache_dir: Path = Path(store.blob_dir) / "cache"
     cache_dir.mkdir(parents=True, exist_ok=True)
     yf_interval: str = INTERVAL_MAP[asset.interval_min]
 
     # Fetch universe
-    if specs.io_universe:
-        universe: list[str] = list(specs.io_universe)
-        meta.screener_result_count = len(universe)
+    if specs.io_indices:
+        universe: list[str] = list(specs.io_indices)
+        meta.catalog_source_result_count = len(universe)
     else:
-        universe = _fetch_universe(specs.screener, meta)
+        universe = _fetch_universe(specs.catalog_source, meta)
 
     # Asset class routing (automatic)
     pre_route_count: int = len(universe)
-    universe = _route_by_asset_class(universe, asset.asset_type)
+    universe = _route_by_asset_class(universe, asset.index_class)
     meta.asset_class_filtered_count = pre_route_count - len(universe)
 
     # Liquidity filtering (percentile-based)
@@ -279,11 +282,11 @@ def run(
             else:
                 raw_df: pd.DataFrame = yf.download(
                     ticker,
-                    period=specs.adx_lookback_period,
+                    period=specs.trend_lookback,
                     interval=yf_interval,
                     auto_adjust=True,
                 )
-                validated: OHLCVInductive = OHLCVInductive.from_dataframe(raw_df)
+                validated: FrameInductive = FrameInductive.from_dataframe(raw_df)
                 df = validated.to_dataframe()
                 if df is not None and len(df) > 0:
                     df.to_pickle(str(cache_path))
@@ -297,7 +300,7 @@ def run(
             )
             continue
 
-        if df is None or len(df) < specs.min_bars:
+        if df is None or len(df) < specs.min_frame_length:
             meta.adx_filtered_count += 1
             continue
 
@@ -313,7 +316,7 @@ def run(
                 continue
             adx_col: str = [c for c in adx_df.columns if c.startswith("ADX_")][0]
             latest_adx: float = float(adx_df[adx_col].iloc[-1])
-            if pd.notna(latest_adx) and latest_adx >= specs.min_adx:
+            if pd.notna(latest_adx) and latest_adx >= specs.min_trend_score:
                 adx_scores.append((ticker, latest_adx))
             else:
                 meta.adx_filtered_count += 1
@@ -333,18 +336,18 @@ def run(
 
     meta.obs.metrics.extend(
         [
-            MetricMonad(
-                name="screener_result_count", value=float(meta.screener_result_count)
+            MeasureMonad(
+                name="screener_result_count", value=float(meta.catalog_source_result_count)
             ),
-            MetricMonad(
+            MeasureMonad(
                 name="asset_class_filtered",
                 value=float(meta.asset_class_filtered_count),
             ),
-            MetricMonad(
+            MeasureMonad(
                 name="liquidity_filtered", value=float(meta.liquidity_filtered_count)
             ),
-            MetricMonad(name="adx_filtered", value=float(meta.adx_filtered_count)),
-            MetricMonad(name="qualifying_count", value=float(len(qualifying))),
+            MeasureMonad(name="adx_filtered", value=float(meta.adx_filtered_count)),
+            MeasureMonad(name="qualifying_count", value=float(len(qualifying))),
         ]
     )
 
@@ -357,10 +360,10 @@ def run(
     ).total_seconds()
 
     record: DiscoveryProductOutput = DiscoveryProductOutput(
-        run_id=run_base.run_id,
-        universe_size=meta.screener_result_count,
+        session_id=run_base.session_id,
+        universe_size=meta.catalog_source_result_count,
         qualifying_tickers=qualifying,
-        min_adx_used=specs.min_adx,
+        min_trend_score_used=specs.min_trend_score,
         meta=meta,
     )
 

@@ -1,4 +1,4 @@
-"""CoScreenerQuoteInductive [CoInductive] — ScreenerQuote elimination witness (2 fields). All bounded.
+"""CoCatalogEntryInductive [CoInductive] — ScreenerQuote elimination witness (2 fields). All bounded.
 
 Crystalline-dual — validates that a screener quote dict has required fields.
 """
@@ -6,8 +6,8 @@ Crystalline-dual — validates that a screener quote dict has required fields.
 from pydantic import BaseModel, Field
 
 
-class CoScreenerQuoteInductive(BaseModel):
-    """CoScreenerQuoteInductive [CoInductive] — ScreenerQuote field presence witness (2 fields)."""
+class CoCatalogEntryInductive(BaseModel):
+    """CoCatalogEntryInductive [CoInductive] — ScreenerQuote field presence witness (2 fields)."""
 
     symbol_present: bool = Field(
         default=False,

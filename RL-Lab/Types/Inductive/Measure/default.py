@@ -1,4 +1,4 @@
-"""MetricKind [Inductive] — ADT for metric measurement kinds (2 variants).
+"""MeasureInductive [Inductive] — ADT for metric measurement kinds (2 variants).
 
 Crystalline phase — exhaustively checkable sum type replacing Literal["counter", "gauge"].
 """
@@ -6,8 +6,8 @@ Crystalline phase — exhaustively checkable sum type replacing Literal["counter
 from enum import Enum
 
 
-class MetricKind(str, Enum):
-    """MetricKind [Inductive] — Metric measurement kind."""
+class MeasureInductive(str, Enum):
+    """MeasureInductive [Inductive] — Metric measurement kind."""
 
     counter = "counter"
     gauge = "gauge"

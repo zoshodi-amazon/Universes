@@ -13,29 +13,29 @@ cata-discover *ARGS:
 cata-ingest *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOIngestPhase.default {{ARGS}}
 
-# Phase 3 (Liquid Crystal): Feature — wavelet denoise + technical indicators
-cata-feature *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOFeaturePhase.default {{ARGS}}
+# Phase 3 (Liquid Crystal): Transform — wavelet denoise + technical indicators
+cata-transform *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOTransformPhase.default {{ARGS}}
 
-# Phase 4 (Liquid): Train — RL model training with SB3
-cata-train *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOTrainPhase.default {{ARGS}}
+# Phase 4 (Liquid): Solve — RL model solving with SB3
+cata-solve *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOSolvePhase.default {{ARGS}}
 
 # Phase 5 (Gas): Eval — out-of-sample backtesting
 cata-eval *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOEvalPhase.default {{ARGS}}
 
-# Phase 6 (Plasma): Serve — live bar-by-bar serving with broker execution
-cata-serve *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOServePhase.default {{ARGS}}
+# Phase 6 (Plasma): Project — live bar-by-bar projection with broker execution
+cata-project *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOProjectPhase.default {{ARGS}}
 
 # ── hylo- (Hylomorphism / Composite) ─────────────────────────────────
 
-# Phase 7 (QGP): Main — full pipeline with optional Optuna optimization
-# Usage: just hylo-main                           (standard walk-forward)
-# Usage: just hylo-main --main.optimize true      (Optuna hyperparameter search)
-hylo-main *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOMainPhase.default {{ARGS}}
+# Phase 7 (QGP): Compose — full pipeline with optional Optuna search
+# Usage: just hylo-compose                           (standard walk-forward)
+# Usage: just hylo-compose --compose.search true     (Optuna hyperparameter search)
+hylo-compose *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m Types.IO.IOComposePhase.default {{ARGS}}
 
 # ── ana- (Anamorphism / Observation) ──────────────────────────────────
 
@@ -47,30 +47,30 @@ ana-discover *ARGS:
 ana-ingest *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOIngestPhase.default {{ARGS}}
 
-# Phase 3 observer: probe FeatureProductOutput geometry stats
-ana-feature *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOFeaturePhase.default {{ARGS}}
+# Phase 3 observer: probe TransformProductOutput geometry stats
+ana-transform *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOTransformPhase.default {{ARGS}}
 
-# Phase 4 observer: probe TrainProductOutput learning curves
-ana-train *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOTrainPhase.default {{ARGS}}
+# Phase 4 observer: probe SolveProductOutput learning curves
+ana-solve *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOSolvePhase.default {{ARGS}}
 
 # Phase 5 observer: probe EvalProductOutput return/drawdown
 # Usage: just ana-eval --eval.launch_renderer true  (launches Flask render dashboard)
 ana-eval *ARGS:
     .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOEvalPhase.default {{ARGS}}
 
-# Phase 6 observer: probe ServeProductOutput broker/audit
-ana-serve *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOServePhase.default {{ARGS}}
+# Phase 6 observer: probe ProjectProductOutput broker/audit
+ana-project *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOProjectPhase.default {{ARGS}}
 
-# Phase 7 observer: probe MainProductOutput + validate type system + optional Rerun visualization
-# Usage: just ana-main                              (artifact probe + validation)
-# Usage: just ana-main --main.visualize true        (also log to Rerun)
-ana-main *ARGS:
-    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOMainPhase.default {{ARGS}}
+# Phase 7 observer: probe ComposeProductOutput + validate type system + optional Rerun visualization
+# Usage: just ana-compose                              (artifact probe + validation)
+# Usage: just ana-compose --compose.visualize true     (also log to Rerun)
+ana-compose *ARGS:
+    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOComposePhase.default {{ARGS}}
 
 # Cross-cutting: system health check — imports, field counts, JSON fidelity, roundtrip closure
-# Delegates to ana-main with all validation flags enabled, no artifact probe
+# Delegates to ana-compose with all validation flags enabled, no artifact probe
 ana-check:
-    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOMainPhase.default --main.validate_imports true --main.validate_fields true --main.validate_json true --main.visualize false
+    .venv/bin/python -W ignore::ResourceWarning -m CoTypes.CoIO.CoIOComposePhase.default --compose.validate_imports true --compose.validate_fields true --compose.validate_json true --compose.visualize false

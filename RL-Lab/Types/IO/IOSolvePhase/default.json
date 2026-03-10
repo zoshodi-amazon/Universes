@@ -1,6 +1,6 @@
 {
   "asset": {
-    "asset_type": "stock",
+    "index_class": "stock",
     "io_ticker": "AAPL",
     "interval_min": 5,
     "trade_start_min": 570,
@@ -9,14 +9,14 @@
   },
   "run": {
     "seed": 42,
-    "name": "train",
+    "name": "solve",
     "verbose": 0
   },
   "store": {
     "db_url": "sqlite:///store/.rl.db",
     "blob_dir": "store/blobs",
-    "run_id": "00000000",
-    "phase": "train",
+    "session_id": "00000000",
+    "phase": "solve",
     "docs_dir": "store/docs"
   },
   "env": {
@@ -24,29 +24,16 @@
     "fees_pct": 0.1,
     "borrow_rate_pct": 0.0,
     "positions": [-1.0, 0.0, 1.0],
-    "broker_mode": "sim",
-    "io_broker_key": "sim"
+    "execution_mode": "sim",
+    "io_execution_key": "sim"
   },
-  "ingest_cfg": {
-    "period": "60d",
-    "warmup_bars": 28
-  },
-  "feature_cfg": {
-    "wavelet": "db4",
-    "level": 4,
-    "threshold_mode": "soft",
-    "adx_period": 14,
-    "supertrend_period": 10,
-    "supertrend_multiplier": 3.0,
-    "regime_threshold": 25.0
-  },
-  "train": {
-    "algo": "PPO",
-    "n_envs": 1,
+  "solve": {
+    "solver": "PPO",
+    "n_parallel": 1,
     "learning_rate": 0.0003,
-    "total_timesteps": 50000,
-    "episode_duration_min": 1440,
-    "normalize_obs": true,
-    "normalize_reward": true
+    "budget": 50000,
+    "horizon_min": 1440,
+    "normalize_input": true,
+    "normalize_signal": true
   }
 }

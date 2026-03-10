@@ -1,17 +1,17 @@
 """IngestProductMeta [Product] — Phase output meta extension for Ingest.
 
-Bound to Ingest phase. Contains ObservabilityMonad + ingest-specific audit fields.
+Bound to Ingest phase. Contains EffectMonad + ingest-specific audit fields.
 """
 from pydantic import BaseModel, Field
 
-from Types.Monad.Observability.default import ObservabilityMonad
+from Types.Monad.Effect.default import EffectMonad
 from Types.Monad.Error.default import PhaseId
 
 
 class IngestProductMeta(BaseModel):
     """IngestProductMeta [Product] — Phase output meta extension for Ingest (6 fields)."""
-    obs: ObservabilityMonad = Field(
-        default_factory=lambda: ObservabilityMonad(phase=PhaseId.ingest),
+    obs: EffectMonad = Field(
+        default_factory=lambda: EffectMonad(phase=PhaseId.ingest),
         description="Observability data — errors, metrics, alarms, timing")
     cache_hit: bool = Field(default=False,
         description="Whether data was loaded from cache")

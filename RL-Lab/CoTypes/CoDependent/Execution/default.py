@@ -1,17 +1,17 @@
-"""CoEnvDependent [CoDependent] — Env schema conformance witness (3 fields). All bounded.
+"""CoExecutionDependent [CoDependent] — Env schema conformance witness (3 fields). All bounded.
 
-Liquid Crystal-dual — validates that EnvDependent fields are internally consistent.
+Liquid Crystal-dual — validates that ExecutionDependent fields are internally consistent.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoEnvDependent(BaseModel):
-    """CoEnvDependent [CoDependent] — Env configuration consistency witness (3 fields)."""
+class CoExecutionDependent(BaseModel):
+    """CoExecutionDependent [CoDependent] — Env configuration consistency witness (3 fields)."""
 
-    broker_mode_valid: bool = Field(
+    execution_mode_valid: bool = Field(
         default=False,
-        description="Whether broker_mode is a recognized BrokerMode variant",
+        description="Whether execution_mode is a recognized ExecutionMode variant",
     )
     positions_valid: bool = Field(
         default=False,

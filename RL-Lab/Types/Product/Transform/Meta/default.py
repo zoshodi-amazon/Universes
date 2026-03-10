@@ -1,17 +1,17 @@
-"""FeatureProductMeta [Product] — Phase output meta extension for Feature.
+"""TransformProductMeta [Product] — Phase output meta extension for Feature.
 
-Bound to Feature phase. Contains ObservabilityMonad + feature-specific audit fields.
+Bound to Feature phase. Contains EffectMonad + feature-specific audit fields.
 """
 from pydantic import BaseModel, Field
 
-from Types.Monad.Observability.default import ObservabilityMonad
+from Types.Monad.Effect.default import EffectMonad
 from Types.Monad.Error.default import PhaseId
 
 
-class FeatureProductMeta(BaseModel):
-    """FeatureProductMeta [Product] — Phase output meta extension for Feature (5 fields)."""
-    obs: ObservabilityMonad = Field(
-        default_factory=lambda: ObservabilityMonad(phase=PhaseId.feature),
+class TransformProductMeta(BaseModel):
+    """TransformProductMeta [Product] — Phase output meta extension for Feature (5 fields)."""
+    obs: EffectMonad = Field(
+        default_factory=lambda: EffectMonad(phase=PhaseId.transform),
         description="Observability data — errors, metrics, alarms, timing")
     wavelet_level_used: int = Field(default=4, ge=1, le=10,
         description="Wavelet decomposition level applied")

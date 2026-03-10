@@ -1,4 +1,4 @@
-"""IOFeaturePhase [QGP] — IngestProductOutput + FeatureHom -> FeatureProductOutput.
+"""IOTransformPhase [QGP] — IngestProductOutput + TransformHom -> TransformProductOutput.
 
 Wavelet denoise OHLCV + trend proxy. Blob written to store via StoreMonad.put().
 Reads ingest blob from store via StoreMonad.get().
@@ -17,13 +17,13 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from Types.Hom.Feature.default import FeatureHom
-from Types.Product.Feature.Output.default import FeatureProductOutput
+from Types.Hom.Transform.default import TransformHom
+from Types.Product.Transform.Output.default import TransformProductOutput
 from Types.Product.Ingest.Output.default import IngestProductOutput
-from Types.Identity.Asset.default import AssetIdentity
-from Types.Identity.Run.default import RunIdentity
+from Types.Identity.Index.default import IndexIdentity
+from Types.Identity.Session.default import SessionIdentity
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
-from Types.Product.Feature.Meta.default import FeatureProductMeta
+from Types.Product.Transform.Meta.default import TransformProductMeta
 from Types.Monad.Store.default import StoreMonad
 from Types.IO.IOIngestPhase.default import run as ingest
 
@@ -31,7 +31,7 @@ N_DYNAMIC_FEATURES = 2
 
 
 def _wavelet_denoise(
-    signal: np.ndarray, wavelet: str, level: int, mode: str
+    signal: np.ndarray, basis: str, level: int, mode: str
 ) -> np.ndarray:
     coeffs = pywt.wavedec(signal, wavelet, level=level)
     sigma = np.median(np.abs(coeffs[-1])) / 0.6745
@@ -49,40 +49,40 @@ def _upsample(coeff: np.ndarray, n: int) -> np.ndarray:
 
 def run(
     ingest_record: IngestProductOutput,
-    specs: FeatureHom,
-    run_base: RunIdentity,
+    specs: TransformHom,
+    run_base: SessionIdentity,
     store_base: StoreMonad,
-) -> FeatureProductOutput:
+) -> TransformProductOutput:
     started = datetime.now(timezone.utc).isoformat()
-    meta = FeatureProductMeta()
+    meta = TransformProductMeta()
     meta.obs.started_at = started
-    meta.obs.phase = PhaseId.feature
+    meta.obs.phase = PhaseId.transform
     meta.wavelet_level_used = specs.level
 
     store = store_base.model_copy(
-        update={"run_id": run_base.run_id, "phase": PhaseId.feature}
+        update={"session_id": run_base.session_id, "phase": PhaseId.transform}
     )
 
     # Retrieve ingest blob path from store
     try:
-        ingest_row = store.get(run_base.run_id, PhaseId.ingest.value, "ingest")
+        ingest_row = store.get(run_base.session_id, PhaseId.ingest.value, "ingest")
         blob_path = ingest_row.blob_path
     except KeyError:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.feature,
-                message=f"ingest artifact not found in store for run_id={run_base.run_id}",
+                phase=PhaseId.transform,
+                message=f"ingest artifact not found in store for session_id={run_base.session_id}",
                 severity=Severity.error,
             )
         )
         raise ValueError(
-            f"ingest artifact not found in store for run_id={run_base.run_id}"
+            f"ingest artifact not found in store for session_id={run_base.session_id}"
         )
 
     if not Path(blob_path).exists():
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.feature,
+                phase=PhaseId.transform,
                 message=f"ingest blob not found on disk: {blob_path}",
                 severity=Severity.error,
             )
@@ -94,7 +94,7 @@ def run(
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.feature,
+                phase=PhaseId.transform,
                 message=f"failed to read ingest blob: {str(e)[:128]}",
                 severity=Severity.error,
             )
@@ -104,7 +104,7 @@ def run(
     if len(df) == 0:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.feature,
+                phase=PhaseId.transform,
                 message="empty DataFrame from ingest",
                 severity=Severity.error,
             )
@@ -138,21 +138,21 @@ def run(
         except Exception as e:
             meta.obs.errors.append(
                 ErrorMonad(
-                    phase=PhaseId.feature,
+                    phase=PhaseId.transform,
                     message=f"wavelet processing failed for {ch}: {str(e)[:64]}",
                     severity=Severity.warn,
                 )
             )
 
     try:
-        adx_df = ta.adx(df["high"], df["low"], df["close"], length=specs.adx_period)
+        adx_df = ta.adx(df["high"], df["low"], df["close"], length=specs.trend_period)
         if adx_df is not None:
             adx_col = [c for c in adx_df.columns if c.startswith("ADX_")][0]
             df["feature_adx"] = (adx_df[adx_col].fillna(0.0) / 100.0).clip(0.0, 1.0)
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.feature,
+                phase=PhaseId.transform,
                 message=f"ADX calculation failed: {str(e)[:64]}",
                 severity=Severity.warn,
             )
@@ -163,8 +163,8 @@ def run(
             df["high"],
             df["low"],
             df["close"],
-            length=specs.supertrend_period,
-            multiplier=specs.supertrend_multiplier,
+            length=specs.envelope_period,
+            multiplier=specs.envelope_multiplier,
         )
         if st_df is not None:
             dir_col = [c for c in st_df.columns if c.startswith("SUPERTd_")][0]
@@ -174,7 +174,7 @@ def run(
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.feature,
+                phase=PhaseId.transform,
                 message=f"SuperTrend calculation failed: {str(e)[:64]}",
                 severity=Severity.warn,
             )
@@ -199,7 +199,7 @@ def run(
         except Exception as e:
             meta.obs.errors.append(
                 ErrorMonad(
-                    phase=PhaseId.feature,
+                    phase=PhaseId.transform,
                     message=f"correlation computation failed: {str(e)[:64]}",
                     severity=Severity.warn,
                 )
@@ -213,7 +213,7 @@ def run(
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.feature,
+                phase=PhaseId.transform,
                 message=f"blob write failed: {str(e)[:128]}",
                 severity=Severity.error,
             )
@@ -225,8 +225,8 @@ def run(
         completed - datetime.fromisoformat(started.replace("Z", "+00:00"))
     ).total_seconds()
 
-    record = FeatureProductOutput(
-        run_id=run_base.run_id,
+    record = TransformProductOutput(
+        session_id=run_base.session_id,
         n_static_features=len(feature_names),
         n_dynamic_features=N_DYNAMIC_FEATURES,
         n_valid_bars=len(df),
@@ -239,7 +239,7 @@ def run(
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.feature,
+                phase=PhaseId.transform,
                 message=f"store.put failed: {str(e)[:128]}",
                 severity=Severity.error,
             )
@@ -249,25 +249,25 @@ def run(
 
 
 class Settings(BaseSettings):
-    """IOFeaturePhase Settings [Plasma] — Standalone entrypoint for feature engineering (4 fields)."""
+    """IOTransformPhase Settings [Plasma] — Standalone entrypoint for feature engineering (4 fields)."""
 
     model_config = SettingsConfigDict(
-        json_file="Types/IO/IOFeaturePhase/default.json",
+        json_file="Types/IO/IOTransformPhase/default.json",
         json_file_encoding="utf-8",
         cli_parse_args=True,
-        cli_prog_name="cata-feature",
+        cli_prog_name="cata-transform",
     )
-    asset: AssetIdentity = Field(
+    asset: IndexIdentity = Field(
         ..., description="Asset index — ticker, interval, trade hours, holidays"
     )
-    run: RunIdentity = Field(
-        default=RunIdentity(), description="Run context — ID, seed, store"
+    run: SessionIdentity = Field(
+        default=SessionIdentity(), description="Run context — ID, seed, store"
     )
     store: StoreMonad = Field(
         default_factory=StoreMonad, description="Artifact store — DB + blob dir"
     )
-    feature: FeatureHom = Field(
-        default=FeatureHom(),
+    transform: TransformHom = Field(
+        default=TransformHom(),
         description="Feature config — wavelet, trend indicators, regime threshold",
     )
 
@@ -281,11 +281,14 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         from pydantic_settings import JsonConfigSettingsSource, CliSettingsSource
+        from pathlib import Path as _P
 
-        return (
-            CliSettingsSource(settings_cls, cli_parse_args=True),
-            JsonConfigSettingsSource(settings_cls),
-        )
+        sources = [CliSettingsSource(settings_cls, cli_parse_args=True)]
+        _local = _P(__file__).parent / "local.json"
+        if _local.exists():
+            sources.append(JsonConfigSettingsSource(settings_cls, json_file=_local))
+        sources.append(JsonConfigSettingsSource(settings_cls))
+        return tuple(sources)
 
 
 if __name__ == "__main__":

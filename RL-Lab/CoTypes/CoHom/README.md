@@ -27,18 +27,18 @@ Where `DiscoveryHom` says "provide these inputs to the Discovery phase," `CoDisc
 |------|:------:|---------|------|
 | `CoDiscoveryHom` | 4 | `DiscoveryHom` | `CoTypes/CoHom/Discovery/default.py` |
 | `CoIngestHom` | 3 | `IngestHom` | `CoTypes/CoHom/Ingest/default.py` |
-| `CoFeatureHom` | 4 | `FeatureHom` | `CoTypes/CoHom/Feature/default.py` |
-| `CoTrainHom` | 4 | `TrainHom` | `CoTypes/CoHom/Train/default.py` |
+| `CoTransformHom` | 4 | `TransformHom` | `CoTypes/CoHom/Transform/default.py` |
+| `CoSolveHom` | 4 | `SolveHom` | `CoTypes/CoHom/Solve/default.py` |
 | `CoEvalHom` | 5 | `EvalHom` | `CoTypes/CoHom/Eval/default.py` |
-| `CoServeHom` | 5 | `ServeHom` | `CoTypes/CoHom/Serve/default.py` |
-| `CoMainHom` | 7 | `MainHom` | `CoTypes/CoHom/Main/default.py` |
+| `CoProjectHom` | 5 | `ProjectHom` | `CoTypes/CoHom/Project/default.py` |
+| `CoComposeHom` | 7 | `ComposeHom` | `CoTypes/CoHom/Compose/default.py` |
 
 ```lean
 structure CoDiscoveryHom where
-  universeResolved   : Bool := true   -- check: did the screener return tickers?
-  screenerResponded  : Bool := true   -- check: did the API respond?
+  universeResolved   : Bool := true   -- check: did the catalog return symbols?
+  catalogResponded   : Bool := true   -- check: did the API respond?
   adxFilterApplied   : Bool := true   -- check: was ADX filtering performed?
-  qualifyingFound    : Bool := true   -- check: did any tickers pass all filters?
+  qualifyingFound    : Bool := true   -- check: did any symbols pass all filters?
   deriving Repr, Lean.ToJson, Lean.FromJson
 ```
 

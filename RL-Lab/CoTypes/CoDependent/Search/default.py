@@ -1,13 +1,13 @@
-"""CoOptimizeDependent [CoDependent] — Optimize schema conformance witness (3 fields). All bounded.
+"""CoSearchDependent [CoDependent] — Optimize schema conformance witness (3 fields). All bounded.
 
-Liquid Crystal-dual — validates that OptimizeDependent search space ranges are consistent.
+Liquid Crystal-dual — validates that SearchDependent search space ranges are consistent.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoOptimizeDependent(BaseModel):
-    """CoOptimizeDependent [CoDependent] — Optimize search space consistency witness (3 fields)."""
+class CoSearchDependent(BaseModel):
+    """CoSearchDependent [CoDependent] — Optimize search space consistency witness (3 fields)."""
 
     lr_range_valid: bool = Field(
         default=False, description="Whether search_space_lr_min < search_space_lr_max"

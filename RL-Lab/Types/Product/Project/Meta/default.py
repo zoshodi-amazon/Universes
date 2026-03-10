@@ -1,18 +1,18 @@
-"""ServeProductMeta [Product] — Phase output meta extension for Serve (6 fields).
+"""ProjectProductMeta [Product] — Phase output meta extension for Serve (6 fields).
 
 shutdown_reason alias dissolved — constraint inlined on field.
 """
 from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 
-from Types.Monad.Observability.default import ObservabilityMonad
+from Types.Monad.Effect.default import EffectMonad
 from Types.Monad.Error.default import PhaseId
 
 
-class ServeProductMeta(BaseModel):
-    """ServeProductMeta [Product] — Phase output meta extension for Serve (6 fields)."""
-    obs: ObservabilityMonad = Field(
-        default_factory=lambda: ObservabilityMonad(phase=PhaseId.serve),
+class ProjectProductMeta(BaseModel):
+    """ProjectProductMeta [Product] — Phase output meta extension for Serve (6 fields)."""
+    obs: EffectMonad = Field(
+        default_factory=lambda: EffectMonad(phase=PhaseId.project),
         description="Observability data — errors, metrics, alarms, timing")
     broker_calls: int = Field(default=0, ge=0, le=10_000,
         description="Number of broker API calls made")

@@ -1,13 +1,13 @@
-"""CoTrainHom [CoHom] — Train phase observation spec (4 fields). All bounded.
+"""CoSolveHom [CoHom] — Train phase observation spec (4 fields). All bounded.
 
-Liquid-dual — observation specification parallel to TrainHom.
+Liquid-dual — observation specification parallel to SolveHom.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoTrainHom(BaseModel):
-    """CoTrainHom [CoHom] — What to verify about a train run (4 fields)."""
+class CoSolveHom(BaseModel):
+    """CoSolveHom [CoHom] — What to verify about a train run (4 fields)."""
 
     model_saved: bool = Field(
         default=True,
@@ -19,7 +19,7 @@ class CoTrainHom(BaseModel):
     )
     timesteps_completed: bool = Field(
         default=True,
-        description="Check that total_timesteps were completed without crash",
+        description="Check that budget were completed without crash",
     )
     reward_finite: bool = Field(
         default=True,

@@ -1,6 +1,6 @@
 {
   "asset": {
-    "asset_type": "stock",
+    "index_class": "stock",
     "io_ticker": "AAPL",
     "interval_min": 5,
     "trade_start_min": 570,
@@ -17,19 +17,19 @@
     "fees_pct": 0.1,
     "borrow_rate_pct": 0.0,
     "positions": [-1.0, 0.0, 1.0],
-    "broker_mode": "sim",
-    "io_broker_key": "sim"
+    "execution_mode": "sim",
+    "io_execution_key": "sim"
   },
   "risk": {
     "stop_loss_pct": -2.0,
     "profit_threshold_pct": 0.5,
     "max_drawdown_pct": -5.0
   },
-  "main": {
+  "compose": {
     "stride_min": 1440,
-    "train_split_pct": 80.0,
-    "optimize": false,
-    "optimize_config": {
+    "solve_split_pct": 80.0,
+    "search": false,
+    "search_fiber": {
       "n_trials": 20,
       "n_parallel": 1,
       "objective_metric": "win_rate_pct",
@@ -42,8 +42,8 @@
   "store": {
     "db_url": "sqlite:///store/.rl.db",
     "blob_dir": "store/blobs",
-    "run_id": "00000000",
-    "phase": "pipeline",
+    "session_id": "00000000",
+    "phase": "compose",
     "docs_dir": "store/docs"
   }
 }

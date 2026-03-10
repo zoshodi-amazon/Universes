@@ -1,7 +1,7 @@
-"""RiskDependent [Dependent] — Per-step risk gate parameters (3 fields).
+"""ConstraintDependent [Dependent] — Per-step risk gate parameters (3 fields).
 
 Liquid Crystal phase — parameterised risk thresholds shared across
-Train (via EnvDependent), Eval, and Serve phases.
+Train (via ExecutionDependent), Eval, and Serve phases.
 stop_loss_pct is negative by convention (loss).
 profit_threshold_pct is positive (gain).
 max_drawdown_pct is negative by convention (peak-to-trough loss).
@@ -10,8 +10,8 @@ max_drawdown_pct is negative by convention (peak-to-trough loss).
 from pydantic import BaseModel, Field
 
 
-class RiskDependent(BaseModel):
-    """RiskDependent [Dependent] — Stop-loss, take-profit, and max drawdown thresholds (3 fields)."""
+class ConstraintDependent(BaseModel):
+    """ConstraintDependent [Dependent] — Stop-loss, take-profit, and max drawdown thresholds (3 fields)."""
 
     stop_loss_pct: float = Field(
         default=-2.0,

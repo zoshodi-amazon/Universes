@@ -17,7 +17,7 @@ structure Co{Name}Inductive where
 
 **Dual of:** Stratum 2 (Inductive, sum types / ADTs).
 
-Where `OHLCVInductive` defines the constructors for valid OHLCV data (5 float arrays with `from_dataframe`), `CoOHLCVInductive` exercises the elimination form — "given runtime data, can we successfully destruct it into a valid OHLCV?" Each Bool field witnesses one aspect of schema conformance.
+Where `FrameInductive` defines the constructors for valid OHLCV data (5 float arrays with `from_dataframe`), `CoFrameInductive` exercises the elimination form — "given runtime data, can we successfully destruct it into a valid Frame?" Each Bool field witnesses one aspect of schema conformance.
 
 **Pattern:** All fields are `Bool`, defaulting to `False`. The CoIO observer probes actual runtime artifacts and flips fields to `True` as conformance checks pass. A fully-`True` CoInductive means the data faithfully inhabits the Inductive type.
 
@@ -25,14 +25,14 @@ Where `OHLCVInductive` defines the constructors for valid OHLCV data (5 float ar
 
 | Type | Fields | Dual Of | File |
 |------|:------:|---------|------|
-| `CoOHLCVInductive` | 4 | `OHLCVInductive` | `CoTypes/CoInductive/OHLCV/default.py` |
-| `CoScreenerInductive` | 2 | `ScreenerInductive` | `CoTypes/CoInductive/Screener/default.py` |
-| `CoAlgoInductive` | 2 | `AlgoIdentity` | `CoTypes/CoInductive/Algo/default.py` |
-| `CoTickerInfoInductive` | 3 | `TickerInfoInductive` | `CoTypes/CoInductive/TickerInfo/default.py` |
-| `CoScreenerQuoteInductive` | 2 | `ScreenerQuoteInductive` | `CoTypes/CoInductive/ScreenerQuote/default.py` |
+| `CoFrameInductive` | 4 | `FrameInductive` | `CoTypes/CoInductive/Frame/default.py` |
+| `CoCatalogInductive` | 2 | `CatalogInductive` | `CoTypes/CoInductive/Catalog/default.py` |
+| `CoSolverInductive` | 2 | `SolverInductive` | `CoTypes/CoInductive/Solver/default.py` |
+| `CoIndexMetaInductive` | 3 | `IndexMetaInductive` | `CoTypes/CoInductive/IndexMeta/default.py` |
+| `CoCatalogEntryInductive` | 2 | `CatalogEntryInductive` | `CoTypes/CoInductive/CatalogEntry/default.py` |
 
 ```lean
-structure CoOHLCVInductive where
+structure CoFrameInductive where
   columnsPresent : Bool := false   -- all 5 OHLCV columns exist
   dtypesNumeric  : Bool := false   -- all columns are numeric (float64)
   noNulls        : Bool := false   -- no NaN/null values

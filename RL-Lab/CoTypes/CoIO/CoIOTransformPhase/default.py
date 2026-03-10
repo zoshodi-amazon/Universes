@@ -1,7 +1,7 @@
-"""CoIOFeaturePhase [CoIO] — Feature phase observation executor.
+"""CoIOTransformPhase [CoIO] — Feature phase observation executor.
 
 Coalgebraic observer: probes the last feature artifact from StoreMonad,
-checks it against CoFeatureHom specification, populates CoFeatureProductOutput.
+checks it against CoTransformHom specification, populates CoTransformProductOutput.
 """
 
 import json
@@ -16,19 +16,19 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from CoTypes.CoHom.Feature.default import CoFeatureHom
-from CoTypes.CoProduct.Feature.Output.default import CoFeatureProductOutput
-from CoTypes.CoProduct.Feature.Meta.default import CoFeatureProductMeta
+from CoTypes.CoHom.Transform.default import CoTransformHom
+from CoTypes.CoProduct.Transform.Output.default import CoTransformProductOutput
+from CoTypes.CoProduct.Transform.Meta.default import CoTransformProductMeta
 from CoTypes.Comonad.Trace.default import TraceComonad, CoPhaseId
 from Types.Monad.Store.default import StoreMonad
 from Types.Monad.Error.default import PhaseId
 
 
-def run(cfg: CoFeatureHom, store: StoreMonad) -> CoFeatureProductOutput:
+def run(cfg: CoTransformHom, store: StoreMonad) -> CoTransformProductOutput:
     """Observe the last feature artifact and populate observation result."""
     observer_id = uuid.uuid4().hex[:8]
     now = datetime.now(timezone.utc).isoformat()
-    meta = CoFeatureProductMeta(
+    meta = CoTransformProductMeta(
         trace=TraceComonad(
             observer_id=observer_id,
             cursor="",
@@ -46,7 +46,7 @@ def run(cfg: CoFeatureHom, store: StoreMonad) -> CoFeatureProductOutput:
 
     # Probe StoreMonad for the latest feature artifact
     try:
-        row = store.latest(PhaseId.feature.value, "features")
+        row = store.latest(PhaseId.transform.value, "features")
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
@@ -69,7 +69,7 @@ def run(cfg: CoFeatureHom, store: StoreMonad) -> CoFeatureProductOutput:
         except (json.JSONDecodeError, TypeError):
             meta.schema_valid = False
 
-    return CoFeatureProductOutput(
+    return CoTransformProductOutput(
         observer_id=observer_id,
         features_present=features_present,
         column_count_valid=column_count_valid,
@@ -79,16 +79,16 @@ def run(cfg: CoFeatureHom, store: StoreMonad) -> CoFeatureProductOutput:
 
 
 class Settings(BaseSettings):
-    """CoIOFeaturePhase Settings — Feature observer entrypoint."""
+    """CoIOTransformPhase Settings — Feature observer entrypoint."""
 
     model_config = SettingsConfigDict(
-        json_file="CoTypes/CoIO/CoIOFeaturePhase/default.json",
+        json_file="CoTypes/CoIO/CoIOTransformPhase/default.json",
         json_file_encoding="utf-8",
         cli_parse_args=True,
-        cli_prog_name="ana-feature",
+        cli_prog_name="ana-transform",
     )
-    feature: CoFeatureHom = Field(
-        default_factory=CoFeatureHom,
+    transform: CoTransformHom = Field(
+        default_factory=CoTransformHom,
         description="Feature observer config",
     )
     store: StoreMonad = Field(
@@ -106,14 +106,17 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         from pydantic_settings import JsonConfigSettingsSource, CliSettingsSource
+        from pathlib import Path as _P
 
-        return (
-            CliSettingsSource(settings_cls, cli_parse_args=True),
-            JsonConfigSettingsSource(settings_cls),
-        )
+        sources = [CliSettingsSource(settings_cls, cli_parse_args=True)]
+        _local = _P(__file__).parent / "local.json"
+        if _local.exists():
+            sources.append(JsonConfigSettingsSource(settings_cls, json_file=_local))
+        sources.append(JsonConfigSettingsSource(settings_cls))
+        return tuple(sources)
 
 
 if __name__ == "__main__":
     s = Settings()
-    result = run(s.feature, s.store)
+    result = run(s.transform, s.store)
     print(result.model_dump_json(indent=2))

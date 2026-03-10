@@ -1,13 +1,13 @@
-"""CoServeProductOutput [CoProduct] — Serve observation result (5 fields). All bounded."""
+"""CoProjectProductOutput [CoProduct] — Serve observation result (5 fields). All bounded."""
 
 from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 import uuid
-from CoTypes.CoProduct.Serve.Meta.default import CoServeProductMeta
+from CoTypes.CoProduct.Project.Meta.default import CoProjectProductMeta
 
 
-class CoServeProductOutput(BaseModel):
-    """CoServeProductOutput [CoProduct] — What was observed about a serve run (5 fields)."""
+class CoProjectProductOutput(BaseModel):
+    """CoProjectProductOutput [CoProduct] — What was observed about a serve run (5 fields)."""
 
     observer_id: Annotated[str, StringConstraints(min_length=1, max_length=64)] = Field(
         default_factory=lambda: uuid.uuid4().hex[:8],
@@ -22,7 +22,7 @@ class CoServeProductOutput(BaseModel):
     shutdown_clean: bool = Field(
         default=False, description="Whether shutdown reason was recorded"
     )
-    meta: CoServeProductMeta = Field(
-        default_factory=CoServeProductMeta,
+    meta: CoProjectProductMeta = Field(
+        default_factory=CoProjectProductMeta,
         description="Observation metadata — trace cursor",
     )

@@ -1,13 +1,13 @@
-"""CoTickerInfoInductive [CoInductive] — TickerInfo elimination witness (3 fields). All bounded.
+"""CoIndexMetaInductive [CoInductive] — TickerInfo elimination witness (3 fields). All bounded.
 
-Crystalline-dual — validates that a yfinance Ticker.info dict conforms to TickerInfoInductive.
+Crystalline-dual — validates that a yfinance Ticker.info dict conforms to IndexMetaInductive.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoTickerInfoInductive(BaseModel):
-    """CoTickerInfoInductive [CoInductive] — TickerInfo conformance witness (3 fields)."""
+class CoIndexMetaInductive(BaseModel):
+    """CoIndexMetaInductive [CoInductive] — TickerInfo conformance witness (3 fields)."""
 
     fields_present: bool = Field(
         default=False,

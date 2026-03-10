@@ -1,11 +1,11 @@
-"""RunIdentity [Identity] — Run context (5 fields).
+"""SessionIdentity [Identity] — Run context (5 fields).
 
 BEC phase — terminal object answering "what run exists?"
 Composed into every phase Settings. Not a pydantic-settings model.
 
 Fields satisfy Independence, Completeness, Locality:
-- run_id:  who   — unique identifier for this run
-- run_ts:  when  — UTC timestamp at minute granularity
+- session_id:  who   — unique identifier for this run
+- session_ts:  when  — UTC timestamp at minute granularity
 - seed:    reproducibility — RNG seed for numpy/torch
 - name:    label — human-readable run label
 - verbose: execution behaviour — logging verbosity level
@@ -20,16 +20,16 @@ from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 
 
-class RunIdentity(BaseModel):
-    """RunIdentity [Identity] — Run identification and execution context shared across all phases (5 fields)."""
+class SessionIdentity(BaseModel):
+    """SessionIdentity [Identity] — Run identification and execution context shared across all phases (5 fields)."""
 
-    run_id: Annotated[
+    session_id: Annotated[
         str, StringConstraints(pattern=r"^[a-f0-9]{8}$", min_length=8, max_length=8)
     ] = Field(
         default_factory=lambda: uuid.uuid4().hex[:8],
         description="8-char hex run identifier — auto-generated UUID prefix",
     )
-    run_ts: Annotated[
+    session_ts: Annotated[
         str, StringConstraints(pattern=r"^\d{8}-\d{4}$", min_length=13, max_length=13)
     ] = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y%m%d-%H%M"),

@@ -1,4 +1,4 @@
-"""IOEvalPhase [QGP] — TrainProductOutput + EvalHom -> EvalProductOutput.
+"""IOEvalPhase [QGP] — SolveProductOutput + EvalHom -> EvalProductOutput.
 
 Same env as Train. Loads model + VecNormalize from StoreMonad.
 Per-step stop-loss and take-profit check. Returns EvalProductOutput only.
@@ -20,26 +20,26 @@ from pydantic_settings import (
 )
 
 from Types.Hom.Eval.default import EvalHom
-from Types.Dependent.Env.default import EnvDependent
-from Types.Dependent.Risk.default import RiskDependent
-from Types.Identity.Asset.default import AssetIdentity
-from Types.Identity.Run.default import RunIdentity
+from Types.Dependent.Execution.default import ExecutionDependent
+from Types.Dependent.Constraint.default import ConstraintDependent
+from Types.Identity.Index.default import IndexIdentity
+from Types.Identity.Session.default import SessionIdentity
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Store.default import StoreMonad
 from Types.Product.Eval.Meta.default import EvalProductMeta
 from Types.Product.Eval.Output.default import EvalProductOutput
-from Types.Product.Train.Output.default import TrainProductOutput
+from Types.Product.Solve.Output.default import SolveProductOutput
 
 ALGOS = {"PPO": PPO, "SAC": SAC, "DQN": DQN, "A2C": A2C}
 
 
 def run(
-    train_record: TrainProductOutput,
+    train_record: SolveProductOutput,
     eval_specs: EvalHom,
-    env_base: EnvDependent,
-    risk: RiskDependent,
-    asset: AssetIdentity,
-    run_base: RunIdentity,
+    env_base: ExecutionDependent,
+    risk: ConstraintDependent,
+    asset: IndexIdentity,
+    run_base: SessionIdentity,
     window_index: int,
     df_slice: pd.DataFrame,
     store_base: StoreMonad,
@@ -61,11 +61,11 @@ def run(
 
     # Resolve model + normalize blob paths from store
     store = store_base.model_copy(
-        update={"run_id": train_record.run_id, "phase": PhaseId.train}
+        update={"session_id": train_record.session_id, "phase": PhaseId.solve}
     )
     try:
-        model_row = store.get(train_record.run_id, PhaseId.train.value, "model")
-        normalize_row = store.get(train_record.run_id, PhaseId.train.value, "normalize")
+        model_row = store.get(train_record.session_id, PhaseId.solve.value, "model")
+        normalize_row = store.get(train_record.session_id, PhaseId.solve.value, "normalize")
         model_path = model_row.blob_path
         normalize_path = normalize_row.blob_path
     except KeyError as e:
@@ -97,7 +97,7 @@ def run(
         )
         raise ValueError(f"normalize blob not found: {normalize_path}")
 
-    forward_bars = eval_specs.forward_steps_min // asset.interval_min
+    forward_bars = eval_specs.horizon_min // asset.interval_min
 
     def _make_env() -> gym.Env:
         env = gym.make(
@@ -110,7 +110,7 @@ def run(
             borrow_interest_rate=env_base.borrow_rate_pct / 100.0,
             windows=None,
             max_episode_duration=forward_bars,
-            name=env_base.broker_mode.value,
+            name=env_base.execution_mode.value,
             verbose=run_base.verbose,
             render_mode="logs",
         )
@@ -140,7 +140,7 @@ def run(
         raise
 
     try:
-        algo_cls = ALGOS[train_record.algo.value]
+        algo_cls = ALGOS[train_record.solver.value]
         model = algo_cls.load(model_path)
 
         obs = eval_env.reset()
@@ -199,7 +199,7 @@ def run(
             ) * 100.0
 
         # Render logs under store blobs
-        render_dir = Path(store_base.blob_dir) / run_base.run_id / "render_logs"
+        render_dir = Path(store_base.blob_dir) / run_base.session_id / "render_logs"
         render_dir.mkdir(parents=True, exist_ok=True)
         try:
             inner_env = eval_env.envs[0].unwrapped
@@ -233,7 +233,7 @@ def run(
     ).total_seconds()
 
     record = EvalProductOutput(
-        run_id=run_base.run_id,
+        session_id=run_base.session_id,
         io_ticker=asset.io_ticker,
         window_index=window_index,
         portfolio_return_pct=max(-100.0, min(1000.0, ret_pct)),
@@ -244,7 +244,7 @@ def run(
 
     # Persist eval results to StoreMonad
     eval_store = store_base.model_copy(
-        update={"run_id": run_base.run_id, "phase": PhaseId.eval}
+        update={"session_id": run_base.session_id, "phase": PhaseId.eval}
     )
     try:
         eval_store.put("eval", record)
@@ -269,18 +269,18 @@ class Settings(BaseSettings):
         cli_parse_args=True,
         cli_prog_name="cata-eval",
     )
-    asset: AssetIdentity = Field(
+    asset: IndexIdentity = Field(
         ..., description="Asset index — ticker, interval, trade hours, holidays"
     )
-    run: RunIdentity = Field(
-        default=RunIdentity(), description="Run context — ID, seed, store"
+    run: SessionIdentity = Field(
+        default=SessionIdentity(), description="Run context — ID, seed, store"
     )
-    env: EnvDependent = Field(
-        default=EnvDependent(),
+    env: ExecutionDependent = Field(
+        default=ExecutionDependent(),
         description="Trading environment — fees, positions, stop-loss, broker mode",
     )
-    risk: RiskDependent = Field(
-        default_factory=RiskDependent,
+    risk: ConstraintDependent = Field(
+        default_factory=ConstraintDependent,
         description="Risk gate — stop-loss and take-profit thresholds",
     )
     eval: EvalHom = Field(
@@ -301,34 +301,37 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         from pydantic_settings import JsonConfigSettingsSource, CliSettingsSource
+        from pathlib import Path as _P
 
-        return (
-            CliSettingsSource(settings_cls, cli_parse_args=True),
-            JsonConfigSettingsSource(settings_cls),
-        )
+        sources = [CliSettingsSource(settings_cls, cli_parse_args=True)]
+        _local = _P(__file__).parent / "local.json"
+        if _local.exists():
+            sources.append(JsonConfigSettingsSource(settings_cls, json_file=_local))
+        sources.append(JsonConfigSettingsSource(settings_cls))
+        return tuple(sources)
 
 
 if __name__ == "__main__":
     from Types.Hom.Ingest.default import IngestHom
-    from Types.Hom.Feature.default import FeatureHom
-    from Types.Hom.Train.default import TrainHom
+    from Types.Hom.Transform.default import TransformHom
+    from Types.Hom.Solve.default import SolveHom
     from Types.IO.IOIngestPhase.default import run as ingest
-    from Types.IO.IOFeaturePhase.default import run as feature
-    from Types.IO.IOTrainPhase.default import run as train
+    from Types.IO.IOTransformPhase.default import run as feature
+    from Types.IO.IOSolvePhase.default import run as train
 
     s = Settings()
     ingest_cfg = IngestHom()
-    feature_cfg = FeatureHom()
-    train_cfg = TrainHom()
+    feature_cfg = TransformHom()
+    train_cfg = SolveHom()
     ingest_record = ingest(ingest_cfg, s.asset, s.run, s.store)
     feature_record = feature(ingest_record, feature_cfg, s.run, s.store)
     store = s.store.model_copy(
-        update={"run_id": s.run.run_id, "phase": PhaseId.feature}
+        update={"session_id": s.run.session_id, "phase": PhaseId.transform}
     )
-    feat_row = store.get(s.run.run_id, PhaseId.feature.value, "features")
+    feat_row = store.get(s.run.session_id, PhaseId.transform.value, "features")
     df = pd.read_pickle(feat_row.blob_path)
-    episode_bars = train_cfg.episode_duration_min // s.asset.interval_min
-    eval_bars = s.eval.forward_steps_min // s.asset.interval_min
+    episode_bars = train_cfg.horizon_min // s.asset.interval_min
+    eval_bars = s.eval.horizon_min // s.asset.interval_min
     train_slice = df.iloc[: episode_bars + 1].copy()
     eval_slice = df.iloc[episode_bars : episode_bars + eval_bars + 1].copy()
     train_record = train(

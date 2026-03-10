@@ -1,13 +1,13 @@
-"""CoFeatureProductOutput [CoProduct] — Feature observation result (5 fields). All bounded."""
+"""CoTransformProductOutput [CoProduct] — Feature observation result (5 fields). All bounded."""
 
 from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 import uuid
-from CoTypes.CoProduct.Feature.Meta.default import CoFeatureProductMeta
+from CoTypes.CoProduct.Transform.Meta.default import CoTransformProductMeta
 
 
-class CoFeatureProductOutput(BaseModel):
-    """CoFeatureProductOutput [CoProduct] — What was observed about a feature run (5 fields)."""
+class CoTransformProductOutput(BaseModel):
+    """CoTransformProductOutput [CoProduct] — What was observed about a feature run (5 fields)."""
 
     observer_id: Annotated[str, StringConstraints(min_length=1, max_length=64)] = Field(
         default_factory=lambda: uuid.uuid4().hex[:8],
@@ -24,7 +24,7 @@ class CoFeatureProductOutput(BaseModel):
         default=False,
         description="Whether all feature columns start with feature_ prefix",
     )
-    meta: CoFeatureProductMeta = Field(
-        default_factory=CoFeatureProductMeta,
+    meta: CoTransformProductMeta = Field(
+        default_factory=CoTransformProductMeta,
         description="Observation metadata — trace cursor",
     )

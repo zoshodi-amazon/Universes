@@ -1,6 +1,6 @@
-"""IOServePhase [QGP] — Live bar-by-bar model serving with broker execution.
+"""IOProjectPhase [QGP] — Live bar-by-bar model serving with broker execution.
 
-Loads trained model + VecNormalize from StoreMonad by train_run_id.
+Loads trained model + VecNormalize from StoreMonad by solve_session_id.
 Polls for new bars on interval. Per-bar risk gates + audit logging.
 """
 
@@ -26,20 +26,20 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from Types.Hom.Serve.default import ServeHom
+from Types.Hom.Project.default import ProjectHom
 from Types.Hom.Ingest.default import IngestHom
-from Types.Hom.Feature.default import FeatureHom
-from Types.Dependent.Env.default import EnvDependent, BrokerMode
-from Types.Dependent.Risk.default import RiskDependent
-from Types.Identity.Asset.default import AssetIdentity
-from Types.Identity.Run.default import RunIdentity
+from Types.Hom.Transform.default import TransformHom
+from Types.Dependent.Execution.default import ExecutionDependent, ExecutionMode
+from Types.Dependent.Constraint.default import ConstraintDependent
+from Types.Identity.Index.default import IndexIdentity
+from Types.Identity.Session.default import SessionIdentity
 from Types.Monad.Error.default import ErrorMonad, PhaseId, Severity
 from Types.Monad.Store.default import StoreMonad
-from Types.Product.Serve.Meta.default import ServeProductMeta
-from Types.Product.Serve.Output.default import ServeProductOutput, ServeStatus
-from Types.Inductive.OHLCV.default import OHLCVInductive
+from Types.Product.Project.Meta.default import ProjectProductMeta
+from Types.Product.Project.Output.default import ProjectProductOutput, ProjectStatus
+from Types.Inductive.Frame.default import FrameInductive
 from Types.IO.IOIngestPhase.default import run as ingest
-from Types.IO.IOFeaturePhase.default import run as feature
+from Types.IO.IOTransformPhase.default import run as feature
 
 ALGOS = {"PPO": PPO, "SAC": SAC, "DQN": DQN, "A2C": A2C}
 INTERVAL_MAP = {1: "1m", 5: "5m", 15: "15m", 30: "30m", 60: "1h", 1440: "1d"}
@@ -49,12 +49,12 @@ SHUTDOWN = False
 
 
 def _audit_log(
-    run_base: RunIdentity, store_base: StoreMonad, entry: dict[str, Any]
+    run_base: SessionIdentity, store_base: StoreMonad, entry: dict[str, Any]
 ) -> None:
     """Append trade decision to audit log (JSONL format) under store blobs."""
-    audit_dir = Path(store_base.blob_dir) / run_base.run_id / "audit"
+    audit_dir = Path(store_base.blob_dir) / run_base.session_id / "audit"
     audit_dir.mkdir(parents=True, exist_ok=True)
-    audit_path = audit_dir / f"audit_{run_base.run_ts}_{run_base.run_id}.jsonl"
+    audit_path = audit_dir / f"audit_{run_base.session_ts}_{run_base.session_id}.jsonl"
     entry["timestamp"] = datetime.now(timezone.utc).isoformat()
     with open(audit_path, "a") as f:
         f.write(json.dumps(entry) + "\n")
@@ -66,9 +66,9 @@ def _handle_signal(signum: int, frame: FrameType | None) -> None:
 
 
 def _fetch_latest_bar(
-    ticker: str, interval: str, meta: ServeProductMeta
+    ticker: str, interval: str, meta: ProjectProductMeta
 ) -> pd.DataFrame:
-    """Fetch latest bar with typed error handling and OHLCVInductive validation."""
+    """Fetch latest bar with typed error handling and FrameInductive validation."""
     try:
         raw_df = yf.download(ticker, period="1d", interval=interval, auto_adjust=True)
         if raw_df is not None and isinstance(raw_df.columns, pd.MultiIndex):
@@ -78,13 +78,13 @@ def _fetch_latest_bar(
         meta.broker_calls += 1
         if raw_df is None or raw_df.empty:
             return pd.DataFrame()
-        validated = OHLCVInductive.from_dataframe(raw_df)
+        validated = FrameInductive.from_dataframe(raw_df)
         df = validated.to_dataframe(index=raw_df.index if raw_df is not None else None)
         return df
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.serve,
+                phase=PhaseId.project,
                 message=f"bar fetch failed: {str(e)[:64]}",
                 severity=Severity.warn,
             )
@@ -98,15 +98,15 @@ def _model_age_min(model_path: str) -> int:
     return int((datetime.now(timezone.utc) - mtime).total_seconds() / 60)
 
 
-def _is_market_open(asset: AssetIdentity) -> bool:
+def _is_market_open(asset: IndexIdentity) -> bool:
     """Check if the market is currently open for this asset, using local timezone."""
-    if asset.asset_type.value == "crypto":
+    if asset.index_class.value == "crypto":
         return True
     from zoneinfo import ZoneInfo
 
     # Map asset type to timezone — US stocks use Eastern
     tz_map = {"stock": "America/New_York", "forex": "America/New_York"}
-    tz_name = tz_map.get(asset.asset_type.value, "America/New_York")
+    tz_name = tz_map.get(asset.index_class.value, "America/New_York")
     now_local = datetime.now(ZoneInfo(tz_name))
     # Weekend check (Monday=0 ... Sunday=6)
     if now_local.weekday() >= 5:
@@ -116,10 +116,10 @@ def _is_market_open(asset: AssetIdentity) -> bool:
 
 
 def _execute_broker(
-    ticker: str, target_pos: float, env_base: EnvDependent, meta: ServeProductMeta
+    ticker: str, target_pos: float, env_base: ExecutionDependent, meta: ProjectProductMeta
 ) -> None:
     """Execute broker order with typed error handling. Loads credentials from .env."""
-    if env_base.broker_mode == BrokerMode.sim:
+    if env_base.execution_mode == ExecutionMode.sim:
         return
 
     try:
@@ -134,7 +134,7 @@ def _execute_broker(
         load_dotenv()  # loads .env from project root
         api_key = os.environ.get("ALPACA_API_KEY", "")
         secret_key = os.environ.get("ALPACA_SECRET_KEY", "")
-        is_paper = env_base.broker_mode == BrokerMode.paper
+        is_paper = env_base.execution_mode == ExecutionMode.paper
         client = TradingClient(api_key, secret_key, paper=is_paper)
 
         try:
@@ -142,7 +142,7 @@ def _execute_broker(
         except Exception as e:
             meta.obs.errors.append(
                 ErrorMonad(
-                    phase=PhaseId.serve,
+                    phase=PhaseId.project,
                     message=f"position fetch failed: {str(e)[:64]}",
                     severity=Severity.warn,
                 )
@@ -227,7 +227,7 @@ def _execute_broker(
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.serve,
+                phase=PhaseId.project,
                 message=f"broker execution failed: {str(e)[:64]}",
                 severity=Severity.error,
             )
@@ -236,37 +236,37 @@ def _execute_broker(
 
 
 def run(
-    serve_specs: ServeHom,
-    env_base: EnvDependent,
-    risk: RiskDependent,
-    asset: AssetIdentity,
-    run_base: RunIdentity,
+    project_specs: ProjectHom,
+    env_base: ExecutionDependent,
+    risk: ConstraintDependent,
+    asset: IndexIdentity,
+    run_base: SessionIdentity,
     store_base: StoreMonad,
-) -> ServeProductOutput:
+) -> ProjectProductOutput:
     started = datetime.now(timezone.utc).isoformat()
-    meta = ServeProductMeta()
+    meta = ProjectProductMeta()
     meta.obs.started_at = started
-    meta.obs.phase = PhaseId.serve
+    meta.obs.phase = PhaseId.project
 
     # Each phase handles its own parameterization — defaults used internally
     ingest_cfg = IngestHom()
-    feature_cfg = FeatureHom()
+    feature_cfg = TransformHom()
 
-    # Resolve model + normalize from store using train_run_id
+    # Resolve model + normalize from store using solve_session_id
     store = store_base.model_copy(
-        update={"run_id": serve_specs.train_run_id, "phase": PhaseId.train}
+        update={"session_id": project_specs.solve_session_id, "phase": PhaseId.solve}
     )
     try:
-        model_row = store.get(serve_specs.train_run_id, PhaseId.train.value, "model")
+        model_row = store.get(project_specs.solve_session_id, PhaseId.solve.value, "model")
         normalize_row = store.get(
-            serve_specs.train_run_id, PhaseId.train.value, "normalize"
+            project_specs.solve_session_id, PhaseId.solve.value, "normalize"
         )
         model_path = model_row.blob_path
         normalize_path = normalize_row.blob_path
     except KeyError as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.serve,
+                phase=PhaseId.project,
                 message=f"artifact not found in store: {e}",
                 severity=Severity.error,
             )
@@ -276,7 +276,7 @@ def run(
     if not Path(model_path).exists():
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.serve,
+                phase=PhaseId.project,
                 message=f"model blob not found: {model_path}",
                 severity=Severity.error,
             )
@@ -285,7 +285,7 @@ def run(
     if not Path(normalize_path).exists():
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.serve,
+                phase=PhaseId.project,
                 message=f"normalize blob not found: {normalize_path}",
                 severity=Severity.error,
             )
@@ -300,15 +300,15 @@ def run(
 
     # Load feature blob from store
     feat_store = store_base.model_copy(
-        update={"run_id": run_base.run_id, "phase": PhaseId.feature}
+        update={"session_id": run_base.session_id, "phase": PhaseId.transform}
     )
     try:
-        feat_row = feat_store.get(run_base.run_id, PhaseId.feature.value, "features")
+        feat_row = feat_store.get(run_base.session_id, PhaseId.transform.value, "features")
         df = pd.read_pickle(feat_row.blob_path)
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.serve,
+                phase=PhaseId.project,
                 message=f"feature blob not found: {str(e)[:128]}",
                 severity=Severity.error,
             )
@@ -318,7 +318,7 @@ def run(
     if len(df) < MIN_BARS:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.serve,
+                phase=PhaseId.project,
                 message=f"insufficient bars: {len(df)} < {MIN_BARS}",
                 severity=Severity.error,
             )
@@ -326,7 +326,7 @@ def run(
         raise ValueError(f"insufficient bars: {len(df)} < {MIN_BARS}")
 
     yf_interval = INTERVAL_MAP[asset.interval_min]
-    algo_cls = ALGOS[serve_specs.io_algo.value]
+    algo_cls = ALGOS[project_specs.io_solver.value]
     model = algo_cls.load(model_path)
 
     n_bars_served = 0
@@ -334,40 +334,40 @@ def run(
     cumulative_ret = 0.0
     final_value = float(env_base.initial_value)
     max_value_seen = float(env_base.initial_value)
-    status = ServeStatus.running
+    status = ProjectStatus.running
 
-    while not SHUTDOWN and n_bars_served < serve_specs.max_bars:
+    while not SHUTDOWN and n_bars_served < project_specs.max_frames:
         if not _is_market_open(asset):
-            time.sleep(serve_specs.poll_interval_s)
+            time.sleep(project_specs.sample_interval_s)
             continue
 
         new_bars = _fetch_latest_bar(asset.io_ticker, yf_interval, meta)
 
         if len(new_bars) == 0:
-            time.sleep(serve_specs.poll_interval_s)
+            time.sleep(project_specs.sample_interval_s)
             continue
 
         latest = new_bars.iloc[[-1]]
         if len(df) > 0 and latest.index[0] <= df.index[-1]:
-            time.sleep(serve_specs.poll_interval_s)
+            time.sleep(project_specs.sample_interval_s)
             continue
 
         ingest_record = ingest(ingest_cfg, asset, run_base, store_base)
         feature_record = feature(ingest_record, feature_cfg, run_base, store_base)
         try:
             feat_row = feat_store.get(
-                run_base.run_id, PhaseId.feature.value, "features"
+                run_base.session_id, PhaseId.transform.value, "features"
             )
             df = pd.read_pickle(feat_row.blob_path)
         except Exception as e:
             meta.obs.errors.append(
                 ErrorMonad(
-                    phase=PhaseId.serve,
+                    phase=PhaseId.project,
                     message=f"feature reload failed: {str(e)[:64]}",
                     severity=Severity.warn,
                 )
             )
-            time.sleep(serve_specs.poll_interval_s)
+            time.sleep(project_specs.sample_interval_s)
             continue
 
         def _make_serve_env() -> gym.Env:
@@ -381,7 +381,7 @@ def run(
                 borrow_interest_rate=env_base.borrow_rate_pct / 100.0,
                 windows=None,
                 max_episode_duration="max",
-                name=env_base.broker_mode.value,
+                name=env_base.execution_mode.value,
                 verbose=run_base.verbose,
                 render_mode="logs",
             )
@@ -441,7 +441,7 @@ def run(
                 ) * 100.0
                 pos = 0.0
 
-            render_dir = Path(store_base.blob_dir) / run_base.run_id / "render_logs"
+            render_dir = Path(store_base.blob_dir) / run_base.session_id / "render_logs"
             render_dir.mkdir(parents=True, exist_ok=True)
             try:
                 inner_env = serve_env.envs[0].unwrapped
@@ -451,7 +451,7 @@ def run(
             except Exception as e:
                 meta.obs.errors.append(
                     ErrorMonad(
-                        phase=PhaseId.serve,
+                        phase=PhaseId.project,
                         message=f"render save failed: {str(e)[:64]}",
                         severity=Severity.warn,
                     )
@@ -467,11 +467,11 @@ def run(
             drawdown_pct = ((final_value - max_value_seen) / max_value_seen) * 100.0
             if drawdown_pct <= risk.max_drawdown_pct:
                 pos = 0.0
-                status = ServeStatus.stopped
+                status = ProjectStatus.stopped
                 meta.shutdown_reason = "max_drawdown"
 
         age = _model_age_min(model_path)
-        if age > serve_specs.max_model_age_min:
+        if age > project_specs.max_artifact_age_min:
             pos = 0.0
 
         end_date = df.index[-1]
@@ -491,11 +491,11 @@ def run(
 
         if cumulative_ret <= risk.stop_loss_pct:
             pos = 0.0
-            status = ServeStatus.stopped
+            status = ProjectStatus.stopped
             meta.shutdown_reason = "stop_loss"
 
         if threshold_met:
-            status = ServeStatus.stopped
+            status = ProjectStatus.stopped
             meta.shutdown_reason = "take_profit"
 
         if pos != prev_pos:
@@ -509,7 +509,7 @@ def run(
                     "new_position": pos,
                     "portfolio_value": final_value,
                     "return_pct": cumulative_ret,
-                    "broker_mode": env_base.broker_mode.value,
+                    "execution_mode": env_base.execution_mode.value,
                     "reason": "model_prediction",
                 },
             )
@@ -518,13 +518,13 @@ def run(
 
         n_bars_served += 1
 
-        if status == ServeStatus.stopped:
+        if status == ProjectStatus.stopped:
             break
 
-        time.sleep(serve_specs.poll_interval_s)
+        time.sleep(project_specs.sample_interval_s)
 
-    if status == ServeStatus.running:
-        status = ServeStatus.completed
+    if status == ProjectStatus.running:
+        status = ProjectStatus.completed
         meta.shutdown_reason = "completed"
 
     if SHUTDOWN and prev_pos != 0.0:
@@ -538,7 +538,7 @@ def run(
                 "new_position": 0.0,
                 "portfolio_value": final_value,
                 "return_pct": cumulative_ret,
-                "broker_mode": env_base.broker_mode.value,
+                "execution_mode": env_base.execution_mode.value,
                 "reason": "graceful_shutdown",
             },
         )
@@ -552,8 +552,8 @@ def run(
         completed - datetime.fromisoformat(started.replace("Z", "+00:00"))
     ).total_seconds()
 
-    record = ServeProductOutput(
-        run_id=run_base.run_id,
+    record = ProjectProductOutput(
+        session_id=run_base.session_id,
         io_ticker=asset.io_ticker,
         n_bars_served=n_bars_served,
         portfolio_return_pct=max(-100.0, min(1000.0, cumulative_ret)),
@@ -564,14 +564,14 @@ def run(
 
     # Store serve result
     serve_store = store_base.model_copy(
-        update={"run_id": run_base.run_id, "phase": PhaseId.serve}
+        update={"session_id": run_base.session_id, "phase": PhaseId.project}
     )
     try:
-        serve_store.put("serve", record)
+        serve_store.put("project", record)
     except Exception as e:
         meta.obs.errors.append(
             ErrorMonad(
-                phase=PhaseId.serve,
+                phase=PhaseId.project,
                 message=f"store.put failed: {str(e)[:128]}",
                 severity=Severity.error,
             )
@@ -581,31 +581,31 @@ def run(
 
 
 class Settings(BaseSettings):
-    """IOServePhase Settings [Plasma] — Standalone entrypoint for live bar-by-bar serving (6 fields)."""
+    """IOProjectPhase Settings [Plasma] — Standalone entrypoint for live bar-by-bar serving (6 fields)."""
 
     model_config = SettingsConfigDict(
-        json_file="Types/IO/IOServePhase/default.json",
+        json_file="Types/IO/IOProjectPhase/default.json",
         json_file_encoding="utf-8",
         env_file=".env",
         cli_parse_args=True,
-        cli_prog_name="cata-serve",
+        cli_prog_name="cata-project",
     )
-    asset: AssetIdentity = Field(
+    asset: IndexIdentity = Field(
         ..., description="Asset index — ticker, interval, trade hours, holidays"
     )
-    run: RunIdentity = Field(
-        default=RunIdentity(), description="Run context — ID, seed, store"
+    run: SessionIdentity = Field(
+        default=SessionIdentity(), description="Run context — ID, seed, store"
     )
-    env: EnvDependent = Field(
-        default=EnvDependent(),
+    env: ExecutionDependent = Field(
+        default=ExecutionDependent(),
         description="Trading environment — fees, positions, stop-loss, broker mode",
     )
-    risk: RiskDependent = Field(
-        default_factory=RiskDependent,
+    risk: ConstraintDependent = Field(
+        default_factory=ConstraintDependent,
         description="Risk gate — stop-loss and take-profit thresholds",
     )
-    serve: ServeHom = Field(
-        ..., description="Serve config — train_run_id, algo, poll interval"
+    project: ProjectHom = Field(
+        ..., description="Serve config — solve_session_id, algo, poll interval"
     )
     store: StoreMonad = Field(
         default_factory=StoreMonad,
@@ -622,11 +622,14 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         from pydantic_settings import JsonConfigSettingsSource, CliSettingsSource
+        from pathlib import Path as _P
 
-        return (
-            CliSettingsSource(settings_cls, cli_parse_args=True),
-            JsonConfigSettingsSource(settings_cls),
-        )
+        sources = [CliSettingsSource(settings_cls, cli_parse_args=True)]
+        _local = _P(__file__).parent / "local.json"
+        if _local.exists():
+            sources.append(JsonConfigSettingsSource(settings_cls, json_file=_local))
+        sources.append(JsonConfigSettingsSource(settings_cls))
+        return tuple(sources)
 
 
 if __name__ == "__main__":

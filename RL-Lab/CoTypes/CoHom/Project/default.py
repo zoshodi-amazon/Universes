@@ -1,13 +1,13 @@
-"""CoServeHom [CoHom] — Serve phase observation spec (5 fields). All bounded.
+"""CoProjectHom [CoHom] — Serve phase observation spec (5 fields). All bounded.
 
-Liquid-dual — observation specification parallel to ServeHom.
+Liquid-dual — observation specification parallel to ProjectHom.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoServeHom(BaseModel):
-    """CoServeHom [CoHom] — What to verify about a serve run (5 fields)."""
+class CoProjectHom(BaseModel):
+    """CoProjectHom [CoHom] — What to verify about a serve run (5 fields)."""
 
     model_loaded: bool = Field(
         default=True, description="Check that model was loaded and not stale"

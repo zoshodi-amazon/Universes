@@ -1,17 +1,17 @@
-"""TrainProductMeta [Product] — Phase output meta extension for Train.
+"""SolveProductMeta [Product] — Phase output meta extension for Train.
 
-Bound to Train phase. Contains ObservabilityMonad + train-specific audit fields.
+Bound to Train phase. Contains EffectMonad + train-specific audit fields.
 """
 from pydantic import BaseModel, Field
 
-from Types.Monad.Observability.default import ObservabilityMonad
+from Types.Monad.Effect.default import EffectMonad
 from Types.Monad.Error.default import PhaseId
 
 
-class TrainProductMeta(BaseModel):
-    """TrainProductMeta [Product] — Phase output meta extension for Train (6 fields)."""
-    obs: ObservabilityMonad = Field(
-        default_factory=lambda: ObservabilityMonad(phase=PhaseId.train),
+class SolveProductMeta(BaseModel):
+    """SolveProductMeta [Product] — Phase output meta extension for Train (6 fields)."""
+    obs: EffectMonad = Field(
+        default_factory=lambda: EffectMonad(phase=PhaseId.solve),
         description="Observability data — errors, metrics, alarms, timing")
     episodes_completed: int = Field(default=0, ge=0, le=1_000_000,
         description="Number of training episodes completed")

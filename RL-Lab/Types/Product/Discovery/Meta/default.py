@@ -1,17 +1,17 @@
 """DiscoveryProductMeta [Product] — Phase output meta extension for Discovery.
 
-Bound to Discovery phase. Contains ObservabilityMonad + discovery-specific audit fields.
+Bound to Discovery phase. Contains EffectMonad + discovery-specific audit fields.
 """
 from pydantic import BaseModel, Field
 
-from Types.Monad.Observability.default import ObservabilityMonad
+from Types.Monad.Effect.default import EffectMonad
 from Types.Monad.Error.default import PhaseId
 
 
 class DiscoveryProductMeta(BaseModel):
     """DiscoveryProductMeta [Product] — Phase output meta extension for Discovery (6 fields)."""
-    obs: ObservabilityMonad = Field(
-        default_factory=lambda: ObservabilityMonad(phase=PhaseId.discovery),
+    obs: EffectMonad = Field(
+        default_factory=lambda: EffectMonad(phase=PhaseId.discovery),
         description="Observability data — errors, metrics, alarms, timing")
     screener_result_count: int = Field(default=0, ge=0, le=100_000,
         description="Raw count from screener before any filtering")

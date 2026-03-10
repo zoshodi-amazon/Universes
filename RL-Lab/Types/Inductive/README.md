@@ -46,26 +46,26 @@ instance : Lean.FromJson {Name}Inductive where
 
 | Type | Variants | File | Status |
 |------|:--------:|------|--------|
-| `AlgoIdentity` | 4 | `Types/Inductive/Algo/default.py` | IMPLEMENTED |
-| `OHLCVInductive` | struct (5 fields) | `Types/Inductive/OHLCV/default.py` | IMPLEMENTED |
-| `ScreenerInductive` | struct (1 field) | `Types/Inductive/Screener/default.py` | IMPLEMENTED |
-| `TickerInfoInductive` | struct (6 fields) | `Types/Inductive/TickerInfo/default.py` | IMPLEMENTED |
-| `ScreenerQuoteInductive` | struct (1 field) | `Types/Inductive/ScreenerQuote/default.py` | IMPLEMENTED |
-| `AlarmSeverity` | 3 | `Types/Inductive/AlarmSeverity/default.py` | IMPLEMENTED |
-| `MetricKind` | 2 | `Types/Inductive/MetricKind/default.py` | IMPLEMENTED |
+| `SolverInductive` | 4 | `Types/Inductive/Solver/default.py` | IMPLEMENTED |
+| `FrameInductive` | struct (5 fields) | `Types/Inductive/Frame/default.py` | IMPLEMENTED |
+| `CatalogInductive` | struct (1 field) | `Types/Inductive/Catalog/default.py` | IMPLEMENTED |
+| `IndexMetaInductive` | struct (6 fields) | `Types/Inductive/IndexMeta/default.py` | IMPLEMENTED |
+| `CatalogEntryInductive` | struct (1 field) | `Types/Inductive/CatalogEntry/default.py` | IMPLEMENTED |
+| `SeverityInductive` | 3 | `Types/Inductive/SeverityInductive/default.py` | IMPLEMENTED |
+| `MeasureInductive` | 2 | `Types/Inductive/MeasureInductive/default.py` | IMPLEMENTED |
 
 ### Enum ADTs (pure sum types)
 
 ```lean
-inductive AlgoIdentity where
+inductive SolverInductive where
   | ppo | sac | dqn | a2c
   deriving Repr, BEq, Inhabited
 
-inductive AlarmSeverity where
+inductive SeverityInductive where
   | info | warn | critical
   deriving Repr, BEq, Inhabited
 
-inductive MetricKind where
+inductive MeasureInductive where
   | counter | gauge
   deriving Repr, BEq, Inhabited
 ```
@@ -73,9 +73,9 @@ inductive MetricKind where
 ### Structural Validators (product types with IO-boundary validation)
 
 ```lean
--- OHLCV: structural validation for external market data
+-- Frame: structural validation for external market data
 -- from_dataframe is the IO-boundary constructor (partial function, may fail)
-structure OHLCVInductive where
+structure FrameInductive where
   open   : Array Float    -- min_length=1, max_length=10_000_000
   high   : Array Float
   low    : Array Float
@@ -83,8 +83,8 @@ structure OHLCVInductive where
   volume : Array Float
   deriving Repr, Lean.ToJson, Lean.FromJson
 
--- TickerInfo: structural validation for yfinance Ticker.info
-structure TickerInfoInductive where
+-- IndexMeta: structural validation for yfinance Ticker.info
+structure IndexMetaInductive where
   symbol             : String    -- [A-Z0-9\-./=]{1,16}
   averageVolume      : Float     -- ge=-1.0, le=??? (UNBOUNDED — needs le)
   regularMarketPrice : Float     -- ge=-1.0, le=??? (UNBOUNDED — needs le)
@@ -93,19 +93,19 @@ structure TickerInfoInductive where
   marketCap          : Float     -- ge=-1.0, le=??? (UNBOUNDED — needs le)
   deriving Repr, Lean.ToJson, Lean.FromJson
 
--- ScreenerQuote: single quote from screener response
-structure ScreenerQuoteInductive where
+-- CatalogEntry: single quote from catalog response
+structure CatalogEntryInductive where
   symbol : String    -- [A-Za-z0-9\-./=]{1,20}
   deriving Repr, Lean.ToJson, Lean.FromJson
 
--- Screener: wrapper for screener API response
-structure ScreenerInductive where
-  quotes : Array ScreenerQuoteInductive    -- max_length=1000
+-- Catalog: wrapper for catalog API response
+structure CatalogInductive where
+  quotes : Array CatalogEntryInductive    -- max_length=1000
   deriving Repr, Lean.ToJson, Lean.FromJson
 ```
 
 **Refactor items:**
-- [ ] Add `le` upper bounds to `TickerInfoInductive` float fields (currently unbounded)
+- [ ] Add `le` upper bounds to `IndexMetaInductive` float fields (currently unbounded)
 
 ## Inline Enums to Extract (10 types, currently violating Invariant 18)
 
@@ -113,37 +113,37 @@ These are `str, Enum` or `Literal` types **currently defined inline** in other s
 
 | Enum | Variants | Currently In | Extract To |
 |------|:--------:|-------------|-----------|
-| `AssetType` | 3: stock, crypto, forex | `Types/Identity/Asset/default.py` | `Types/Inductive/AssetType/default.py` |
-| `HolidayCalendar` | 3: none, us_market, bank | `Types/Identity/Asset/default.py` | `Types/Inductive/HolidayCalendar/default.py` |
-| `BrokerMode` | 3: sim, paper, live | `Types/Dependent/Env/default.py` | `Types/Inductive/BrokerMode/default.py` |
-| `ObjectiveMetric` | 2: win_rate_pct, avg_return_pct | `Types/Dependent/Optimize/default.py` | `Types/Inductive/ObjectiveMetric/default.py` |
-| `WaveletName` | 5: db4, db6, db8, sym4, sym6 | `Types/Hom/Feature/default.py` | `Types/Inductive/WaveletName/default.py` |
-| `ThresholdMode` | 2: soft, hard | `Types/Hom/Feature/default.py` | `Types/Inductive/ThresholdMode/default.py` |
+| `IndexClass` | 3: stock, crypto, forex | `Types/Identity/Index/default.py` | `Types/Inductive/IndexClass/default.py` |
+| `TemporalMask` | 3: none, us_market, bank | `Types/Identity/Index/default.py` | `Types/Inductive/TemporalMask/default.py` |
+| `ExecutionMode` | 3: sim, paper, live | `Types/Dependent/Execution/default.py` | `Types/Inductive/ExecutionMode/default.py` |
+| `ObjectiveInductive` | 2: win_rate_pct, avg_return_pct | `Types/Dependent/Search/default.py` | `Types/Inductive/ObjectiveInductive/default.py` |
+| `BasisInductive` | 5: db4, db6, db8, sym4, sym6 | `Types/Hom/Transform/default.py` | `Types/Inductive/BasisInductive/default.py` |
+| `ThresholdMode` | 2: soft, hard | `Types/Hom/Transform/default.py` | `Types/Inductive/ThresholdMode/default.py` |
 | `Severity` | 3: warn, error, fatal | `Types/Monad/Error/default.py` | `Types/Inductive/Severity/default.py` |
-| `PhaseId` | 8: discovery..optimize | `Types/Monad/Error/default.py` | `Types/Inductive/PhaseId/default.py` |
-| `ServeStatus` | 4: running..failed | `Types/Product/Serve/Output/default.py` | `Types/Inductive/ServeStatus/default.py` |
-| `MainStatus` | 3: success, partial, failed | `Types/Product/Main/Output/default.py` | `Types/Inductive/MainStatus/default.py` |
+| `PhaseId` | 8: discovery..search | `Types/Monad/Error/default.py` | `Types/Inductive/PhaseId/default.py` |
+| `ProjectStatus` | 4: running..failed | `Types/Product/Project/Output/default.py` | `Types/Inductive/ProjectStatus/default.py` |
+| `ComposeStatus` | 3: success, partial, failed | `Types/Product/Compose/Output/default.py` | `Types/Inductive/ComposeStatus/default.py` |
 
 ```lean
 -- All 10 to be extracted:
 
-inductive AssetType where | stock | crypto | forex
-inductive HolidayCalendar where | none | usMarket | bank
-inductive BrokerMode where | sim | paper | live
-inductive ObjectiveMetric where | winRatePct | avgReturnPct
-inductive WaveletName where | db4 | db6 | db8 | sym4 | sym6
+inductive IndexClass where | stock | crypto | forex
+inductive TemporalMask where | none | usMarket | bank
+inductive ExecutionMode where | sim | paper | live
+inductive ObjectiveInductive where | winRatePct | avgReturnPct
+inductive BasisInductive where | db4 | db6 | db8 | sym4 | sym6
 inductive ThresholdMode where | soft | hard
 inductive Severity where | warn | error | fatal
-inductive PhaseId where | discovery | ingest | feature | train | eval | serve | pipeline | optimize
-inductive ServeStatus where | running | completed | stopped | failed
-inductive MainStatus where | success | partial | failed
+inductive PhaseId where | discovery | ingest | transform | solve | eval | project | compose | search
+inductive ProjectStatus where | running | completed | stopped | failed
+inductive ComposeStatus where | success | partial | failed
 ```
 
 **New type to create:**
 
 | Enum | Variants | Rationale |
 |------|:--------:|----------|
-| `IntervalInductive` | 6: m1, m5, m15, m30, h1, d1 | Replaces bare `int` on `AssetIdentity.interval_min`. Currently `interval_min=7` passes validation but crashes at IO boundary (`INTERVAL_MAP` has no entry). |
+| `IntervalInductive` | 6: m1, m5, m15, m30, h1, d1 | Replaces bare `int` on `IndexIdentity.interval_min`. Currently `interval_min=7` passes validation but crashes at IO boundary (`INTERVAL_MAP` has no entry). |
 
 ```lean
 inductive IntervalInductive where
@@ -157,29 +157,29 @@ inductive IntervalInductive where
 
 | Term | Area | Definition | Type Mapping | Other Strata |
 |------|------|-----------|--------------|-------------|
-| Algorithm | Agent/Model | RL algorithm family | `AlgoIdentity` (PPO/SAC/DQN/A2C) | 4 (TrainHom.algo), 7 (IOTrainPhase) |
-| OHLCV Bar | Market Data | Candlestick price record | `OHLCVInductive` | 7 (yfinance download) |
-| Bar Resolution | Market Data | Temporal granularity | `IntervalInductive` (PLANNED) | 1 (AssetIdentity.interval_min) |
-| Screener | Market Data | Universe discovery query | `ScreenerInductive` | 4 (DiscoveryHom.screener), 7 (IODiscoveryPhase) |
-| Ticker Info | Market Data | Per-ticker metadata | `TickerInfoInductive` | 7 (IODiscoveryPhase) |
-| Alarm Severity | Observability | Alert priority level | `AlarmSeverity` (info/warn/critical) | 6 (AlarmMonad.severity) |
-| Metric Kind | Observability | Counter vs gauge | `MetricKind` (counter/gauge) | 6 (MetricMonad.kind) |
-| Asset Type | Market Data | Security classification | `AssetType` (PLANNED) | 1 (AssetIdentity.asset_type) |
-| Holiday Calendar | Market Data | Exchange holiday schedule | `HolidayCalendar` (PLANNED) | 1 (AssetIdentity.holidays) |
-| Broker Mode | Execution | Sim/paper/live toggle | `BrokerMode` (PLANNED) | 3 (EnvDependent.broker_mode) |
+| Solver | Agent/Model | RL algorithm family | `SolverInductive` (PPO/SAC/DQN/A2C) | 4 (SolveHom.solver), 7 (IOSolvePhase) |
+| OHLCV Bar | Market Data | Candlestick price record | `FrameInductive` | 7 (yfinance download) |
+| Bar Resolution | Market Data | Temporal granularity | `IntervalInductive` (PLANNED) | 1 (IndexIdentity.interval_min) |
+| Catalog | Market Data | Universe discovery query | `CatalogInductive` | 4 (DiscoveryHom.catalog_source), 7 (IODiscoveryPhase) |
+| Index Meta | Market Data | Per-ticker metadata | `IndexMetaInductive` | 7 (IODiscoveryPhase) |
+| Alarm Severity | Observability | Alert priority level | `SeverityInductive` (info/warn/critical) | 6 (SignalMonad.severity) |
+| Measure Kind | Observability | Counter vs gauge | `MeasureInductive` (counter/gauge) | 6 (MeasureMonad.kind) |
+| Index Class | Market Data | Security classification | `IndexClass` (PLANNED) | 1 (IndexIdentity.index_class) |
+| Temporal Mask | Market Data | Exchange holiday schedule | `TemporalMask` (PLANNED) | 1 (IndexIdentity.holidays) |
+| Execution Mode | Execution | Sim/paper/live toggle | `ExecutionMode` (PLANNED) | 3 (ExecutionDependent.execution_mode) |
 | Order Type | Execution | Market/limit/stop/etc. | NOT IMPLEMENTED | Future: 3, 4, 5, 6, 7 |
 | Order Status | Execution | Lifecycle state of an order | NOT IMPLEMENTED | Future: 5, 6, 7 |
 | Time-in-Force | Execution | Order duration policy | NOT IMPLEMENTED | Future: 4, 7 |
 | Regime Label | Regime Detection | Market state classification | NOT IMPLEMENTED | Future: 3, 4, 5, 7 |
-| Serve Status | Infrastructure | Session outcome | `ServeStatus` (PLANNED extraction) | 5 (ServeProductOutput.status) |
-| Main Status | Infrastructure | Pipeline outcome | `MainStatus` (PLANNED extraction) | 5 (MainProductOutput.status) |
+| Project Status | Infrastructure | Session outcome | `ProjectStatus` (PLANNED extraction) | 5 (ProjectProductOutput.status) |
+| Compose Status | Infrastructure | Pipeline outcome | `ComposeStatus` (PLANNED extraction) | 5 (ComposeProductOutput.status) |
 | Severity | Observability | Error severity level | `Severity` (PLANNED extraction) | 6 (ErrorMonad.severity) |
 | Phase ID | Infrastructure | Pipeline phase identifier | `PhaseId` (PLANNED extraction) | 6 (ErrorMonad.phase) |
-| Wavelet Family | Feature Eng. | Signal decomposition basis | `WaveletName` (PLANNED extraction) | 4 (FeatureHom.wavelet) |
-| Threshold Mode | Feature Eng. | Denoising strategy | `ThresholdMode` (PLANNED extraction) | 4 (FeatureHom.threshold_mode) |
-| Objective Metric | Optimization | What Optuna maximizes | `ObjectiveMetric` (PLANNED extraction) | 3 (OptimizeDependent.objective_metric) |
+| Basis Family | Transform Eng. | Signal decomposition basis | `BasisInductive` (PLANNED extraction) | 4 (TransformHom.basis) |
+| Threshold Mode | Transform Eng. | Denoising strategy | `ThresholdMode` (PLANNED extraction) | 4 (TransformHom.threshold_mode) |
+| Objective Inductive | Optimization | What Optuna maximizes | `ObjectiveInductive` (PLANNED extraction) | 3 (SearchDependent.objective_metric) |
 | Slippage Model | Microstructure | Market impact type | NOT IMPLEMENTED | Future: 3, 4, 5, 6, 7 |
-| Position Side | Position Mgmt | Long/short/flat | NOT IMPLEMENTED (implicit in `EnvDependent.positions`) | Future: 1, 5, 7 |
+| Position Side | Position Mgmt | Long/short/flat | NOT IMPLEMENTED (implicit in `ExecutionDependent.positions`) | Future: 1, 5, 7 |
 | Data Vendor | Market Data | Upstream data provider | NOT IMPLEMENTED | Future: 1, 3, 7 |
 
 ## Validation Checklist (ana-main)
@@ -187,6 +187,6 @@ inductive IntervalInductive where
 - [ ] Every `Literal["a","b"]` in the codebase has been extracted to `Types/Inductive/`
 - [ ] Every `str, Enum` class is in `Types/Inductive/`, not inline in another stratum
 - [ ] All structural validators have `from_*` classmethods that are total over valid inputs
-- [ ] `TickerInfoInductive` float fields have `le` upper bounds
+- [ ] `IndexMetaInductive` float fields have `le` upper bounds
 - [ ] All Inductive types have `__init__.py` in their directory
 - [ ] JSON roundtrip: every enum value serializes to a string and deserializes back exhaustively

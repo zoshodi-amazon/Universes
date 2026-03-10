@@ -23,7 +23,7 @@ structure {Name}Comonad where
 
 **Dual of:** Stratum 6 (Monad, effect types).
 
-Where `ErrorMonad` accumulates errors during execution (the free monad), `CoErrorComonad` summarizes what was **observed** about errors across probes (the cofree comonad). Where `ObservabilityMonad` is the effect algebra (errors × metrics × alarms), `TraceComonad` is the observation cursor that tracks the observer's position in the event stream.
+Where `ErrorMonad` accumulates errors during execution (the free monad), `CoErrorComonad` summarizes what was **observed** about errors across probes (the cofree comonad). Where `EffectMonad` is the effect algebra (errors × metrics × signals), `TraceComonad` is the observation cursor that tracks the observer's position in the event stream.
 
 **Comonad laws:**
 - `extract`: get the current observation value (e.g., `TraceComonad.cursor` = current position)
@@ -33,16 +33,16 @@ Where `ErrorMonad` accumulates errors during execution (the free monad), `CoErro
 
 | Type | Fields | Dual Of | File |
 |------|:------:|---------|------|
-| `TraceComonad` | 5 | `ObservabilityMonad` | `CoTypes/Comonad/Trace/default.py` |
+| `TraceComonad` | 5 | `EffectMonad` | `CoTypes/Comonad/Trace/default.py` |
 | `CoErrorComonad` | 4 | `ErrorMonad` | `CoTypes/Comonad/Error/default.py` |
-| `CoMetricComonad` | 4 | `MetricMonad` | `CoTypes/Comonad/Metric/default.py` |
-| `CoAlarmComonad` | 4 | `AlarmMonad` | `CoTypes/Comonad/Alarm/default.py` |
+| `CoMeasureComonad` | 4 | `MeasureMonad` | `CoTypes/Comonad/Measure/default.py` |
+| `CoSignalComonad` | 4 | `SignalMonad` | `CoTypes/Comonad/Signal/default.py` |
 | `CoStoreComonad` | 5 | `StoreMonad` | `CoTypes/Comonad/Store/default.py` |
 
 ```lean
 -- CoPhaseId: observer-side phase enum (distinct from PhaseId in Types/Monad/Error/)
 inductive CoPhaseId where
-  | discovery | ingest | feature | train | eval | serve | main
+  | discovery | ingest | transform | solve | eval | project | compose
   deriving Repr, BEq, Inhabited
 
 structure TraceComonad where
@@ -69,7 +69,7 @@ structure CoStoreComonad where
   deriving Repr, Lean.ToJson, Lean.FromJson
 ```
 
-**Naming note:** `TraceComonad` uses `TraceComonad` rather than `CoTraceComonad` — a naming deviation from the `Co{Name}Comonad` pattern. Documented as cosmetic issue.
+**Naming note:** `TraceComonad` uses `TraceComonad` rather than `CoTraceComonad` — it is the dual of `EffectMonad`, not `ObservabilityMonad`. Documented as cosmetic issue.
 
 ## Validation Checklist
 

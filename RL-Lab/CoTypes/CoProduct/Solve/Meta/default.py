@@ -1,11 +1,11 @@
-"""CoTrainProductMeta [CoProduct] — Train observation metadata (3 fields). All bounded."""
+"""CoSolveProductMeta [CoProduct] — Train observation metadata (3 fields). All bounded."""
 
 from pydantic import BaseModel, Field
 from CoTypes.Comonad.Trace.default import TraceComonad
 
 
-class CoTrainProductMeta(BaseModel):
-    """CoTrainProductMeta [CoProduct] — Train observation trace (3 fields)."""
+class CoSolveProductMeta(BaseModel):
+    """CoSolveProductMeta [CoProduct] — Train observation trace (3 fields)."""
 
     trace: TraceComonad = Field(
         default_factory=TraceComonad, description="Coalgebraic observation cursor"
@@ -15,5 +15,5 @@ class CoTrainProductMeta(BaseModel):
     )
     schema_valid: bool = Field(
         default=False,
-        description="Whether the artifact conforms to TrainProductOutput schema",
+        description="Whether the artifact conforms to SolveProductOutput schema",
     )

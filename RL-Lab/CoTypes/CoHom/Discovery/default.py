@@ -12,7 +12,7 @@ class CoDiscoveryHom(BaseModel):
 
     universe_resolved: bool = Field(
         default=True,
-        description="Check that io_universe tickers were resolved to valid assets",
+        description="Check that io_indices tickers were resolved to valid assets",
     )
     screener_responded: bool = Field(
         default=True,
@@ -20,7 +20,7 @@ class CoDiscoveryHom(BaseModel):
     )
     adx_filter_applied: bool = Field(
         default=True,
-        description="Check that ADX filtering was applied with min_adx threshold",
+        description="Check that ADX filtering was applied with min_trend_score threshold",
     )
     qualifying_found: bool = Field(
         default=True,

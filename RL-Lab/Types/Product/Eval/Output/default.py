@@ -10,7 +10,7 @@ import uuid
 
 class EvalProductOutput(BaseModel):
     """EvalProductOutput [Product] — Result of out-of-sample evaluation: return, position, and threshold status."""
-    run_id: Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{8}$", min_length=8, max_length=8)] = Field(
+    session_id: Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{8}$", min_length=8, max_length=8)] = Field(
         default_factory=lambda: uuid.uuid4().hex[:8],
         description="8-char hex run identifier")
     io_ticker: Annotated[str, StringConstraints(pattern=r"^[A-Z0-9\-./=]{1,16}$", min_length=1, max_length=16)] = Field(

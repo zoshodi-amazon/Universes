@@ -1,4 +1,4 @@
-"""CoMainProductMeta [CoProduct] — Main observation metadata (7 fields). All bounded.
+"""CoComposeProductMeta [CoProduct] — Main observation metadata (7 fields). All bounded.
 
 Expanded to hold validation detail (import health, field count, JSON fidelity)
 and visualization detail (phases logged, series logged) — flattened from
@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field
 from CoTypes.Comonad.Trace.default import TraceComonad
 
 
-class CoMainProductMeta(BaseModel):
-    """CoMainProductMeta [CoProduct] — Main observation trace + validation detail (7 fields)."""
+class CoComposeProductMeta(BaseModel):
+    """CoComposeProductMeta [CoProduct] — Main observation trace + validation detail (7 fields)."""
 
     trace: TraceComonad = Field(
         default_factory=TraceComonad, description="Coalgebraic observation cursor"
@@ -20,7 +20,7 @@ class CoMainProductMeta(BaseModel):
     )
     schema_valid: bool = Field(
         default=False,
-        description="Whether the artifact conforms to MainProductOutput schema",
+        description="Whether the artifact conforms to ComposeProductOutput schema",
     )
     imports_healthy: bool = Field(
         default=False,

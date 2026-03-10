@@ -1,11 +1,11 @@
-"""AssetIdentity [Identity] — Asset-agnostic index type (6 fields).
+"""IndexIdentity [Identity] — Asset-agnostic index type (6 fields).
 
 BEC phase — terminal object answering "what asset exists?"
 Determines temporal structure: trade hours, holidays, interval.
 Used by all phases. io_ticker is required.
 
 Fields satisfy Independence, Completeness, Locality:
-- asset_type:      class of asset — stock, crypto, forex
+- index_class:      class of asset — stock, crypto, forex
 - io_ticker:       external symbol — required IO boundary input
 - interval_min:    bar granularity — independent time axis
 - trade_start_min: market open — minutes from midnight
@@ -17,23 +17,23 @@ from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 
 
-class AssetType(str, Enum):
+class IndexClass(str, Enum):
     """Asset class category — stocks, crypto, or foreign exchange."""
     stock = "stock"
     crypto = "crypto"
     forex = "forex"
 
 
-class HolidayCalendar(str, Enum):
+class TemporalMask(str, Enum):
     """Market holiday schedule — determines non-trading days."""
     none = "none"
     us_market = "us_market"
     bank = "bank"
 
 
-class AssetIdentity(BaseModel):
-    """AssetIdentity [Identity] — Asset-agnostic index type defining ticker, interval, and trade window."""
-    asset_type: AssetType = Field(default=AssetType.stock,
+class IndexIdentity(BaseModel):
+    """IndexIdentity [Identity] — Asset-agnostic index type defining ticker, interval, and trade window."""
+    index_class: IndexClass = Field(default=IndexClass.stock,
         description="Asset class — stock, crypto, or forex")
     io_ticker: Annotated[str, StringConstraints(pattern=r"^[A-Z0-9\-./=]{1,16}$", min_length=1, max_length=16)] = Field(
         ..., description="Ticker symbol — required external input, e.g. AAPL, BTC-USD, EURUSD=X")
@@ -43,5 +43,5 @@ class AssetIdentity(BaseModel):
         description="Market open as minutes from midnight — 570 = 9:30 AM")
     trade_end_min: int = Field(default=960, ge=0, le=1440,
         description="Market close as minutes from midnight — 960 = 4:00 PM")
-    holidays: HolidayCalendar = Field(default=HolidayCalendar.us_market,
+    holidays: TemporalMask = Field(default=TemporalMask.us_market,
         description="Holiday calendar for skipping non-trading days")

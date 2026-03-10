@@ -1,7 +1,7 @@
 [project]
 name = "rl-sandbox"
-version = "0.3.0"
-description = "Config-driven RL trading sandbox with wavelet-denoised input geometry"
+version = "0.4.0"
+description = "Type-theoretic RL trading sandbox with wavelet-denoised input geometry"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "gymnasium>=1.0",
@@ -21,6 +21,7 @@ dependencies = [
     "rerun-sdk>=0.22",
     "sqlalchemy>=2.0",
     "python-dotenv>=1.0",
+    "returns>=0.23",
 ]
 
 [build-system]

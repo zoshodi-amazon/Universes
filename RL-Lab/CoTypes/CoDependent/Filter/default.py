@@ -1,13 +1,13 @@
-"""CoLiquidityDependent [CoDependent] — Liquidity schema conformance witness (2 fields). All bounded.
+"""CoFilterDependent [CoDependent] — Liquidity schema conformance witness (2 fields). All bounded.
 
-Liquid Crystal-dual — validates that LiquidityDependent percentile bounds are sensible.
+Liquid Crystal-dual — validates that FilterDependent percentile bounds are sensible.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoLiquidityDependent(BaseModel):
-    """CoLiquidityDependent [CoDependent] — Liquidity bounds consistency witness (2 fields)."""
+class CoFilterDependent(BaseModel):
+    """CoFilterDependent [CoDependent] — Liquidity bounds consistency witness (2 fields)."""
 
     percentiles_in_range: bool = Field(
         default=False,

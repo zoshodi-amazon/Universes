@@ -39,20 +39,20 @@ def Valid{Name}Identity := { x : {Name}Identity // {Name}Identity.valid x }
 
 | Type | Fields | File | Status |
 |------|:------:|------|--------|
-| `AssetIdentity` | 6 | `Types/Identity/Asset/default.py` | IMPLEMENTED |
-| `RunIdentity` | 5 | `Types/Identity/Run/default.py` | IMPLEMENTED |
+| `IndexIdentity` | 6 | `Types/Identity/Index/default.py` | IMPLEMENTED |
+| `SessionIdentity` | 5 | `Types/Identity/Session/default.py` | IMPLEMENTED |
 
-### AssetIdentity (6 fields)
+### IndexIdentity (6 fields)
 
 ```lean
--- The canonical asset identity — answers "what are we trading?"
+-- The canonical index identity — answers "what are we trading?"
 -- External index: io_ticker (the IO-boundary symbol string)
 
-inductive AssetType where
+inductive IndexClass where
   | stock | crypto | forex
   deriving Repr, BEq, Inhabited          -- EXTRACT TO Inductive/ (currently inline)
 
-inductive HolidayCalendar where
+inductive TemporalMask where
   | none | usMarket | bank
   deriving Repr, BEq, Inhabited          -- EXTRACT TO Inductive/ (currently inline)
 
@@ -60,40 +60,40 @@ inductive IntervalInductive where
   | m1 | m5 | m15 | m30 | h1 | d1
   deriving Repr, BEq, Inhabited          -- CREATE in Inductive/ (currently bare Int)
 
-structure AssetIdentity where
-  assetType     : AssetType        := .stock
-  ioTicker      : String                          -- IO-boundary index, regex [A-Z0-9\-./=]{1,16}
-  intervalMin   : IntervalInductive := .m5        -- REFACTOR: currently bare Int
-  tradeStartMin : Nat              := 570         -- bounded [0, 1440]
-  tradeEndMin   : Nat              := 960         -- bounded [0, 1440]
-  holidays      : HolidayCalendar  := .usMarket
+structure IndexIdentity where
+  indexClass     : IndexClass       := .stock
+  ioTicker       : String                          -- IO-boundary index, regex [A-Z0-9\-./=]{1,16}
+  intervalMin    : IntervalInductive := .m5        -- REFACTOR: currently bare Int
+  tradeStartMin  : Nat              := 570         -- bounded [0, 1440]
+  tradeEndMin    : Nat              := 960         -- bounded [0, 1440]
+  holidays       : TemporalMask     := .usMarket
   deriving Repr, Inhabited, Lean.ToJson, Lean.FromJson
 
 /-- Closure: market open must precede market close. -/
-def AssetIdentity.valid (a : AssetIdentity) : Prop :=
+def IndexIdentity.valid (a : IndexIdentity) : Prop :=
   a.tradeStartMin < a.tradeEndMin
 
-def ValidAssetIdentity := { a : AssetIdentity // AssetIdentity.valid a }
+def ValidIndexIdentity := { a : IndexIdentity // IndexIdentity.valid a }
 ```
 
 **Refactor items:**
-- [ ] Extract `AssetType` to `Types/Inductive/AssetType/default.py`
-- [ ] Extract `HolidayCalendar` to `Types/Inductive/HolidayCalendar/default.py`
+- [ ] Extract `IndexClass` to `Types/Inductive/IndexClass/default.py`
+- [ ] Extract `TemporalMask` to `Types/Inductive/TemporalMask/default.py`
 - [ ] Create `IntervalInductive` ADT replacing bare `int` on `interval_min`
 - [ ] Add `model_validator` enforcing `trade_start_min < trade_end_min`
 
-### RunIdentity (5 fields)
+### SessionIdentity (5 fields)
 
 ```lean
--- The canonical run identity — answers "which execution run is this?"
--- Auto-generated: run_id is a fresh 8-char hex UUID on each construction.
+-- The canonical session identity — answers "which execution session is this?"
+-- Auto-generated: session_id is a fresh 8-char hex UUID on each construction.
 
-structure RunIdentity where
-  runId   : String  := <uuid4_hex8>    -- auto-generated, regex [a-f0-9]{8}
-  runTs   : String  := <utc_now>       -- auto-generated, YYYYMMDD-HHMM
-  seed    : Nat     := 42              -- bounded [0, 2^31-1]
-  name    : String  := "run"           -- bounded [1,64] chars
-  verbose : Nat     := 0              -- bounded {0, 1, 2}
+structure SessionIdentity where
+  sessionId : String  := <uuid4_hex8>    -- auto-generated, regex [a-f0-9]{8}
+  sessionTs : String  := <utc_now>       -- auto-generated, YYYYMMDD-HHMM
+  seed      : Nat     := 42              -- bounded [0, 2^31-1]
+  label     : String  := "session"       -- bounded [1,64] chars
+  verbose   : Nat     := 0              -- bounded {0, 1, 2}
   deriving Repr, Inhabited, Lean.ToJson, Lean.FromJson
 
 -- No cross-field constraint needed — all fields are independent.
@@ -107,20 +107,20 @@ These domain terms have their **Identity stalk** (terminal object / "what exists
 
 | Term | Area | Definition | Type Mapping | Other Strata |
 |------|------|-----------|--------------|-------------|
-| Asset | Market Data | A tradeable financial instrument | `AssetIdentity` | 2 (AssetType), 3 (EnvDependent), 7 (all IO) |
-| Ticker | Market Data | Exchange-specific symbol identifier | `AssetIdentity.io_ticker` | 7 (yfinance/Alpaca API) |
-| Run | Persistence | A unique pipeline execution instance | `RunIdentity` | 5 (Product.run_id), 6 (StoreMonad), 7 (IO) |
-| Seed | Agent/Model | Random seed for reproducibility | `RunIdentity.seed` | 4 (TrainHom), 7 (IOMainPhase) |
-| Interval | Market Data | Bar resolution / temporal granularity | `AssetIdentity.interval_min` | 2 (IntervalInductive, PLANNED) |
-| Market Calendar | Market Data | Trading session schedule per exchange | `AssetIdentity.holidays` | 2 (HolidayCalendar), 7 (IOServePhase) |
-| Market Clock | Market Data | Real-time open/closed indicator | `AssetIdentity.trade_start_min/trade_end_min` | 7 (IOServePhase._is_market_open) |
-| Universe | Market Data | The set of all tradeable symbols | `DiscoveryHom.io_universe` (Stratum 4) | 1 (AssetIdentity per ticker), 5 (DiscoveryProductOutput.qualifying_tickers) |
-| Initial Capital | Environment | Starting portfolio value | `EnvDependent.initial_value` (Stratum 3) | 5 (portfolio tracking), 7 (IO) |
+| Index | Market Data | A tradeable financial instrument | `IndexIdentity` | 2 (IndexClass), 3 (ExecutionDependent), 7 (all IO) |
+| Ticker | Market Data | Exchange-specific symbol identifier | `IndexIdentity.io_ticker` | 7 (yfinance/Alpaca API) |
+| Session | Persistence | A unique pipeline execution instance | `SessionIdentity` | 5 (Product.session_id), 6 (StoreMonad), 7 (IO) |
+| Seed | Agent/Model | Random seed for reproducibility | `SessionIdentity.seed` | 4 (SolveHom), 7 (IOComposePhase) |
+| Interval | Market Data | Bar resolution / temporal granularity | `IndexIdentity.interval_min` | 2 (IntervalInductive, PLANNED) |
+| Market Calendar | Market Data | Trading session schedule per exchange | `IndexIdentity.holidays` | 2 (TemporalMask), 7 (IOProjectPhase) |
+| Market Clock | Market Data | Real-time open/closed indicator | `IndexIdentity.trade_start_min/trade_end_min` | 7 (IOProjectPhase._is_market_open) |
+| Universe | Market Data | The set of all tradeable symbols | `DiscoveryHom.io_indices` (Stratum 4) | 1 (IndexIdentity per ticker), 5 (DiscoveryProductOutput.qualifying_indices) |
+| Initial Capital | Environment | Starting portfolio value | `ExecutionDependent.initial_value` (Stratum 3) | 5 (portfolio tracking), 7 (IO) |
 
-## Validation Checklist (ana-main)
+## Validation Checklist (ana-compose)
 
 - [ ] All fields have `Field(default=..., ge=..., le=...)` or equivalent bounds
-- [ ] `AssetIdentity.trade_start_min < trade_end_min` enforced by `model_validator`
+- [ ] `IndexIdentity.trade_start_min < trade_end_min` enforced by `model_validator`
 - [ ] No `Optional` / `None` fields
 - [ ] `default.json` roundtrip: `fromJson(toJson(default)) == default`
 - [ ] <=7 fields per type

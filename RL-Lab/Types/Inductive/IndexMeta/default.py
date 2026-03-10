@@ -1,4 +1,4 @@
-"""TickerInfoInductive [Inductive] — Structural validation for yfinance Ticker.info (6 fields).
+"""IndexMetaInductive [Inductive] — Structural validation for yfinance Ticker.info (6 fields).
 
 Crystalline phase — validates Ticker.info dict with sentinel defaults.
 """
@@ -7,8 +7,8 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-class TickerInfoInductive(BaseModel):
-    """TickerInfoInductive [Inductive] — Validated ticker info."""
+class IndexMetaInductive(BaseModel):
+    """IndexMetaInductive [Inductive] — Validated ticker info."""
 
     symbol: str = Field(
         default="", min_length=0, max_length=20, description="Ticker symbol"
@@ -32,7 +32,7 @@ class TickerInfoInductive(BaseModel):
     @classmethod
     def from_info(
         cls, info: dict[str, Any] | None, symbol: str = ""
-    ) -> "TickerInfoInductive":
+    ) -> "IndexMetaInductive":
         """Validate and convert Ticker.info dict."""
         if info is None:
             return cls(symbol=symbol)

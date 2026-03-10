@@ -1,7 +1,7 @@
-"""CoIOServePhase [CoIO] — Serve phase observation executor.
+"""CoIOProjectPhase [CoIO] — Serve phase observation executor.
 
 Coalgebraic observer: probes the last serve artifact from StoreMonad,
-checks it against CoServeHom specification, populates CoServeProductOutput.
+checks it against CoProjectHom specification, populates CoProjectProductOutput.
 """
 
 import json
@@ -16,19 +16,19 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from CoTypes.CoHom.Serve.default import CoServeHom
-from CoTypes.CoProduct.Serve.Output.default import CoServeProductOutput
-from CoTypes.CoProduct.Serve.Meta.default import CoServeProductMeta
+from CoTypes.CoHom.Project.default import CoProjectHom
+from CoTypes.CoProduct.Project.Output.default import CoProjectProductOutput
+from CoTypes.CoProduct.Project.Meta.default import CoProjectProductMeta
 from CoTypes.Comonad.Trace.default import TraceComonad, CoPhaseId
 from Types.Monad.Store.default import StoreMonad
 from Types.Monad.Error.default import PhaseId
 
 
-def run(cfg: CoServeHom, store: StoreMonad) -> CoServeProductOutput:
+def run(cfg: CoProjectHom, store: StoreMonad) -> CoProjectProductOutput:
     """Observe the last serve artifact and populate observation result."""
     observer_id = uuid.uuid4().hex[:8]
     now = datetime.now(timezone.utc).isoformat()
-    meta = CoServeProductMeta(
+    meta = CoProjectProductMeta(
         trace=TraceComonad(
             observer_id=observer_id,
             cursor="",
@@ -46,7 +46,7 @@ def run(cfg: CoServeHom, store: StoreMonad) -> CoServeProductOutput:
 
     # Probe StoreMonad for the latest serve artifact
     try:
-        row = store.latest(PhaseId.serve.value, "serve")
+        row = store.latest(PhaseId.project.value, "project")
         meta.artifact_found = True
         meta.trace.events_seen = 1
         meta.trace.cursor = row.blob_path
@@ -57,7 +57,7 @@ def run(cfg: CoServeHom, store: StoreMonad) -> CoServeProductOutput:
     if meta.artifact_found:
         # Check audit directory for JSONL files
         try:
-            audit_dir = Path(store.blob_dir) / store.run_id
+            audit_dir = Path(store.blob_dir) / store.session_id
             if audit_dir.exists():
                 audit_files = list(audit_dir.glob("serve_audit*"))
                 audit_present = len(audit_files) > 0
@@ -73,7 +73,7 @@ def run(cfg: CoServeHom, store: StoreMonad) -> CoServeProductOutput:
         except (json.JSONDecodeError, TypeError):
             meta.schema_valid = False
 
-    return CoServeProductOutput(
+    return CoProjectProductOutput(
         observer_id=observer_id,
         audit_present=audit_present,
         orders_logged=orders_logged,
@@ -83,16 +83,16 @@ def run(cfg: CoServeHom, store: StoreMonad) -> CoServeProductOutput:
 
 
 class Settings(BaseSettings):
-    """CoIOServePhase Settings — Serve observer entrypoint."""
+    """CoIOProjectPhase Settings — Serve observer entrypoint."""
 
     model_config = SettingsConfigDict(
-        json_file="CoTypes/CoIO/CoIOServePhase/default.json",
+        json_file="CoTypes/CoIO/CoIOProjectPhase/default.json",
         json_file_encoding="utf-8",
         cli_parse_args=True,
-        cli_prog_name="ana-serve",
+        cli_prog_name="ana-project",
     )
-    serve: CoServeHom = Field(
-        default_factory=CoServeHom,
+    project: CoProjectHom = Field(
+        default_factory=CoProjectHom,
         description="Serve observer config",
     )
     store: StoreMonad = Field(
@@ -110,14 +110,17 @@ class Settings(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         from pydantic_settings import JsonConfigSettingsSource, CliSettingsSource
+        from pathlib import Path as _P
 
-        return (
-            CliSettingsSource(settings_cls, cli_parse_args=True),
-            JsonConfigSettingsSource(settings_cls),
-        )
+        sources = [CliSettingsSource(settings_cls, cli_parse_args=True)]
+        _local = _P(__file__).parent / "local.json"
+        if _local.exists():
+            sources.append(JsonConfigSettingsSource(settings_cls, json_file=_local))
+        sources.append(JsonConfigSettingsSource(settings_cls))
+        return tuple(sources)
 
 
 if __name__ == "__main__":
     s = Settings()
-    result = run(s.serve, s.store)
+    result = run(s.project, s.store)
     print(result.model_dump_json(indent=2))

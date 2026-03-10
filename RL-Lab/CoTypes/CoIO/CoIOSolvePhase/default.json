@@ -1,10 +1,10 @@
 {
-  "train": {},
+  "solve": {},
   "store": {
     "db_url": "sqlite:///store/.rl.db",
     "blob_dir": "store/blobs",
-    "run_id": "00000000",
-    "phase": "train",
+    "session_id": "00000000",
+    "phase": "solve",
     "docs_dir": "store/docs"
   }
 }

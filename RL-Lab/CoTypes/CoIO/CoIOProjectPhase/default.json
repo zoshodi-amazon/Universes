@@ -1,10 +1,10 @@
 {
-  "serve": {},
+  "project": {},
   "store": {
     "db_url": "sqlite:///store/.rl.db",
     "blob_dir": "store/blobs",
-    "run_id": "00000000",
-    "phase": "serve",
+    "session_id": "00000000",
+    "phase": "project",
     "docs_dir": "store/docs"
   }
 }

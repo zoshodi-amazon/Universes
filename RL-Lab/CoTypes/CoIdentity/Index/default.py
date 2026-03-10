@@ -1,14 +1,14 @@
-"""CoAssetIdentity [CoIdentity] — Asset introspection witness (3 fields). All bounded.
+"""CoIndexIdentity [CoIdentity] — Asset introspection witness (3 fields). All bounded.
 
-BEC-dual — the coterminal dual of AssetIdentity. Witnesses whether the
-asset identified by AssetIdentity is reachable, valid, and tradeable.
+BEC-dual — the coterminal dual of IndexIdentity. Witnesses whether the
+asset identified by IndexIdentity is reachable, valid, and tradeable.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoAssetIdentity(BaseModel):
-    """CoAssetIdentity [CoIdentity] — Asset reachability and validity witness (3 fields)."""
+class CoIndexIdentity(BaseModel):
+    """CoIndexIdentity [CoIdentity] — Asset reachability and validity witness (3 fields)."""
 
     ticker_valid: bool = Field(
         default=False,

@@ -1,6 +1,6 @@
 {
   "asset": {
-    "asset_type": "stock",
+    "index_class": "stock",
     "io_ticker": "AAPL",
     "interval_min": 5,
     "trade_start_min": 570,
@@ -15,12 +15,12 @@
   "store": {
     "db_url": "sqlite:///store/.rl.db",
     "blob_dir": "store/blobs",
-    "run_id": "00000000",
+    "session_id": "00000000",
     "phase": "ingest",
     "docs_dir": "store/docs"
   },
   "ingest": {
     "period": "60d",
-    "warmup_bars": 28
+    "warmup_frames": 28
   }
 }

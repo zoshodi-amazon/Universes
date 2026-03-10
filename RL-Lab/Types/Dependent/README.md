@@ -41,134 +41,130 @@ def Valid{Name}Dependent := { x : {Name}Dependent // {Name}Dependent.valid x }
 
 | Type | Fields | Cross-Field Constraint | File | Status |
 |------|:------:|----------------------|------|--------|
-| `RiskDependent` | 3 | `stop_loss_pct > max_drawdown_pct` (MISSING) | `Types/Dependent/Risk/default.py` | PARTIAL |
-| `EnvDependent` | 6 | `0.0 in positions` (MISSING) | `Types/Dependent/Env/default.py` | PARTIAL |
-| `LiquidityDependent` | 7 | None needed (fields independent) | `Types/Dependent/Liquidity/default.py` | IMPLEMENTED |
-| `AlarmDependent` | 6 | None needed (fields independent) | `Types/Dependent/Alarm/default.py` | IMPLEMENTED |
-| `OptimizeDependent` | 7 | `lr_min < lr_max`, `timesteps_min < timesteps_max` | `Types/Dependent/Optimize/default.py` | IMPLEMENTED |
+| `ConstraintDependent` | 3 | `stop_loss_pct > max_drawdown_pct` (MISSING) | `Types/Dependent/Constraint/default.py` | PARTIAL |
+| `ExecutionDependent` | 6 | `0.0 in position_space` (MISSING) | `Types/Dependent/Execution/default.py` | PARTIAL |
+| `FilterDependent` | 7 | None needed (fields independent) | `Types/Dependent/Filter/default.py` | IMPLEMENTED |
+| `ThresholdDependent` | 6 | None needed (fields independent) | `Types/Dependent/Threshold/default.py` | IMPLEMENTED |
+| `SearchDependent` | 7 | `lr_min < lr_max`, `budget_min < budget_max` | `Types/Dependent/Search/default.py` | IMPLEMENTED |
 
-### RiskDependent (3 fields)
+### ConstraintDependent (3 fields)
 
 ```lean
-structure RiskDependent where
+structure ConstraintDependent where
   stopLossPct     : Float := -2.0    -- bounded [-100, 0]
   profitThreshPct : Float := 0.5     -- bounded [0, 100]
   maxDrawdownPct  : Float := -5.0    -- bounded [-100, 0]
   deriving Repr, Lean.ToJson, Lean.FromJson
 
 /-- Fiber closure: stop-loss must be less severe than circuit breaker. -/
-def RiskDependent.valid (r : RiskDependent) : Prop :=
+def ConstraintDependent.valid (r : ConstraintDependent) : Prop :=
   r.stopLossPct > r.maxDrawdownPct
 
-def ValidRiskDependent := { r : RiskDependent // RiskDependent.valid r }
+def ValidConstraintDependent := { r : ConstraintDependent // ConstraintDependent.valid r }
 ```
 
 **Refactor items:**
 - [ ] Add `model_validator` enforcing `stop_loss_pct > max_drawdown_pct`
 
-### EnvDependent (6 fields)
+### ExecutionDependent (6 fields)
 
 ```lean
-structure EnvDependent where
-  initialValue  : Float      := 10000.0  -- bounded [100, 1e8]
-  feesPct       : Float      := 0.1      -- bounded [0, 10]
-  borrowRatePct : Float      := 0.0      -- bounded [0, 10]
-  positions     : Array Float := #[-1.0, 0.0, 1.0]  -- min 2, max 10
-  brokerMode    : BrokerMode := .sim     -- EXTRACT to Inductive/
-  ioBrokerKey   : String     := "sim"    -- bounded [1, 256]
+structure ExecutionDependent where
+  initialValue   : Float      := 10000.0  -- bounded [100, 1e8]
+  feesPct        : Float      := 0.1      -- bounded [0, 10]
+  borrowRatePct  : Float      := 0.0      -- bounded [0, 10]
+  positionSpace  : Array Float := #[-1.0, 0.0, 1.0]  -- min 2, max 10
+  executionMode  : ExecutionMode := .sim   -- EXTRACT to Inductive/
+  ioExecutionKey : String     := "sim"     -- bounded [1, 256]
   deriving Repr, Lean.ToJson, Lean.FromJson
 
 /-- Fiber closure: flat position must be available. -/
-def EnvDependent.valid (e : EnvDependent) : Prop :=
-  0.0 ∈ e.positions
+def ExecutionDependent.valid (e : ExecutionDependent) : Prop :=
+  0.0 ∈ e.positionSpace
 
-def ValidEnvDependent := { e : EnvDependent // EnvDependent.valid e }
+def ValidExecutionDependent := { e : ExecutionDependent // ExecutionDependent.valid e }
 ```
 
 **Refactor items:**
-- [ ] Extract `BrokerMode` to `Types/Inductive/BrokerMode/default.py`
-- [ ] Add `model_validator` enforcing `0.0 in positions`
+- [ ] Extract `ExecutionMode` to `Types/Inductive/ExecutionMode/default.py`
+- [ ] Add `model_validator` enforcing `0.0 in position_space`
 
-### LiquidityDependent (7 fields)
+### FilterDependent (7 fields)
 
 ```lean
-structure LiquidityDependent where
-  minVolumePercentile : Float := 30.0   -- bounded [0, 100]
-  minPricePercentile  : Float := 5.0    -- bounded [0, 100]
-  maxSpreadPct        : Float := 10.0   -- bounded [0, 100]
-  minTurnoverPct      : Float := 0.1    -- bounded [0, 100]
-  requireShortable    : Bool  := false
-  enabled             : Bool  := true
-  minUniverseSize     : Nat   := 5      -- bounded [3, 1000]
+structure FilterDependent where
+  volumeQuantile    : Float := 30.0   -- bounded [0, 100]
+  priceQuantile     : Float := 5.0    -- bounded [0, 100]
+  volatilityBound   : Float := 10.0   -- bounded [0, 100]
+  turnoverQuantile  : Float := 0.1    -- bounded [0, 100]
+  requireInvertible : Bool  := false
+  enabled           : Bool  := true
+  minCatalogSize    : Nat   := 5      -- bounded [3, 1000]
   deriving Repr, Lean.ToJson, Lean.FromJson
 
 -- No cross-field constraint needed — all fields are independent axes.
 ```
 
-### AlarmDependent (6 fields)
+### ThresholdDependent (6 fields)
 
 ```lean
-structure AlarmDependent where
-  minQualifyingTickers : Nat   := 3      -- bounded [1, 1000]
+structure ThresholdDependent where
+  minQualifyingIndices : Nat   := 3      -- bounded [1, 1000]
   maxPhaseDurationS    : Float := 300.0  -- bounded [1, 86400]
-  maxApiFailures       : Nat   := 5      -- bounded [0, 100]
+  maxIoFailures        : Nat   := 5      -- bounded [0, 100]
   maxErrorRatePct      : Float := 10.0   -- bounded [0, 100]
   notifyOnCritical     : Bool  := true
   enabled              : Bool  := true
   deriving Repr, Lean.ToJson, Lean.FromJson
 ```
 
-### OptimizeDependent (7 fields)
+### SearchDependent (7 fields)
 
 ```lean
-structure OptimizeDependent where
-  nTrials              : Nat           := 20       -- bounded [1, 10000]
-  nParallel            : Nat           := 1        -- bounded [1, 16]
-  objectiveMetric      : ObjectiveMetric := .winRatePct  -- EXTRACT to Inductive/
-  searchSpaceLrMin     : Float         := 1e-5     -- bounded [1e-8, 1.0]
-  searchSpaceLrMax     : Float         := 1e-2     -- bounded [1e-8, 1.0]
-  searchSpaceTimestepsMin : Nat        := 10000    -- bounded [100, 100M]
-  searchSpaceTimestepsMax : Nat        := 200000   -- bounded [100, 100M]
+structure SearchDependent where
+  budget               : Nat              := 20       -- bounded [1, 10000]
+  parallelism          : Nat              := 1        -- bounded [1, 16]
+  objectiveMetric      : ObjectiveInductive := .winRatePct  -- EXTRACT to Inductive/
+  searchSpaceLrMin     : Float            := 1e-5     -- bounded [1e-8, 1.0]
+  searchSpaceLrMax     : Float            := 1e-2     -- bounded [1e-8, 1.0]
+  searchSpaceBudgetMin : Nat              := 10000    -- bounded [100, 100M]
+  searchSpaceBudgetMax : Nat              := 200000   -- bounded [100, 100M]
   deriving Repr, Lean.ToJson, Lean.FromJson
 
 /-- Fiber closure: search range lower bounds must be strictly less than upper bounds. -/
-def OptimizeDependent.valid (o : OptimizeDependent) : Prop :=
+def SearchDependent.valid (o : SearchDependent) : Prop :=
   o.searchSpaceLrMin < o.searchSpaceLrMax ∧
-  o.searchSpaceTimestepsMin < o.searchSpaceTimestepsMax
+  o.searchSpaceBudgetMin < o.searchSpaceBudgetMax
 
-def ValidOptimizeDependent := { o : OptimizeDependent // OptimizeDependent.valid o }
+def ValidSearchDependent := { o : SearchDependent // SearchDependent.valid o }
 ```
 
 **Refactor items:**
-- [ ] Extract `ObjectiveMetric` to `Types/Inductive/ObjectiveMetric/default.py`
+- [ ] Extract `ObjectiveInductive` to `Types/Inductive/ObjectiveInductive/default.py`
 
 ## Domain Terms Projecting to Stratum 3
 
 | Term | Area | Definition | Type Mapping | Other Strata |
 |------|------|-----------|--------------|-------------|
-| Stop-Loss | Risk Mgmt | Per-step loss threshold | `RiskDependent.stop_loss_pct` | 7 (IOEvalPhase, IOServePhase) |
-| Take-Profit | Risk Mgmt | Per-step gain threshold | `RiskDependent.profit_threshold_pct` | 7 (IOEvalPhase, IOServePhase) |
-| Drawdown Limit | Risk Mgmt | Peak-to-trough circuit breaker | `RiskDependent.max_drawdown_pct` | 7 (IOServePhase) |
-| Initial Capital | Environment | Starting portfolio value | `EnvDependent.initial_value` | 1 (per-run), 7 (IO) |
-| Trading Fee | Environment | Per-trade friction cost | `EnvDependent.fees_pct` | 7 (TradingEnv) |
-| Borrow Rate | Environment | Short position cost | `EnvDependent.borrow_rate_pct` | 7 (TradingEnv) |
-| Position Set | Environment | Allowed position bins | `EnvDependent.positions` | 7 (TradingEnv action space) |
-| Broker Mode | Execution | Sim/paper/live toggle | `EnvDependent.broker_mode` | 2 (BrokerMode ADT), 7 (IOServePhase) |
-| Liquidity Filter | Market Data | Volume/price/turnover gates | `LiquidityDependent` | 7 (IODiscoveryPhase) |
-| Alarm Threshold | Observability | When to fire alerts | `AlarmDependent` | 6 (AlarmMonad), 7 (IODiscoveryPhase) |
-| Search Space | Optimization | HPO parameter ranges | `OptimizeDependent` | 7 (IOMainPhase + Optuna) |
-| Slippage Params | Microstructure | Market impact coefficients | NOT IMPLEMENTED | Future: `SlippageDependent` |
-| Risk Budget | Risk Mgmt | Total risk allocation | NOT IMPLEMENTED | Future: `RiskDependent` extension |
-| Position Limit | Position Mgmt | Max single position size | NOT IMPLEMENTED | Future: `RiskDependent` or new type |
-| Daily Loss Limit | Risk Mgmt | Max loss per day before halt | NOT IMPLEMENTED | Future: `RiskDependent` extension |
+| Stop-Loss | Constraint | Per-step loss threshold | `ConstraintDependent.stop_loss_pct` | 7 (IOEvalPhase, IOProjectPhase) |
+| Take-Profit | Constraint | Per-step gain threshold | `ConstraintDependent.profit_threshold_pct` | 7 (IOEvalPhase, IOProjectPhase) |
+| Drawdown Limit | Constraint | Peak-to-trough circuit breaker | `ConstraintDependent.max_drawdown_pct` | 7 (IOProjectPhase) |
+| Initial Capital | Environment | Starting portfolio value | `ExecutionDependent.initial_value` | 1 (per-session), 7 (IO) |
+| Trading Fee | Environment | Per-trade friction cost | `ExecutionDependent.fees_pct` | 7 (TradingEnv) |
+| Borrow Rate | Environment | Short position cost | `ExecutionDependent.borrow_rate_pct` | 7 (TradingEnv) |
+| Position Space | Environment | Allowed position bins | `ExecutionDependent.position_space` | 7 (TradingEnv action space) |
+| Execution Mode | Execution | Sim/paper/live toggle | `ExecutionDependent.execution_mode` | 2 (ExecutionMode ADT), 7 (IOProjectPhase) |
+| Filter | Market Data | Volume/price/turnover gates | `FilterDependent` | 7 (IODiscoveryPhase) |
+| Signal Threshold | Observability | When to fire signals | `ThresholdDependent` | 6 (SignalMonad), 7 (IODiscoveryPhase) |
+| Search Space | Search | HPO parameter ranges | `SearchDependent` | 7 (IOComposePhase + Optuna) |
 
-## Validation Checklist (ana-main)
+## Validation Checklist (ana-compose)
 
 - [ ] Every numeric field has both `ge` and `le` bounds
 - [ ] All cross-field constraints have `model_validator` implementations
-- [ ] `RiskDependent`: `stop_loss_pct > max_drawdown_pct`
-- [ ] `EnvDependent`: `0.0 in positions`
-- [ ] `OptimizeDependent`: `lr_min < lr_max` AND `timesteps_min < timesteps_max` (already done)
+- [ ] `ConstraintDependent`: `stop_loss_pct > max_drawdown_pct`
+- [ ] `ExecutionDependent`: `0.0 in position_space`
+- [ ] `SearchDependent`: `lr_min < lr_max` AND `budget_min < budget_max` (already done)
 - [ ] All Inductive-typed fields import from `Types/Inductive/`, not inline
 - [ ] `default.json` roundtrip: `fromJson(toJson(default)) == default`
 - [ ] <=7 fields per type

@@ -1,6 +1,6 @@
-"""CoMainHom [CoHom] — Main phase observation spec (7 fields). All bounded.
+"""CoComposeHom [CoHom] — Main phase observation spec (7 fields). All bounded.
 
-Liquid-dual — observation specification parallel to MainHom.
+Liquid-dual — observation specification parallel to ComposeHom.
 Main is the composite phase (QGP). Its observer absorbs cross-cutting observations:
 - Pipeline artifact probing (original)
 - Type system structural validation (flattened from CoIOValidatePhase)
@@ -10,8 +10,8 @@ Main is the composite phase (QGP). Its observer absorbs cross-cutting observatio
 from pydantic import BaseModel, Field
 
 
-class CoMainHom(BaseModel):
-    """CoMainHom [CoHom] — What to verify about a main pipeline run (7 fields)."""
+class CoComposeHom(BaseModel):
+    """CoComposeHom [CoHom] — What to verify about a main pipeline run (7 fields)."""
 
     all_phases_completed: bool = Field(
         default=True,
@@ -22,7 +22,7 @@ class CoMainHom(BaseModel):
     )
     result_persisted: bool = Field(
         default=True,
-        description="Check that final MainProductOutput was persisted to StoreMonad",
+        description="Check that final ComposeProductOutput was persisted to StoreMonad",
     )
     validate_imports: bool = Field(
         default=True,

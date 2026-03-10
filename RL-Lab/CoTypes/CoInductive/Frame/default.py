@@ -1,13 +1,13 @@
-"""CoOHLCVInductive [CoInductive] — OHLCV schema elimination witness (4 fields). All bounded.
+"""CoFrameInductive [CoInductive] — OHLCV schema elimination witness (4 fields). All bounded.
 
-Crystalline-dual — validates that a DataFrame conforms to the OHLCVInductive schema.
+Crystalline-dual — validates that a DataFrame conforms to the FrameInductive schema.
 """
 
 from pydantic import BaseModel, Field
 
 
-class CoOHLCVInductive(BaseModel):
-    """CoOHLCVInductive [CoInductive] — OHLCV DataFrame conformance witness (4 fields)."""
+class CoFrameInductive(BaseModel):
+    """CoFrameInductive [CoInductive] — OHLCV DataFrame conformance witness (4 fields)."""
 
     columns_present: bool = Field(
         default=False,

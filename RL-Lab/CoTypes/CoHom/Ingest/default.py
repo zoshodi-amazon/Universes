@@ -15,7 +15,7 @@ class CoIngestHom(BaseModel):
     )
     schema_validated: bool = Field(
         default=True,
-        description="Check that downloaded data passed OHLCVInductive.from_dataframe()",
+        description="Check that downloaded data passed FrameInductive.from_dataframe()",
     )
     blob_persisted: bool = Field(
         default=True, description="Check that the ingest blob was written to StoreMonad"

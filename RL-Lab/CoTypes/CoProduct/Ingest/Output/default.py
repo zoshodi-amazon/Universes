@@ -17,7 +17,7 @@ class CoIngestProductOutput(BaseModel):
         default=False, description="Whether ingest blob exists on disk"
     )
     schema_valid: bool = Field(
-        default=False, description="Whether blob deserializes to valid OHLCVInductive"
+        default=False, description="Whether blob deserializes to valid FrameInductive"
     )
     bars_sufficient: bool = Field(
         default=False, description="Whether n_bars meets minimum threshold"
