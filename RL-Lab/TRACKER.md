@@ -5,6 +5,331 @@ Most recent entries first.
 
 ---
 
+## 2026-03-09 — Session 6: Taxonomic Purification Implementation Plan
+
+### What happened
+- Explored full codebase: 93 source files, ~150 `__init__.py`, 14 JSON configs, justfile, pyproject.toml
+- Confirmed all Session 5 documentation is in place (AGENTS.md, DICTIONARY.md, TEMPLATE.md, README.md, 14 per-stratum READMEs)
+- Confirmed code still uses old (domain jargon) names — docs and code are out of sync
+- Produced the stratum-by-stratum implementation plan below for the next coding session
+
+### Implementation Plan (T6 — Code Rename)
+
+The coding session will execute **bottom-up, stratum by stratum**. Each stratum involves: (1) `git mv` directory renames, (2) class/field/method renames inside files, (3) `__init__.py` export updates, (4) cross-stratum import path updates. After all strata, JSON configs, justfile, and pyproject.toml are updated. Finally `dry-python/returns` is integrated.
+
+#### T6.1 — Stratum 1: Identity (4 source files)
+
+| Action | Old | New |
+|--------|-----|-----|
+| Dir rename (Types) | `Types/Identity/Asset/` | `Types/Identity/Index/` |
+| Dir rename (Types) | `Types/Identity/Run/` | `Types/Identity/Session/` |
+| Dir rename (CoTypes) | `CoTypes/CoIdentity/Asset/` | `CoTypes/CoIdentity/Index/` |
+| Dir rename (CoTypes) | `CoTypes/CoIdentity/Run/` | `CoTypes/CoIdentity/Session/` |
+| Class rename | `AssetIdentity` | `IndexIdentity` |
+| Class rename | `AssetType` | `IndexClass` |
+| Class rename | `HolidayCalendar` | `TemporalMask` |
+| Class rename | `RunIdentity` | `SessionIdentity` |
+| Class rename | `CoAssetIdentity` | `CoIndexIdentity` |
+| Class rename | `CoRunIdentity` | `CoSessionIdentity` |
+| Field rename | `asset_type` | `index_class` |
+| Field rename | `run_id` | `session_id` |
+| Field rename | `run_ts` | `session_ts` |
+| Field rename | `name` | `label` |
+
+#### T6.2 — Stratum 2: Inductive (14 source files)
+
+| Action | Old | New |
+|--------|-----|-----|
+| Dir rename (Types) | `Inductive/Algo/` | `Inductive/Solver/` |
+| Dir rename (Types) | `Inductive/AlarmSeverity/` | `Inductive/Severity/` |
+| Dir rename (Types) | `Inductive/MetricKind/` | `Inductive/Measure/` |
+| Dir rename (Types) | `Inductive/OHLCV/` | `Inductive/Frame/` |
+| Dir rename (Types) | `Inductive/Screener/` | `Inductive/Catalog/` |
+| Dir rename (Types) | `Inductive/ScreenerQuote/` | `Inductive/CatalogEntry/` |
+| Dir rename (Types) | `Inductive/TickerInfo/` | `Inductive/IndexMeta/` |
+| Dir rename (CoTypes) | `CoInductive/Algo/` | `CoInductive/Solver/` |
+| Dir rename (CoTypes) | `CoInductive/OHLCV/` | `CoInductive/Frame/` |
+| Dir rename (CoTypes) | `CoInductive/Screener/` | `CoInductive/Catalog/` |
+| Dir rename (CoTypes) | `CoInductive/ScreenerQuote/` | `CoInductive/CatalogEntry/` |
+| Dir rename (CoTypes) | `CoInductive/TickerInfo/` | `CoInductive/IndexMeta/` |
+| Class rename | `AlgoIdentity` | `SolverInductive` |
+| Class rename | `AlarmSeverity` | `SeverityInductive` |
+| Class rename | `MetricKind` | `MeasureInductive` |
+| Class rename | `OHLCVInductive` | `FrameInductive` |
+| Class rename | `ScreenerInductive` | `CatalogInductive` |
+| Class rename | `ScreenerQuoteInductive` | `CatalogEntryInductive` |
+| Class rename | `TickerInfoInductive` | `IndexMetaInductive` |
+| Method rename | `from_dataframe` | `from_io_frame` |
+| Method rename | `to_dataframe` | `to_io_frame` |
+| Method rename | `from_response` | `from_io_response` |
+| Method rename | `get_tickers` | `indices` |
+| Field rename | `quotes` | `entries` |
+| Field rename | `symbol` (CatalogEntry) | `index_symbol` |
+| Field rename | `average_volume` | `mean_volume` |
+| Field rename | `regular_market_price` | `spot_price` |
+| Field rename | `day_high` | `session_high` |
+| Field rename | `day_low` | `session_low` |
+| Field rename | `market_cap` | `capitalization` |
+
+Note: CoInductive has 5 subdirs (no AlarmSeverity or MetricKind duals).
+
+#### T6.3 — Stratum 3: Dependent (10 source files)
+
+| Action | Old | New |
+|--------|-----|-----|
+| Dir rename (Types) | `Dependent/Env/` | `Dependent/Execution/` |
+| Dir rename (Types) | `Dependent/Risk/` | `Dependent/Constraint/` |
+| Dir rename (Types) | `Dependent/Liquidity/` | `Dependent/Filter/` |
+| Dir rename (Types) | `Dependent/Alarm/` | `Dependent/Threshold/` |
+| Dir rename (Types) | `Dependent/Optimize/` | `Dependent/Search/` |
+| Dir rename (CoTypes) | `CoDependent/Env/` | `CoDependent/Execution/` |
+| Dir rename (CoTypes) | `CoDependent/Risk/` | `CoDependent/Constraint/` |
+| Dir rename (CoTypes) | `CoDependent/Liquidity/` | `CoDependent/Filter/` |
+| Dir rename (CoTypes) | `CoDependent/Alarm/` | `CoDependent/Threshold/` |
+| Dir rename (CoTypes) | `CoDependent/Optimize/` | `CoDependent/Search/` |
+| Class rename | `EnvDependent` | `ExecutionDependent` |
+| Class rename | `BrokerMode` | `ExecutionMode` |
+| Class rename | `RiskDependent` | `ConstraintDependent` |
+| Class rename | `LiquidityDependent` | `FilterDependent` |
+| Class rename | `AlarmDependent` | `ThresholdDependent` |
+| Class rename | `OptimizeDependent` | `SearchDependent` |
+| Field rename | `io_broker_key` | `io_execution_key` |
+| Field rename | `positions` | `position_space` |
+| Field rename | `min_volume_percentile` | `volume_quantile` |
+| Field rename | `min_price_percentile` | `price_quantile` |
+| Field rename | `max_spread_pct` | `volatility_bound` |
+| Field rename | `min_turnover_pct` | `turnover_quantile` |
+| Field rename | `require_shortable` | `require_invertible` |
+| Field rename | `min_universe_size` | `min_catalog_size` |
+| Field rename | `min_qualifying_tickers` | `min_qualifying_indices` |
+| Field rename | `max_api_failures` | `max_io_failures` |
+| Field rename | `n_trials` | `budget` |
+| Field rename | `n_parallel` (Optimize) | `parallelism` |
+
+#### T6.4 — Stratum 4: Hom (8 source files — 4 renamed phases)
+
+| Action | Old | New |
+|--------|-----|-----|
+| Dir rename (Types) | `Hom/Feature/` | `Hom/Transform/` |
+| Dir rename (Types) | `Hom/Train/` | `Hom/Solve/` |
+| Dir rename (Types) | `Hom/Serve/` | `Hom/Project/` |
+| Dir rename (Types) | `Hom/Main/` | `Hom/Compose/` |
+| Dir rename (CoTypes) | `CoHom/Feature/` | `CoHom/Transform/` |
+| Dir rename (CoTypes) | `CoHom/Train/` | `CoHom/Solve/` |
+| Dir rename (CoTypes) | `CoHom/Serve/` | `CoHom/Project/` |
+| Dir rename (CoTypes) | `CoHom/Main/` | `CoHom/Compose/` |
+| Class rename | `FeatureHom` | `TransformHom` |
+| Class rename | `TrainHom` | `SolveHom` |
+| Class rename | `ServeHom` | `ProjectHom` |
+| Class rename | `MainHom` | `ComposeHom` |
+| Class rename | `WaveletName` | `BasisInductive` |
+| Field rename | `wavelet` | `basis` |
+| Field rename | `adx_period` | `trend_period` |
+| Field rename | `supertrend_period` | `envelope_period` |
+| Field rename | `supertrend_multiplier` | `envelope_multiplier` |
+| Field rename | `algo` | `solver` |
+| Field rename | `n_envs` | `n_parallel` |
+| Field rename | `total_timesteps` | `budget` |
+| Field rename | `episode_duration_min` | `horizon_min` |
+| Field rename | `normalize_obs` | `normalize_input` |
+| Field rename | `normalize_reward` | `normalize_signal` |
+| Field rename | `train_run_id` | `solve_session_id` |
+| Field rename | `io_algo` | `io_solver` |
+| Field rename | `poll_interval_s` | `sample_interval_s` |
+| Field rename | `max_bars` | `max_frames` |
+| Field rename | `max_model_age_min` | `max_artifact_age_min` |
+| Field rename | `forward_steps_min` | `horizon_min` |
+| Field rename | `io_universe` | `io_indices` |
+| Field rename | `screener` | `catalog_source` |
+| Field rename | `min_adx` | `min_trend_score` |
+| Field rename | `min_bars` | `min_frame_length` |
+| Field rename | `adx_lookback_period` | `trend_lookback` |
+| Field rename | `warmup_bars` | `warmup_frames` |
+| Field rename | `stride_min` | `stride_min` (unchanged) |
+| Field rename | `train_split_pct` | `solve_split_pct` |
+| Field rename | `optimize` | `search` |
+| Field rename | `optimize_config` | `search_fiber` |
+
+#### T6.5 — Stratum 5: Product (16 source files — 4 renamed phase dirs × Output+Meta)
+
+| Action | Old | New |
+|--------|-----|-----|
+| Dir rename (Types) | `Product/Feature/` | `Product/Transform/` |
+| Dir rename (Types) | `Product/Train/` | `Product/Solve/` |
+| Dir rename (Types) | `Product/Serve/` | `Product/Project/` |
+| Dir rename (Types) | `Product/Main/` | `Product/Compose/` |
+| Dir rename (CoTypes) | `CoProduct/Feature/` | `CoProduct/Transform/` |
+| Dir rename (CoTypes) | `CoProduct/Train/` | `CoProduct/Solve/` |
+| Dir rename (CoTypes) | `CoProduct/Serve/` | `CoProduct/Project/` |
+| Dir rename (CoTypes) | `CoProduct/Main/` | `CoProduct/Compose/` |
+| Class rename | `FeatureProductOutput` | `TransformProductOutput` |
+| Class rename | `FeatureProductMeta` | `TransformProductMeta` |
+| Class rename | `TrainProductOutput` | `SolveProductOutput` |
+| Class rename | `TrainProductMeta` | `SolveProductMeta` |
+| Class rename | `ServeProductOutput` | `ProjectProductOutput` |
+| Class rename | `ServeProductMeta` | `ProjectProductMeta` |
+| Class rename | `MainProductOutput` | `ComposeProductOutput` |
+| Class rename | `MainProductMeta` | `ComposeProductMeta` |
+| Class rename | `MainStatus` | `ComposeStatus` |
+| Class rename | `ServeStatus` | `ProjectStatus` |
+
+Note: Discovery, Ingest, Eval phase dirs and class names are unchanged.
+
+#### T6.6 — Stratum 6: Monad (8 source files)
+
+| Action | Old | New |
+|--------|-----|-----|
+| Dir rename (Types) | `Monad/Alarm/` | `Monad/Signal/` |
+| Dir rename (Types) | `Monad/Metric/` | `Monad/Measure/` |
+| Dir rename (Types) | `Monad/Observability/` | `Monad/Effect/` |
+| Dir rename (CoTypes) | `Comonad/Alarm/` | `Comonad/Signal/` |
+| Dir rename (CoTypes) | `Comonad/Metric/` | `Comonad/Measure/` |
+| Class rename | `AlarmMonad` | `SignalMonad` |
+| Class rename | `MetricMonad` | `MeasureMonad` |
+| Class rename | `ObservabilityMonad` | `EffectMonad` |
+| Class rename | `ArtifactRow` | `ArtifactMonad` |
+| Class rename | `CoAlarmComonad` | `CoSignalComonad` |
+| Class rename | `CoMetricComonad` | `CoMeasureComonad` |
+| Enum variant | `PhaseId.feature` | `PhaseId.transform` |
+| Enum variant | `PhaseId.train` | `PhaseId.solve` |
+| Enum variant | `PhaseId.serve` | `PhaseId.project` |
+| Enum variant | `PhaseId.pipeline` | `PhaseId.compose` |
+| Enum variant | `PhaseId.optimize` | `PhaseId.search` |
+| Enum variant | `CoPhaseId` (Trace) | Mirror same renames |
+
+Note: `Monad/Artifact/` dir name unchanged (class ArtifactRow→ArtifactMonad). `Monad/Error/`, `Monad/Store/` unchanged. `Comonad/Error/`, `Comonad/Store/`, `Comonad/Trace/` unchanged.
+
+#### T6.7 — Stratum 7: IO + CoIO (8 source files + 8 JSON configs)
+
+| Action | Old | New |
+|--------|-----|-----|
+| Dir rename (Types) | `IO/IOFeaturePhase/` | `IO/IOTransformPhase/` |
+| Dir rename (Types) | `IO/IOTrainPhase/` | `IO/IOSolvePhase/` |
+| Dir rename (Types) | `IO/IOServePhase/` | `IO/IOProjectPhase/` |
+| Dir rename (Types) | `IO/IOMainPhase/` | `IO/IOComposePhase/` |
+| Dir rename (CoTypes) | `CoIO/CoIOFeaturePhase/` | `CoIO/CoIOTransformPhase/` |
+| Dir rename (CoTypes) | `CoIO/CoIOTrainPhase/` | `CoIO/CoIOSolvePhase/` |
+| Dir rename (CoTypes) | `CoIO/CoIOServePhase/` | `CoIO/CoIOProjectPhase/` |
+| Dir rename (CoTypes) | `CoIO/CoIOMainPhase/` | `CoIO/CoIOComposePhase/` |
+
+Inside each executor/observer: update all import paths, class references, string literals referencing old names. Update all `default.json` field names to match new Hom/Dependent field names.
+
+#### T6.8 — Cross-Cutting Updates
+
+| Item | Action |
+|------|--------|
+| All `__init__.py` | Update import paths and `__all__` exports (if any) |
+| All `default.json` (14 files) | Rename keys to match new field names |
+| `justfile` | Rename commands: `cata-feature`→`cata-transform`, `cata-train`→`cata-solve`, `cata-serve`→`cata-project`, `hylo-main`→`hylo-compose`, `ana-feature`→`ana-transform`, `ana-train`→`ana-solve`, `ana-serve`→`ana-project`, `ana-main`→`ana-compose`. Update module paths in commands. |
+| `pyproject.toml` | Version bump 0.3.0→0.4.0, add `dry-python/returns` dependency |
+
+#### T6.9 — dry-python/returns Integration
+
+| Item | Action |
+|------|--------|
+| Add dependency | `returns>=0.23` in `pyproject.toml` |
+| IO executors (7) | Wrap `run()` return in `IOResult[T, ErrorMonad]` |
+| StoreMonad lookups | Return `Maybe[ArtifactMonad]` |
+| Pure fallible | `@safe` decorator, return `Result[T, ErrorMonad]` |
+| IO fallible | `@impure_safe` decorator |
+| Composition | `flow()` / `pipe()` for phase pipelines in IOComposePhase |
+
+#### T6.10 — Verification
+
+| Item | Action |
+|------|--------|
+| `rg` sweep | Grep for all old names across entire RL-Lab; fix any remaining references |
+| `ruff check` | Lint pass |
+| `pyright` | Type check pass |
+| `just ana-check` | Full system health check (imports, field counts, JSON fidelity, roundtrip closure) |
+
+### Execution Order
+
+1. T6.1 through T6.7 (stratum by stratum, bottom-up)
+2. T6.8 (cross-cutting: __init__.py, JSON, justfile, pyproject)
+3. T6.9 (dry-python/returns integration)
+4. T6.10 (verification sweep)
+5. Single commit: `[Code | Refactor] v0.4.0: Execute taxonomic purification`
+
+### Directory Rename Summary (Total: 52 git mv operations)
+
+| Stratum | Types/ dirs | CoTypes/ dirs | Total |
+|---------|:-----------:|:-------------:|:-----:|
+| 1 Identity | 2 | 2 | 4 |
+| 2 Inductive | 7 | 5 | 12 |
+| 3 Dependent | 5 | 5 | 10 |
+| 4 Hom | 4 | 4 | 8 |
+| 5 Product | 4 | 4 | 8 |
+| 6 Monad | 3 | 2 | 5 |
+| 7 IO | 4 | 4 | 8 |
+| **Total** | **29** | **26** | **55** |
+
+### Session 6 Roadmap (T6)
+
+| # | Task | Status |
+|---|------|--------|
+| T6.1 | Stratum 1 (Identity): dir + class + field renames | DEFERRED to coding session |
+| T6.2 | Stratum 2 (Inductive): dir + class + field + method renames | DEFERRED to coding session |
+| T6.3 | Stratum 3 (Dependent): dir + class + field renames | DEFERRED to coding session |
+| T6.4 | Stratum 4 (Hom): dir + class + field renames | DEFERRED to coding session |
+| T6.5 | Stratum 5 (Product): dir + class + status enum renames | DEFERRED to coding session |
+| T6.6 | Stratum 6 (Monad): dir + class + PhaseId variant renames | DEFERRED to coding session |
+| T6.7 | Stratum 7 (IO/CoIO): dir renames + internal ref updates | DEFERRED to coding session |
+| T6.8 | Cross-cutting: __init__.py, JSON, justfile, pyproject | DEFERRED to coding session |
+| T6.9 | dry-python/returns integration | DEFERRED to coding session |
+| T6.10 | Verification sweep (rg, ruff, pyright, ana-check) | DEFERRED to coding session |
+
+---
+
+## 2026-03-09 — Session 5: Taxonomic Purification Spec + v0.4.0
+
+### What happened
+- Designed and documented a **complete taxonomic purification** -- every type name, phase name, and field name normalized from domain jargon to category-theoretic vocabulary.
+- Phase chain renamed: `Discovery -> Ingest -> Feature -> Train -> Eval -> Serve -> Main` becomes `Discovery -> Ingest -> Transform -> Solve -> Eval -> Project -> Compose`.
+- All type names, field names, and enum names normalized per root TEMPLATE.md Section 16 (Naming Normalization Protocol).
+- Added root AGENTS.md invariants 33 (type-theoretic naming) and 34 (`dry-python/returns` monadic purity).
+- Added root AGENTS.md anti-patterns for invariants 33 and 34.
+- Integrated `dry-python/returns` monadic surface spec into all documentation: `IOResult[T, ErrorMonad]` for IO executors, `Result[T, ErrorMonad]` for pure fallible, `Maybe[T]` for store lookups, `@safe`/`@impure_safe` decorators, `flow()`/`pipe()` composition.
+- Full rewrite of RL-Lab AGENTS.md, TEMPLATE.md, DICTIONARY.md, README.md with new taxonomy.
+- Removed stale `INVENTORY-TYPES-HOM-DEPENDENT.md`.
+- Updated all 14 per-stratum READMEs with new names.
+- Updated root Universes README.md and TRACKER.md with version bump.
+
+### Doc Changes
+
+| File | What Changed |
+|------|-------------|
+| `Universes/AGENTS.md` | Added invariants 33 + 34, 2 new anti-patterns, count 31->34 |
+| `Universes/TEMPLATE.md` | Section 16 (Naming Normalization Protocol) already present from prior edit |
+| `Universes/README.md` | RL-Lab version bump v0.3.0 -> v0.4.0 |
+| `Universes/TRACKER.md` | RL-Lab version bump, Naming Normalization Protocol in structures table |
+| `RL-Lab/AGENTS.md` | Full rewrite with new taxonomy |
+| `RL-Lab/TEMPLATE.md` | Full rewrite with new taxonomy + returns patterns |
+| `RL-Lab/DICTIONARY.md` | Full rewrite with normalization table + new entries |
+| `RL-Lab/README.md` | Full rewrite with new taxonomy |
+| `RL-Lab/TRACKER.md` | Session 5 entry, T5.1-T5.4 roadmap |
+| 14x per-stratum READMEs | Name propagation |
+
+### Files Removed
+
+| File | Reason |
+|------|--------|
+| `RL-Lab/INVENTORY-TYPES-HOM-DEPENDENT.md` | Superseded by DICTIONARY.md normalization table |
+
+### Version
+- v0.3.0 -> **v0.4.0** (docs-only; code rename deferred to next session)
+
+### Session 5 Roadmap (T5)
+
+| # | Task | Status |
+|---|------|--------|
+| T5.1 | Design complete rename mapping (all strata, all fields) | **DONE** |
+| T5.2 | Document Naming Normalization Protocol (root TEMPLATE.md Section 16) | **DONE** |
+| T5.3 | Update all RL-Lab docs with new taxonomy | **DONE** |
+| T5.4 | Execute code renames (Python files, directories, imports, JSON) | DEFERRED → Session 6 (T6.1-T6.10) |
+
+---
+
 ## 2026-03-09 — Session 4: Documentation Reconciliation + v0.3.0
 
 ### What happened
