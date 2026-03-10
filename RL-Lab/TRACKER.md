@@ -28,6 +28,15 @@ Most recent entries first.
   - All `default.json` configs referencing these fields
   - `dry-python/returns` integration (T6.9): dependency added, but wrapping not yet done
 - Created `PROMPTS.md` (Universes/ + RL-Lab/) — canonical spec-driven prompt library for subagent dispatch
+- Committed all code changes: `5821cb8` — 127 files, 2261+/2598- (dirs, classes, fields, JSON, justfile, pyproject)
+
+### Commits
+
+| Hash | Message |
+|------|---------|
+| `94c9efd` | `[RL-Lab \| Docs] v0.4.0: Session 6 implementation plan` |
+| `3f2b68c` | `[Docs \| CoIO] v7.2.1: Add PROMPTS.md` |
+| `5821cb8` | `[RL-Lab \| Refactor] v0.4.0: Taxonomic purification` |
 
 ### Implementation Plan (T6 — Code Rename)
 
